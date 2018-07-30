@@ -3,7 +3,7 @@
 """
 from setuptools import find_packages, setup
 
-dependencies = ['click']
+dependencies = ['click', 'requests', 'pygments']
 
 setup(
     name='arcsecond',
