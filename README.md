@@ -1,23 +1,39 @@
 [![Build Status](https://img.shields.io/travis/onekiloparsec/arcsecond-python.svg)](https://travis-ci.org/onekiloparsec/arcsecond-python.svg?branch=master)
 
-# Arcsecond Python
+# Arcsecond CLI
 
- CLI for arcsecond.io
+ Command-line interface (CLI) for arcsecond.io
 
 
 # Installation
 
-If you don't use `pipsi`, you're missing out.
-Here are [installation instructions](https://github.com/mitsuhiko/pipsi#readme).
-
 Simply run:
 
-    $ pipsi install .
+    $ pip install arcsecond
 
 
 # Usage
 
-To use it:
+Philosophy: the Arcsecond CLI is using the same principle as `git`: it has a global
+command `arcsecond` followed by subcommands, such as `objects`, or `exoplanets`.
+
+For instance, to obtain the information about an object:
+
+    $ arcsecond objects "HD 5980"
+    
+Likewise, it can be abbreviated:
+
+     $ arcsecond o "HD 5980"
+     
+Open the webpage in the default browser for that object (`--open` can be abbreviated `-o`):     
+
+     $ arcsecond o "HD 5980" --open
+
+Open the API webpage in the default browser for that object (`--open` can be abbreviated `-o`):     
+
+     $ arcsecond o "HD 5980" --open api
+
+Help:
 
     $ arcsecond --help
 
