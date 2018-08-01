@@ -103,13 +103,9 @@ def main():
     pass
 
 
-@main.command()
-@click.argument('name', required=True)
-@common_options
-@pass_state
-def objects(state, name):
+def endpoint(state, endpoint, name):
     api = API(state.debug)
-    url = api.url(API.ENDPOINT_OBJECTS, name, open=state.open)
+    url = api.url(endpoint, name, open=state.open)
 
     if state.open:
         if state.verbose:
@@ -124,6 +120,22 @@ def objects(state, name):
             print(highlight(json_str, JsonLexer(), TerminalFormatter()))
         else:
             print('error')
+
+
+@main.command()
+@click.argument('name', required=True)
+@common_options
+@pass_state
+def object(state, name):
+    endpoint(state, API.ENDPOINT_OBJECTS, name)
+
+
+@main.command()
+@click.argument('name', required=True)
+@common_options
+@pass_state
+def exoplanet(state, name):
+    endpoint(state, API.ENDPOINT_EXOPLANETS, name)
 
 
 if __name__ == '__main__':
