@@ -123,7 +123,7 @@ def endpoint(state, endpoint, name):
 
 
 @main.command()
-@click.argument('name', required=True)
+@click.argument('name', required=True, nargs=-1)
 @common_options
 @pass_state
 def object(state, name):
@@ -131,7 +131,7 @@ def object(state, name):
 
 
 @main.command()
-@click.argument('name', required=True)
+@click.argument('name', required=True, nargs=-1)
 @common_options
 @pass_state
 def exoplanet(state, name):
