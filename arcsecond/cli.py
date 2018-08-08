@@ -49,7 +49,8 @@ class API(object):
                 json_str = json.dumps(r.json(), indent=4, sort_keys=True)
                 print(highlight(json_str, JsonLexer(), TerminalFormatter()))
             else:
-                print('error')
+                json_obj = json.loads(r.text)
+                click.echo(json_obj['detail'])
 
 
 @click.group(cls=AliasedGroup, invoke_without_command=True)
