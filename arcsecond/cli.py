@@ -35,6 +35,7 @@ class API(object):
         return "{}{}{}".format(path, self.endpoint[index], name)
 
     def run(self, name=''):
+        if type(name) is tuple: name = " ".join(name)
         url = self.url(name)
 
         if self.state.open:
