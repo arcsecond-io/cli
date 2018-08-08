@@ -47,7 +47,7 @@ class API(object):
             r = requests.get(url)
             if r.status_code == 200:
                 json_str = json.dumps(r.json(), indent=4, sort_keys=True)
-                print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+                click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()))
             else:
                 json_obj = json.loads(r.text)
                 click.echo(json_obj['detail'])
