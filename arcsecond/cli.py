@@ -22,19 +22,18 @@ class API(object):
 
     ENPOINTS = [ENDPOINT_OBJECTS, ENDPOINT_EXOPLANETS]
 
-    def __init__(self, state, endpoint):
-        assert (endpoint in API.ENPOINTS)
+    def __init__(self, state):
         self.state = state
-        self.endpoint = endpoint
         self.request_path = 'http://api.lvh.me:8000' if state.debug is True else 'https://api.arcsecond.io'
         self.open_path = 'http://localhost:8080' if state.debug is True else 'https://www.arcsecond.io'
 
-    def get_read_url(self, name=''):
+    def get_read_url(self, endpoint, name=''):
         path = self.request_path if self.state.open is False else self.open_path
         index = 0 if open is False else 1
-        return "{}{}{}".format(path, self.endpoint[index], name)
+        return "{}{}{}".format(path, endpoint[index], name)
 
-    def read(self, name=''):
+    def read(self, endpoint, name=''):
+        assert (endpoint in API.ENPOINTS)
         if type(name) is tuple: name = " ".join(name)
         url = self.get_read_url(name)
 
@@ -76,7 +75,7 @@ def main(ctx, version=False):
 @common_options
 @pass_state
 def object(state, name):
-    API(state, API.ENDPOINT_OBJECTS).read(name)
+    API(state).read(API.ENDPOINT_OBJECTS, name)
 
 
 @main.command()
@@ -84,7 +83,7 @@ def object(state, name):
 @common_options
 @pass_state
 def exoplanet(state, name):
-    API(state, API.ENDPOINT_EXOPLANETS).read(name)
+    API(state).read(API.ENDPOINT_EXOPLANETS, name)
 
 
 @main.command()
@@ -93,11 +92,4 @@ def exoplanet(state, name):
 @common_options
 @pass_state
 def login(state, username, password):
-    url = 'http://api.lvh.me:8000' if state.debug is True else 'https://api.arcsecond.io'
-    r = requests.post(url + '/auth/login/', data={'username': username, 'password': password})
-    if r.status_code == 200:
-        json_str = json.dumps(r.json(), indent=4, sort_keys=True)
-        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()))
-    else:
-        json_obj = json.loads(r.text)
-        click.echo(json_obj)
+    API(state).login(username, password)
