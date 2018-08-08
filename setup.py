@@ -3,11 +3,13 @@
 """
 from setuptools import find_packages, setup
 
+from arcsecond.cli import __version__
+
 dependencies = ['click', 'requests', 'pygments']
 
 setup(
     name='arcsecond',
-    version='0.1.1',
+    version=__version__,
     url='https://github.com/onekiloparsec/arcsecond-python',
     license='MIT',
     author='Cedric Foellmi',

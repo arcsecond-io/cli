@@ -1,6 +1,5 @@
 import json
 import pprint
-import sys
 import webbrowser
 
 import click
@@ -8,6 +7,8 @@ import requests
 from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
+
+__version__ = '0.2.0'
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 
@@ -19,21 +20,23 @@ class State(object):
         self.open = None
 
 
+pass_state = click.make_pass_decorator(State, ensure=True)
+
+
 class API(object):
     ENDPOINT_OBJECTS = ('/objects/', '/objects/')
     ENDPOINT_EXOPLANETS = ('/exoplanets/', '/objects/')
 
     ENPOINTS = [ENDPOINT_OBJECTS, ENDPOINT_EXOPLANETS]
 
-    def __init__(self, state: State, endpoint: tuple):
+    def __init__(self, state, endpoint):
+        assert (endpoint in API.ENPOINTS)
         self.state = state
         self.endpoint = endpoint
         self.request_path = 'http://api.lvh.me:8000' if state.debug is True else 'https://api.arcsecond.io'
         self.open_path = 'http://localhost:8080' if state.debug is True else 'https://www.arcsecond.io'
 
     def url(self, name=''):
-        if self.endpoint not in API.ENPOINTS:
-            return None
         path = self.request_path if self.state.open is False else self.open_path
         index = 0 if open is False else 1
         return "{}{}{}".format(path, self.endpoint[index], name)
@@ -68,9 +71,6 @@ class AliasedGroup(click.Group):
         elif len(matches) == 1:
             return click.Group.get_command(self, ctx, matches[0])
         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
-
-
-pass_state = click.make_pass_decorator(State, ensure=True)
 
 
 def verbose_option(f):
@@ -117,9 +117,12 @@ def common_options(f):
     return f
 
 
-@click.group(cls=AliasedGroup)
-def main():
-    pass
+@click.group(cls=AliasedGroup, invoke_without_command=True)
+@click.option('-v', '--version', is_flag=True)
+@click.pass_context
+def main(ctx, version=False):
+    if ctx.invoked_subcommand is None and version:
+        click.echo(__version__)
 
 
 @main.command()
@@ -136,7 +139,3 @@ def object(state, name):
 @pass_state
 def exoplanet(state, name):
     API(state, API.ENDPOINT_EXOPLANETS).run(name)
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
