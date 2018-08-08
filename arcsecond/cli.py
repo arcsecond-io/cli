@@ -29,14 +29,14 @@ class API(object):
         self.request_path = 'http://api.lvh.me:8000' if state.debug is True else 'https://api.arcsecond.io'
         self.open_path = 'http://localhost:8080' if state.debug is True else 'https://www.arcsecond.io'
 
-    def url(self, name=''):
+    def get_read_url(self, name=''):
         path = self.request_path if self.state.open is False else self.open_path
         index = 0 if open is False else 1
         return "{}{}{}".format(path, self.endpoint[index], name)
 
-    def run(self, name=''):
+    def read(self, name=''):
         if type(name) is tuple: name = " ".join(name)
-        url = self.url(name)
+        url = self.get_read_url(name)
 
         if self.state.open:
             if self.state.verbose:
@@ -53,6 +53,15 @@ class API(object):
                 json_obj = json.loads(r.text)
                 click.echo(json_obj['detail'])
 
+    def login(self, username, password):
+        r = requests.post(self.request_path + '/auth/login/', data={'username': username, 'password': password})
+        if r.status_code == 200:
+            json_str = json.dumps(r.json(), indent=4, sort_keys=True)
+            click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()))
+        else:
+            json_obj = json.loads(r.text)
+            click.echo(json_obj['non_field_errors'])
+
 
 @click.group(cls=AliasedGroup, invoke_without_command=True)
 @click.option('-v', '--version', is_flag=True)
@@ -67,7 +76,7 @@ def main(ctx, version=False):
 @common_options
 @pass_state
 def object(state, name):
-    API(state, API.ENDPOINT_OBJECTS).run(name)
+    API(state, API.ENDPOINT_OBJECTS).read(name)
 
 
 @main.command()
@@ -75,4 +84,20 @@ def object(state, name):
 @common_options
 @pass_state
 def exoplanet(state, name):
-    API(state, API.ENDPOINT_EXOPLANETS).run(name)
+    API(state, API.ENDPOINT_EXOPLANETS).read(name)
+
+
+@main.command()
+@click.option('--username', required=True, nargs=1, prompt=True)
+@click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
+@common_options
+@pass_state
+def login(state, username, password):
+    url = 'http://api.lvh.me:8000' if state.debug is True else 'https://api.arcsecond.io'
+    r = requests.post(url + '/auth/login/', data={'username': username, 'password': password})
+    if r.status_code == 200:
+        json_str = json.dumps(r.json(), indent=4, sort_keys=True)
+        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()))
+    else:
+        json_obj = json.loads(r.text)
+        click.echo(json_obj)
