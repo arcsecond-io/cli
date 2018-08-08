@@ -12,22 +12,48 @@ from pygments.lexers.data import JsonLexer
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 
 
+class State(object):
+    def __init__(self):
+        self.verbose = 0
+        self.debug = False
+        self.open = None
+
+
 class API(object):
     ENDPOINT_OBJECTS = ('/objects/', '/objects/')
     ENDPOINT_EXOPLANETS = ('/exoplanets/', '/objects/')
 
     ENPOINTS = [ENDPOINT_OBJECTS, ENDPOINT_EXOPLANETS]
 
-    def __init__(self, debug=False):
-        self.request_path = 'http://api.lvh.me:8000' if debug is True else 'https://api.arcsecond.io'
-        self.open_path = 'http://localhost:8080' if debug is True else 'https://www.arcsecond.io'
+    def __init__(self, state: State, endpoint: tuple):
+        self.state = state
+        self.endpoint = endpoint
+        self.request_path = 'http://api.lvh.me:8000' if state.debug is True else 'https://api.arcsecond.io'
+        self.open_path = 'http://localhost:8080' if state.debug is True else 'https://www.arcsecond.io'
 
-    def url(self, endpoint, name='', open=False):
-        if endpoint not in API.ENPOINTS:
+    def url(self, name=''):
+        if self.endpoint not in API.ENPOINTS:
             return None
-        path = self.request_path if open is False else self.open_path
+        path = self.request_path if self.state.open is False else self.open_path
         index = 0 if open is False else 1
-        return "{}{}{}".format(path, endpoint[index], name)
+        return "{}{}{}".format(path, self.endpoint[index], name)
+
+    def run(self, name=''):
+        url = self.url(name)
+
+        if self.state.open:
+            if self.state.verbose:
+                click.echo('Opening URL in browser : ' + url)
+            webbrowser.open(url)
+        else:
+            if self.state.verbose:
+                click.echo('Requesting URL ' + url + ' ...')
+            r = requests.get(url)
+            if r.status_code == 200:
+                json_str = json.dumps(r.json(), indent=4, sort_keys=True)
+                print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+            else:
+                print('error')
 
 
 class AliasedGroup(click.Group):
@@ -42,13 +68,6 @@ class AliasedGroup(click.Group):
         elif len(matches) == 1:
             return click.Group.get_command(self, ctx, matches[0])
         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
-
-
-class State(object):
-    def __init__(self):
-        self.verbose = 0
-        self.debug = False
-        self.open = None
 
 
 pass_state = click.make_pass_decorator(State, ensure=True)
@@ -103,31 +122,12 @@ def main():
     pass
 
 
-def endpoint(state, endpoint, name):
-    api = API(state.debug)
-    url = api.url(endpoint, name, open=state.open)
-
-    if state.open:
-        if state.verbose:
-            click.echo('Opening URL in browser : ' + url)
-        webbrowser.open(url)
-    else:
-        if state.verbose:
-            click.echo('Requesting URL ' + url + ' ...')
-        r = requests.get(url)
-        if r.status_code == 200:
-            json_str = json.dumps(r.json(), indent=4, sort_keys=True)
-            print(highlight(json_str, JsonLexer(), TerminalFormatter()))
-        else:
-            print('error')
-
-
 @main.command()
 @click.argument('name', required=True, nargs=-1)
 @common_options
 @pass_state
 def object(state, name):
-    endpoint(state, API.ENDPOINT_OBJECTS, name)
+    API(state, API.ENDPOINT_OBJECTS).run(name)
 
 
 @main.command()
@@ -135,7 +135,7 @@ def object(state, name):
 @common_options
 @pass_state
 def exoplanet(state, name):
-    endpoint(state, API.ENDPOINT_EXOPLANETS, name)
+    API(state, API.ENDPOINT_EXOPLANETS).run(name)
 
 
 if __name__ == '__main__':
