@@ -28,7 +28,8 @@ def verbose_option(f):
         state.verbose = value
         return value
 
-    return click.option('-v', '--verbose', count=True,
+    return click.option('-v', '--verbose',
+                        count=True,
                         expose_value=False,
                         help='Increases verbosity.',
                         callback=callback)(f)
@@ -40,7 +41,8 @@ def debug_option(f):
         state.debug = value
         return value
 
-    return click.option('--debug/--no-debug',
+    return click.option('--debug',
+                        is_flag=True,
                         expose_value=False,
                         help='Enables or disables debug mode.',
                         callback=callback)(f)
