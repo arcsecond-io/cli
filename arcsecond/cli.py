@@ -32,10 +32,10 @@ def exoplanet(state, name):
     API(state).read(API.ENDPOINT_EXOPLANETS, name)
 
 
-@main.command()
-@click.option('--username', required=True, nargs=1, prompt=True)
-@click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
-@common_options
-@pass_state
-def login(state, username, password):
-    API(state).login(username, password)
+# @main.command()
+# @click.option('--username', required=True, nargs=1, prompt=True)
+# @click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
+# @common_options
+# @pass_state
+# def login(state, username, password):
+#     API(state).login(username, password)
