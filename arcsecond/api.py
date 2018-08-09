@@ -25,12 +25,15 @@ class API(object):
     def get_read_url(self, endpoint, name=''):
         path = self.request_path if self.state.open is False else self.open_path
         index = 0 if open is False else 1
-        return "{}{}{}".format(path, endpoint[index], name)
+        url = "{}{}{}".format(path, endpoint[index], name)
+        if self.state.verbose:
+            click.echo('Building read URL : ' + url)
+        return url
 
     def read(self, endpoint, name=''):
         assert (endpoint in API.ENPOINTS)
         if type(name) is tuple: name = " ".join(name)
-        url = self.get_read_url(name)
+        url = self.get_read_url(endpoint, name)
 
         if self.state.open:
             if self.state.verbose:
