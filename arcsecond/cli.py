@@ -16,7 +16,7 @@ def main(ctx, version=False):
         click.echo(__version__)
 
 
-@main.command()
+@main.command(help='Request single object information (in the /objects/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @common_options
 @pass_state
@@ -24,7 +24,7 @@ def object(state, name):
     API(state).read(API.ENDPOINT_OBJECTS, name)
 
 
-@main.command()
+@main.command(help='Request single exoplanet information (in the /exoplanets/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @common_options
 @pass_state
