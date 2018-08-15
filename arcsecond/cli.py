@@ -16,27 +16,27 @@ def main(ctx, version=False):
         click.echo(__version__)
 
 
-@main.command(help='Request single object information (in the /objects/<name>/ API endpoint)')
+@main.command(help='Request object(s) information (in the /objects/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
-def object(state, name):
+def objects(state, name):
     API(state).read(API.ENDPOINT_OBJECTS, name)
 
 
-@main.command(help='Request single exoplanet information (in the /exoplanets/<name>/ API endpoint)')
+@main.command(help='Request exoplanet(s) information (in the /exoplanets/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
-def exoplanet(state, name):
+def exoplanets(state, name):
     API(state).read(API.ENDPOINT_EXOPLANETS, name)
 
 
-@main.command(help='Request single object finding charts (in the /findingcharts/<name>/ API endpoint)')
+@main.command(help='Request object(s) finding charts (in the /findingcharts/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
-def findingchart(state, name):
+def charts(state, name):
     API(state).read(API.ENDPOINT_FINDINGCHARTS, name)
 
 
