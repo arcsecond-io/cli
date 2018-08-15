@@ -1,11 +1,12 @@
 from .base import APIEndPoint
 
+
 class ObjectsAPIEndPoint(APIEndPoint):
     name = 'objects'
 
 
     def _detail_url(self, name):
-        return self._root_url() + '/objects/' + name
+        return self._root_url() + '/objects/' + name + '/'
 
 
     def _open_url(self, name):
@@ -21,7 +22,7 @@ class ExoplanetsAPIEndPoint(APIEndPoint):
 
 
     def _detail_url(self, name):
-        return self._list_url() + name
+        return self._list_url() + name + '/'
 
 
     def _open_url(self, name):
