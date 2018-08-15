@@ -32,10 +32,18 @@ def exoplanet(state, name):
     API(state).read(API.ENDPOINT_EXOPLANETS, name)
 
 
-# @main.command()
-# @click.option('--username', required=True, nargs=1, prompt=True)
-# @click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
-# @common_options
-# @pass_state
-# def login(state, username, password):
-#     API(state).login(username, password)
+@main.command(help='Request single object finding charts (in the /findingcharts/<name>/ API endpoint)')
+@click.argument('name', required=True, nargs=-1)
+@open_options
+@pass_state
+def findingchart(state, name):
+    API(state).read(API.ENDPOINT_FINDINGCHARTS, name)
+
+
+@main.command(help='Login to your personnal Arcsecond.io account, and retrieve the API key.')
+@click.option('--username', required=True, nargs=1, prompt=True)
+@click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
+@basic_options
+@pass_state
+def login(state, username, password):
+    API(state).login(username, password)
