@@ -9,7 +9,7 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 
 
 @click.group(cls=AliasedGroup, invoke_without_command=True)
-@click.option('-v', '--version', is_flag=True)
+@click.option('-v', '--version', is_flag=True, help="Show the CLI version and exit.")
 @click.pass_context
 def main(ctx, version=False):
     if ctx.invoked_subcommand is None and version:
