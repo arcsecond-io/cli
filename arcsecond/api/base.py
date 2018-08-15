@@ -37,13 +37,13 @@ class APIEndPoint(object):
 
     def _send_get_request(self, url, **headers):
         if self.require_auth and 'Authorization' not in headers.keys():
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + config_file_read_api_key()
+            headers['X-Arcsecond-API-Authorization'] = 'Key ' + config_file_read_api_key(self.state.debug)
         return requests.get(url, headers=headers)
 
 
     def _send_post_request(self, url, payload, **headers):
         if self.require_auth and 'Authorization' not in headers.keys():
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + config_file_read_api_key()
+            headers['X-Arcsecond-API-Authorization'] = 'Key ' + config_file_read_api_key(self.state.debug)
         return requests.post(url, payload, headers=headers)
 
 

@@ -11,12 +11,13 @@ def config_file_exists():
     return os.path.exists(path) and os.path.isfile(path)
 
 
-def config_file_is_valid():
+def config_file_is_valid(debug=False):
     if not config_file_exists():
         return False
     config = SafeConfigParser()
     config.read(config_file_path())
-    return config['main'].get('api_key')
+    section = 'debug' if debug else 'main'
+    return config[section].get('api_key')
 
 
 def config_file_save_api_key(api_key, username, debug=False):
@@ -31,15 +32,16 @@ def config_file_save_api_key(api_key, username, debug=False):
         config.write(f)
 
 
-def config_file_read_key(key):
+def config_file_read_key(key, debug=False):
     config = SafeConfigParser()
     config.read(config_file_path())
-    return config['main'].get(key)
+    section = 'debug' if debug else 'main'
+    return config[section].get(key)
 
 
-def config_file_read_api_key():
-    return config_file_read_key('api_key')
+def config_file_read_api_key(debug=False):
+    return config_file_read_key('api_key', debug=debug)
 
 
-def config_file_read_username():
-    return config_file_read_key('username')
+def config_file_read_username(debug=False):
+    return config_file_read_key('username', debug=debug)

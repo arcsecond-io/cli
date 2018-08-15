@@ -62,4 +62,4 @@ def login(state, username, password):
 @open_options
 @pass_state
 def me(state):
-    API(state).read(API.ENDPOINT_ME, config_file_read_username())
+    API(state).read(API.ENDPOINT_ME, config_file_read_username(state.debug))
