@@ -19,11 +19,14 @@ def config_file_is_valid():
     return config['main'].get('api_key')
 
 
-def config_file_save_api_key(api_key, username):
+def config_file_save_api_key(api_key, username, debug=False):
     config = SafeConfigParser()
-    config.add_section('main')
-    config.set('main', 'username', username)
-    config.set('main', 'api_key', api_key)
+    config.read(config_file_path())
+    section = 'debug' if debug else 'main'
+    if not section in config.keys():
+        config.add_section(section)
+    config.set(section, 'username', username)
+    config.set(section, 'api_key', api_key)
     with open(config_file_path(), 'w') as f:
         config.write(f)
 

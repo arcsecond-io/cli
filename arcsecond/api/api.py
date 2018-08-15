@@ -101,6 +101,6 @@ class API(object):
 
             if result:
                 api_key = result['api_key']
-                config_file_save_api_key(api_key, username)
+                config_file_save_api_key(api_key, username, self.state.debug)
                 if self.state.verbose:
                     click.echo('Successfull API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
