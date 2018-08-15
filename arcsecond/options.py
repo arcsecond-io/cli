@@ -29,7 +29,7 @@ def verbose_option(f):
         return value
 
 
-    return click.option('-v', '--verbose',
+    return click.option('--verbose',
                         count=True,
                         expose_value=False,
                         help='Increases verbosity.',
@@ -57,7 +57,7 @@ def open_option(f):
         return value
 
 
-    return click.option('-o', '--open',
+    return click.option('--open',
                         is_flag=True,
                         expose_value=False,
                         help="Open the corresponding webpage in the default browser.",
