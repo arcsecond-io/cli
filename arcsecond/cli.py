@@ -37,7 +37,7 @@ def exoplanets(state, name):
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
-def charts(state, name):
+def findingcharts(state, name):
     API(state).read(API.ENDPOINT_FINDINGCHARTS, name)
 
 
