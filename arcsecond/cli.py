@@ -4,7 +4,7 @@ from .api import API
 from .config import config_file_read_username
 from .options import AliasedGroup, State, basic_options, open_options
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
