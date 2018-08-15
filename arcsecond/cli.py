@@ -1,7 +1,7 @@
 import click
 
 from .api import API
-from .options import AliasedGroup, State, common_options
+from .options import AliasedGroup, State, basic_options, open_options
 
 __version__ = '0.2.0'
 
@@ -18,7 +18,7 @@ def main(ctx, version=False):
 
 @main.command(help='Request single object information (in the /objects/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
-@common_options
+@open_options
 @pass_state
 def object(state, name):
     API(state).read(API.ENDPOINT_OBJECTS, name)
@@ -26,7 +26,7 @@ def object(state, name):
 
 @main.command(help='Request single exoplanet information (in the /exoplanets/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
-@common_options
+@open_options
 @pass_state
 def exoplanet(state, name):
     API(state).read(API.ENDPOINT_EXOPLANETS, name)
