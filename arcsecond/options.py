@@ -28,6 +28,7 @@ def verbose_option(f):
         state.verbose = value
         return value
 
+
     return click.option('-v', '--verbose',
                         count=True,
                         expose_value=False,
@@ -40,6 +41,7 @@ def debug_option(f):
         state = ctx.ensure_object(State)
         state.debug = value
         return value
+
 
     return click.option('--debug',
                         is_flag=True,
@@ -54,6 +56,7 @@ def open_option(f):
         state.open = value
         return value
 
+
     return click.option('-o', '--open',
                         is_flag=True,
                         expose_value=False,
@@ -61,8 +64,13 @@ def open_option(f):
                         callback=callback)(f)
 
 
-def common_options(f):
+def basic_options(f):
     f = verbose_option(f)
     f = debug_option(f)
+    return f
+
+
+def open_options(f):
+    f = basic_options(f)
     f = open_option(f)
     return f
