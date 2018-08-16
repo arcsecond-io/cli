@@ -1,4 +1,5 @@
 [![Build Status](https://img.shields.io/travis/onekiloparsec/arcsecond-python.svg)](https://travis-ci.org/onekiloparsec/arcsecond-python.svg?branch=master)
+[![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
 
 # Arcsecond CLI
 
