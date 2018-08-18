@@ -8,11 +8,8 @@ from arcsecond.config import config_file_read_api_key
 class APIEndPoint(object):
     name = None
 
-
-    def __init__(self, state, require_auth=False):
+    def __init__(self, state):
         self.state = state
-        self.require_auth = require_auth
-
 
     def _root_url(self):
         return 'http://api.lvh.me:8000' if self.state.debug is True else 'https://api.arcsecond.io'
