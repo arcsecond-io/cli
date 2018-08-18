@@ -1,4 +1,4 @@
-[![Build Status](https://img.shields.io/travis/arcsecond-io/cli.svg)](https://travis-ci.org/arcsecond-io/cli.svg?branch=master)
+[![Build Status](https://img.shields.io/travis/arcsecond-io/cli.svg)](https://travis-ci.org/arcsecond-io/cli)
 [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
 
 # Arcsecond CLI
