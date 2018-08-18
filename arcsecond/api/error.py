@@ -1,0 +1,2 @@
+class ArcsecondError(Exception):
+    pass

@@ -12,11 +12,24 @@ Simply run:
 
     $ pip install arcsecond
 
-
 # Usage
 
 Philosophy: the Arcsecond CLI is using the same principle as `git`: it has a global
 command `arcsecond` followed by subcommands.
+
+Help:
+
+    $ arcsecond --help
+
+**You must login first before accessing APIs.**
+
+    $ arcsecond login 
+    
+To skip prompts:
+
+    $ arcsecond login --username <username> --password <password>
+
+Your private API key will be stored in the config file in `~/.arcsecond.ini`. Then, you can access public and private APIs. 
 
 ## Public APIs
 
@@ -40,21 +53,7 @@ The available endpoints (and thus, subcommands) available so far are: `objects`,
 
 ## Private APIs
 
-To access private APIs, you must first login: 
-
-    $ arcsecond login 
-    
-To skip prompts:
-
-    $ arcsecond login --username <username> --password <password>
-
-An API key will be stored in the config file in `~/.arcsecond.ini`
-
-Then, you can access private APIs. As of now, you can simply access your own fill profile:
+As of now, you can simply access your own fill profile:
 
     $ arcsecond me    
-
-Help:
-
-    $ arcsecond --help
 

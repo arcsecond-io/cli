@@ -1,6 +1,6 @@
 import click
 
-from .api import API
+from .api import API, ArcsecondError
 from .config import config_file_read_username
 from .options import AliasedGroup, State, basic_options, open_options
 
@@ -62,4 +62,6 @@ def login(state, username, password):
 @open_options
 @pass_state
 def me(state):
-    API(state).read(API.ENDPOINT_ME, config_file_read_username(state.debug))
+    username = config_file_read_username(state.debug)
+    if not username: raise ArcsecondError('Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username))
+    API(state).read(API.ENDPOINT_ME, username)
