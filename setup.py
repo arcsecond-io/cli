@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 from arcsecond.cli import __version__
 
-dependencies = ['click', 'requests', 'pygments']
+dependencies = ['click', 'requests', 'pygments', 'configparser']
 
 setup(
     name='arcsecond',
