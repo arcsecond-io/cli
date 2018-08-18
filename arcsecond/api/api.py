@@ -84,23 +84,32 @@ class API(object):
             if error:
                 self._echo_error(error)
 
-    def login(self, username, password):
-        result, error = AuthAPIEndPoint(self.state).authenticate(username, password)
+    def _get_and_save_api_key(self, username, auth_token):
+        headers = {'Authorization': 'Token ' + auth_token}
+        result, error = ProfileAPIKeyAPIEndPoint(self.state).read(username, **headers)
+
         if error:
             self._echo_error(error)
             return
 
         if result:
-            auth_token = result['key']
-            headers = {'Authorization': 'Token ' + auth_token}
-            result, error = ProfileAPIKeyAPIEndPoint(self.state).read(username, **headers)
+            api_key = result['api_key']
+            config_file_save_api_key(api_key, username, self.state.debug)
+            if self.state.verbose:
+                click.echo('Successfull API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
 
-            if error:
-                self._echo_error(error)
-                return
+    def login(self, username, password):
+        result, error = AuthAPIEndPoint(self.state).authenticate(username, password)
+        if error:
+            self._echo_error(error)
+            return
+        if result:
+            self._get_and_save_api_key(username, result['key'])
 
-            if result:
-                api_key = result['api_key']
-                config_file_save_api_key(api_key, username, self.state.debug)
-                if self.state.verbose:
-                    click.echo('Successfull API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
+    def register(self, username, email, password1, password2):
+        result, error = AuthAPIEndPoint(self.state).register(username, email, password1, password2)
+        if error:
+            self._echo_error(error)
+            return
+        if result:
+            self._get_and_save_api_key(username, result['key'])

@@ -58,10 +58,22 @@ def login(state, username, password):
     API(state).login(username, password)
 
 
+@main.command(help='Register for a free personnal Arcsecond.io account, and retrieve the API key.')
+@click.option('--username', required=True, nargs=1, prompt=True)
+@click.option('--email', required=True, nargs=1, prompt=True)
+@click.option('--password1', required=True, nargs=1, prompt=True, hide_input=True)
+@click.option('--password2', required=True, nargs=1, prompt=True, hide_input=True)
+@basic_options
+@pass_state
+def register(state, username, email, password1, password2):
+    API(state).register(username, email, password1, password2)
+
+
 @main.command(help='Request your user profile.')
 @open_options
 @pass_state
 def me(state):
     username = config_file_read_username(state.debug)
-    if not username: raise ArcsecondError('Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username))
+    if not username: raise ArcsecondError(
+        'Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username))
     API(state).read(API.ENDPOINT_ME, username)
