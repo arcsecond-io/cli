@@ -18,18 +18,18 @@ from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPI
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 
 
-class API(object):
+class ArcsecondAPI(object):
     ENDPOINT_OBJECTS = ObjectsAPIEndPoint.name
     ENDPOINT_EXOPLANETS = ExoplanetsAPIEndPoint.name
     ENDPOINT_FINDINGCHARTS = FindingChartsAPIEndPoint.name
     ENDPOINT_PROFILE = ProfileAPIEndPoint.name
     ENDPOINT_ME = PersonalProfileAPIEndPoint.name
 
-    ENPOINTS = [ENDPOINT_OBJECTS,
-                ENDPOINT_EXOPLANETS,
-                ENDPOINT_FINDINGCHARTS,
-                ENDPOINT_PROFILE,
-                ENDPOINT_ME]
+    ENDPOINTS = [ENDPOINT_OBJECTS,
+                 ENDPOINT_EXOPLANETS,
+                 ENDPOINT_FINDINGCHARTS,
+                 ENDPOINT_PROFILE,
+                 ENDPOINT_ME]
 
     _mapping = {ENDPOINT_OBJECTS: ObjectsAPIEndPoint,
                 ENDPOINT_EXOPLANETS: ExoplanetsAPIEndPoint,
@@ -37,8 +37,12 @@ class API(object):
                 ENDPOINT_PROFILE: ProfileAPIEndPoint,
                 ENDPOINT_ME: PersonalProfileAPIEndPoint}
 
-    def __init__(self, state):
+    def __init__(self, state=None, **kwargs):
         self.state = state or State()
+        if 'debug' in kwargs.keys():
+            self.state.debug = kwargs.get('debug')
+        if 'verbose' in kwargs.keys():
+            self.state.verbose = kwargs.get('verbose')
 
     def _echo_result(self, result):
         json_str = json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False)
@@ -52,10 +56,11 @@ class API(object):
             click.echo(json_obj['non_field_errors'])
 
     def list(self, endpoint):
-        if endpoint not in API.ENPOINTS:
-            raise ArcsecondError("Unknown endpoint {}. Must be one of: {}".format(endpoint, ', '.join(API.ENPOINTS)))
+        if endpoint not in ArcsecondAPI.ENDPOINTS:
+            raise ArcsecondError(
+                "Unknown endpoint {}. Must be one of: {}".format(endpoint, ', '.join(ArcsecondAPI.ENDPOINTS)))
 
-        endpoint = API._mapping[endpoint](self.state)
+        endpoint = ArcsecondAPI._mapping[endpoint](self.state)
         result, error = endpoint.list()
         if result:
             self._echo_result(result)
@@ -63,12 +68,13 @@ class API(object):
             self._echo_error(error)
 
     def read(self, endpoint, name):
-        if endpoint not in API.ENPOINTS:
-            raise ArcsecondError("Unknown endpoint {}. Must be one of: {}".format(endpoint, ', '.join(API.ENPOINTS)))
+        if endpoint not in ArcsecondAPI.ENDPOINTS:
+            raise ArcsecondError(
+                "Unknown endpoint {}. Must be one of: {}".format(endpoint, ', '.join(ArcsecondAPI.ENDPOINTS)))
         if not name:
             raise ArcsecondError("Invalid 'name' parameter: {}.".format(name))
 
-        endpoint = API._mapping[endpoint](self.state)
+        endpoint = ArcsecondAPI._mapping[endpoint](self.state)
 
         if type(name) is tuple:
             name = " ".join(name)

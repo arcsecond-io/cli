@@ -1,2 +1,2 @@
-from .api import API
+from .api import ArcsecondAPI
 from .error import ArcsecondError
