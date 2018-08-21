@@ -8,6 +8,7 @@ from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
 from arcsecond.config import config_file_path, config_file_save_api_key
+from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .error import ArcsecondError
@@ -37,7 +38,7 @@ class API(object):
                 ENDPOINT_ME: PersonalProfileAPIEndPoint}
 
     def __init__(self, state):
-        self.state = state
+        self.state = state or State()
 
     def _echo_result(self, result):
         json_str = json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False)
