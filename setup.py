@@ -10,7 +10,7 @@ dependencies = ['click', 'requests', 'pygments', 'configparser']
 setup(
     name='arcsecond',
     version=__version__,
-    url='https://github.com/onekiloparsec/arcsecond-python',
+    url='https://github.com/arcsecond-io/cli',
     license='MIT',
     author='Cedric Foellmi',
     author_email='cedric@arcsecond.io',
