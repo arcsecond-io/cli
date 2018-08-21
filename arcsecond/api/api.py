@@ -38,6 +38,7 @@ class ArcsecondAPI(object):
                 ENDPOINT_ME: PersonalProfileAPIEndPoint}
 
     def __init__(self, state=None, **kwargs):
+        self._is_using_cli = state is not None
         self.state = state or State()
         if 'debug' in kwargs.keys():
             self.state.debug = kwargs.get('debug')
@@ -45,10 +46,12 @@ class ArcsecondAPI(object):
             self.state.verbose = kwargs.get('verbose')
 
     def _echo_result(self, result):
+        if not self._is_using_cli: return result
         json_str = json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False)
         click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()))
 
     def _echo_error(self, error):
+        if not self._is_using_cli: return error
         if self.state.debug:
             click.echo(error)
         else:
@@ -63,9 +66,9 @@ class ArcsecondAPI(object):
         endpoint = ArcsecondAPI._mapping[endpoint](self.state)
         result, error = endpoint.list()
         if result:
-            self._echo_result(result)
+            return self._echo_result(result)
         if error:
-            self._echo_error(error)
+            return self._echo_error(error)
 
     def read(self, endpoint, name):
         if endpoint not in ArcsecondAPI.ENDPOINTS:
@@ -87,36 +90,32 @@ class ArcsecondAPI(object):
         else:
             result, error = endpoint.read(name)
             if result:
-                self._echo_result(result)
+                return self._echo_result(result)
             if error:
-                self._echo_error(error)
+                return self._echo_error(error)
 
     def _get_and_save_api_key(self, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
         result, error = ProfileAPIKeyAPIEndPoint(self.state).read(username, **headers)
-
         if error:
-            self._echo_error(error)
-            return
-
+            return self._echo_error(error)
         if result:
             api_key = result['api_key']
             config_file_save_api_key(api_key, username, self.state.debug)
             if self.state.verbose:
                 click.echo('Successfull API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
+            return self._echo_result(result)
 
     def login(self, username, password):
         result, error = AuthAPIEndPoint(self.state).authenticate(username, password)
         if error:
-            self._echo_error(error)
-            return
+            return self._echo_error(error)
         if result:
-            self._get_and_save_api_key(username, result['key'])
+            return self._get_and_save_api_key(username, result['key'])
 
     def register(self, username, email, password1, password2):
         result, error = AuthAPIEndPoint(self.state).register(username, email, password1, password2)
         if error:
-            self._echo_error(error)
-            return
+            return self._echo_error(error)
         if result:
-            self._get_and_save_api_key(username, result['key'])
+            return self._get_and_save_api_key(username, result['key'])
