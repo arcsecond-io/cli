@@ -37,6 +37,11 @@ class ArcsecondAPI(object):
                 ENDPOINT_PROFILE: ProfileAPIEndPoint,
                 ENDPOINT_ME: PersonalProfileAPIEndPoint}
 
+    @classmethod
+    def pretty_print_dict(cls, d):
+        json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
+        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()))
+
     def __init__(self, state=None, **kwargs):
         self._is_using_cli = state is not None
         self.state = state or State()
@@ -47,8 +52,7 @@ class ArcsecondAPI(object):
 
     def _echo_result(self, result):
         if not self._is_using_cli: return result
-        json_str = json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False)
-        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()))
+        ArcsecondAPI.pretty_print_dict(result)
 
     def _echo_error(self, error):
         if not self._is_using_cli: return error
