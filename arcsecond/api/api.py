@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json
 import pprint
 import webbrowser
@@ -11,12 +13,12 @@ from arcsecond.config import config_file_path, config_file_save_api_key
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
-from .error import ArcsecondError
+from .error import ArcsecondError, ArcsecondInvalidEndpointError
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
 from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
-
+ECHO_PREFIX = u' • '
 
 class ArcsecondAPI(object):
     ENDPOINT_OBJECTS = ObjectsAPIEndPoint.name
@@ -60,12 +62,14 @@ class ArcsecondAPI(object):
             click.echo(error)
         else:
             json_obj = json.loads(error)
-            click.echo(json_obj['non_field_errors'])
+            if 'detail' in json_obj.keys():
+                click.echo(ECHO_PREFIX + json_obj['detail'])
+            if 'non_field_errors' in json_obj.keys():
+                click.echo(ECHO_PREFIX + json_obj['non_field_errors'])
 
     def list(self, endpoint):
         if endpoint not in ArcsecondAPI.ENDPOINTS:
-            raise ArcsecondError(
-                "Unknown endpoint {}. Must be one of: {}".format(endpoint, ', '.join(ArcsecondAPI.ENDPOINTS)))
+            raise ArcsecondInvalidEndpointError(endpoint, ArcsecondAPI.ENDPOINTS)
 
         endpoint = ArcsecondAPI._mapping[endpoint](self.state)
         result, error = endpoint.list()
@@ -76,8 +80,7 @@ class ArcsecondAPI(object):
 
     def read(self, endpoint, name):
         if endpoint not in ArcsecondAPI.ENDPOINTS:
-            raise ArcsecondError(
-                "Unknown endpoint {}. Must be one of: {}".format(endpoint, ', '.join(ArcsecondAPI.ENDPOINTS)))
+            raise ArcsecondInvalidEndpointError(endpoint, ArcsecondAPI.ENDPOINTS)
         if not name:
             raise ArcsecondError("Invalid 'name' parameter: {}.".format(name))
 
