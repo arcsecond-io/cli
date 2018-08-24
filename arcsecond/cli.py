@@ -4,7 +4,7 @@ from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
 from .options import AliasedGroup, State, basic_options, open_options
 
-__version__ = '0.3.4'
+__version__ = '0.3.5'
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
