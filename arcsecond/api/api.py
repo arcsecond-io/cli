@@ -43,7 +43,7 @@ class ArcsecondAPI(object):
     @classmethod
     def pretty_print_dict(cls, d):
         json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
-        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()))
+        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip()) # .strip() avoids the empty newline
 
     def __init__(self, state=None, **kwargs):
         self._is_using_cli = state is not None

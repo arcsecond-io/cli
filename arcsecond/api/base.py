@@ -61,7 +61,7 @@ class APIEndPoint(object):
         while thread.is_alive():
             if self.state.verbose: spinner.next()
         thread.join()
-        click.echo()
+        if self.state.verbose: click.echo()
 
         response = storage['response']
         if response.status_code >= 200 and response.status_code < 300:
