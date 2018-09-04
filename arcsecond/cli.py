@@ -79,6 +79,19 @@ def findingcharts(state, name):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, state).list(name)
 
 
+@main.command(help='Request the list of instruments (in the /instruments/ API endpoint)')
+@open_options
+@pass_state
+def sites(state, name):
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBSERVINGSITES, state).list()
+
+
+@main.command(help='Request the list of instruments (in the /instruments/ API endpoint)')
+@open_options
+@pass_state
+def instruments(state, name):
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_INSTRUMENTS, state).list()
+
 
 @main.command(help='Play with the of observing activities (in the /activities/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
@@ -98,7 +111,7 @@ def activities(state, method, pk, **kwargs):
     if method == 'create':
         api.create(kwargs)
     elif method == 'read':
-        api.read(pk) # will handle list if pk is None
+        api.read(pk)  # will handle list if pk is None
     elif method == 'update':
         api.update(pk, kwargs)
     elif method == 'delete':
