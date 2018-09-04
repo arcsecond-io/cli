@@ -14,9 +14,9 @@ from arcsecond.options import State
 from .activities import ActivitiesAPIEndPoint
 from .auth import AuthAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
-from .error import ArcsecondError, ArcsecondInvalidEndpointError
+from .error import ArcsecondInvalidEndpointError
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
-from .observingsites import ObservingSitesAPIEndPoint, InstrumentsAPIEndPoint
+from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint
 from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
@@ -84,7 +84,7 @@ class ArcsecondAPI(object):
             raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
         return endpoint
 
-    def list(self, name):
+    def list(self, name=None):
         self._echo_response(self._endpoint(self.state).list(name))
 
     def create(self, payload):

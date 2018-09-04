@@ -4,7 +4,7 @@ from .base import APIEndPoint
 class ActivitiesAPIEndPoint(APIEndPoint):
     name = 'activities'
 
-    def _list_url(self):
+    def _list_url(self, name=None):
         return self._root_url() + '/activities/'
 
     def _detail_url(self, pk):

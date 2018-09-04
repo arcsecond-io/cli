@@ -2,6 +2,8 @@ from .base import APIEndPoint
 
 
 class ObservingSitesAPIEndPoint(APIEndPoint):
+    name = 'observingsites'
+
     def _list_url(self, name=None):
         return self._root_url() + '/observingsites/'
 
@@ -10,6 +12,8 @@ class ObservingSitesAPIEndPoint(APIEndPoint):
 
 
 class InstrumentsAPIEndPoint(APIEndPoint):
+    name = 'instruments'
+
     def _list_url(self, name=None):
         return self._root_url() + '/instruments/'
 

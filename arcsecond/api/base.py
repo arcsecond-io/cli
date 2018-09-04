@@ -1,7 +1,7 @@
-import click
-import requests
 import threading
 
+import click
+import requests
 from progress.spinner import Spinner
 
 from arcsecond.config import config_file_read_api_key
@@ -69,8 +69,8 @@ class APIEndPoint(object):
         else:
             return (None, response.text)
 
-    def list(self):
-        return self._perform_request(self._list_url(), 'get')
+    def list(self, name=None):
+        return self._perform_request(self._list_url(name), 'get')
 
     def create(self, payload):
         return self._perform_request(self._list_url(), 'post', payload)
