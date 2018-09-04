@@ -20,18 +20,19 @@ from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPI
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
 
+
+def set_endpoints_property(cls):
+    setattr(cls, 'ENDPOINTS', cls._mapping.keys())
+    return cls
+
+
+@set_endpoints_property
 class ArcsecondAPI(object):
     ENDPOINT_OBJECTS = ObjectsAPIEndPoint.name
     ENDPOINT_EXOPLANETS = ExoplanetsAPIEndPoint.name
     ENDPOINT_FINDINGCHARTS = FindingChartsAPIEndPoint.name
     ENDPOINT_PROFILE = ProfileAPIEndPoint.name
     ENDPOINT_ME = PersonalProfileAPIEndPoint.name
-
-    ENDPOINTS = [ENDPOINT_OBJECTS,
-                 ENDPOINT_EXOPLANETS,
-                 ENDPOINT_FINDINGCHARTS,
-                 ENDPOINT_PROFILE,
-                 ENDPOINT_ME]
 
     _mapping = {ENDPOINT_OBJECTS: ObjectsAPIEndPoint,
                 ENDPOINT_EXOPLANETS: ExoplanetsAPIEndPoint,
