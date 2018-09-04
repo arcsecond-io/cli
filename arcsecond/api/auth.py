@@ -12,11 +12,7 @@ class AuthAPIEndPoint(APIEndPoint):
             raise ArcsecondError("Invalid 'password' parameter {}.".format(password))
 
         url = self._root_url() + '/auth/login/'
-        r = self._send_post_request(url, {'username': username, 'password': password})
-        if r.status_code >= 200 and r.status_code < 300:
-            return (r.json(), None)
-        else:
-            return (None, r.text)
+        return self._perform_request(url, 'post', {'username': username, 'password': password})
 
     def register(self, username, email, password1, password2):
         if not username:
@@ -28,8 +24,4 @@ class AuthAPIEndPoint(APIEndPoint):
 
         url = self._root_url() + '/auth/registration/'
         payload = {'username': username, 'email': email, 'password1': password1, 'password2': password2}
-        r = self._send_post_request(url, payload)
-        if r.status_code >= 200 and r.status_code < 300:
-            return (r.json(), None)
-        else:
-            return (None, r.text)
+        return self._perform_request(url, 'post', payload)
