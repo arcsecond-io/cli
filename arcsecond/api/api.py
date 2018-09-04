@@ -45,8 +45,9 @@ class ArcsecondAPI(object):
         json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
         click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
-    def __init__(self, state=None, **kwargs):
-        self._is_using_cli = state is not None and isinstance(state, State) # State class is not exposed inside module.
+    def __init__(self, endpoint=None, state=None, **kwargs):
+        self._endpoint = self._check_endpoint(endpoint)
+        self._is_using_cli = state is not None and isinstance(state, State)  # State class is not exposed inside module.
         self.state = state or State()
         if 'debug' in kwargs.keys():
             self.state.debug = kwargs.get('debug')
@@ -76,42 +77,37 @@ class ArcsecondAPI(object):
             return self._echo_error(error)
 
     def _check_endpoint(self, endpoint):
-        if endpoint not in ENDPOINTS:
+        if endpoint is not None and endpoint not in ENDPOINTS:
             raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
+        return endpoint
 
-    def list(self, endpoint):
-        self._check_endpoint(endpoint)
-        self._echo_response(endpoint(self.state).list())
+    def list(self):
+        self._echo_response(self._endpoint(self.state).list())
 
-    def create(self, endpoint, payload):
-        self._check_endpoint(endpoint)
-        self._echo_response(endpoint(self.state).create(payload))
+    def create(self, payload):
+        self._echo_response(self._endpoint(self.state).create(payload))
 
-    def read(self, endpoint, id_name_uuid):
-        self._check_endpoint(endpoint)
+    def read(self, id_name_uuid):
         if not id_name_uuid:
-            raise ArcsecondError("Invalid 'id_name_uuid' parameter: {}.".format(id_name_uuid))
+            self.list()
+            return
 
         if type(id_name_uuid) is tuple:
             id_name_uuid = " ".join(id_name_uuid)
 
         if self.state.open:
-            url = endpoint(self.state)._open_url(id_name_uuid)
+            url = self._endpoint(self.state)._open_url(id_name_uuid)
             if self.state.verbose:
                 click.echo('Opening URL in browser : ' + url)
             webbrowser.open(url)
         else:
-            self._echo_response(endpoint(self.state).read(id_name_uuid))
+            self._echo_response(self._endpoint(self.state).read(id_name_uuid))
 
-    def update(self, endpoint_name, id_name_uuid, payload):
-        self._check_endpoint(endpoint_name)
-        endpoint = ArcsecondAPI._mapping[endpoint_name](self.state)
-        self._echo_response(endpoint(self.state).update(id_name_uuid, payload))
+    def update(self, id_name_uuid, payload):
+        self._echo_response(self._endpoint(self.state).update(id_name_uuid, payload))
 
-    def delete(self, endpoint_name, id_name_uuid):
-        self._check_endpoint(endpoint_name)
-        endpoint = ArcsecondAPI._mapping[endpoint_name](self.state)
-        self._echo_response(endpoint(self.state).delete(id_name_uuid))
+    def delete(self, id_name_uuid):
+        self._echo_response(self._endpoint(self.state).delete(id_name_uuid))
 
     def _get_and_save_api_key(self, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}

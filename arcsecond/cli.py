@@ -25,7 +25,7 @@ def main(ctx, version=False):
 @basic_options
 @pass_state
 def register(state, username, email, password1, password2):
-    ArcsecondAPI(state).register(username, email, password1, password2)
+    ArcsecondAPI(state=state).register(username, email, password1, password2)
 
 
 @main.command(help='Login to your personnal Arcsecond.io account, and retrieve the API key.')
@@ -34,7 +34,7 @@ def register(state, username, email, password1, password2):
 @basic_options
 @pass_state
 def login(state, username, password):
-    ArcsecondAPI(state).login(username, password)
+    ArcsecondAPI(state=state).login(username, password)
 
 
 @main.command(help='Request your user profile.')
@@ -44,7 +44,7 @@ def me(state):
     username = config_file_read_username(state.debug)
     if not username: raise ArcsecondError(
         'Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username))
-    ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_ME, username)
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_ME, state).read(username)
 
 
 @main.command(help='Request any user profile (in the /profiles/<username>/ API endpoint)')
@@ -52,7 +52,7 @@ def me(state):
 @open_options
 @pass_state
 def profiles(state, username):
-    ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_PROFILE, username)
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_PROFILEstate).read(username)
 
 
 @main.command(help='Request object (in the /objects/<name>/ API endpoint)')
@@ -60,7 +60,7 @@ def profiles(state, username):
 @open_options
 @pass_state
 def objects(state, name):
-    ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_OBJECTS, name)
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBJECTS, state).read(name)
 
 
 @main.command(help='Request exoplanet (in the /exoplanets/<name>/ API endpoint)')
@@ -68,7 +68,7 @@ def objects(state, name):
 @open_options
 @pass_state
 def exoplanets(state, name):
-    ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_EXOPLANETS, name)
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_EXOPLANETS, state).read(name)
 
 
 @main.command(help='Request the list of object finding charts (in the /findingcharts/<name>/ API endpoint)')
@@ -76,7 +76,7 @@ def exoplanets(state, name):
 @open_options
 @pass_state
 def findingcharts(state, name):
-    ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, name)
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, state).read(name)
 
 
 @main.command(help='Play with the of observing activities (in the /activities/ API endpoint)')
@@ -93,13 +93,12 @@ def findingcharts(state, name):
 @open_options
 @pass_state
 def activities(state, method, pk, **kwargs):
-    if method == 'read' and pk is None:
-        ArcsecondAPI(state).list(ArcsecondAPI.ENDPOINT_ACTIVITIES)
-    elif method == 'read' and pk is not None:
-        ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_ACTIVITIES, pk)
-    elif method == 'create':
-        ArcsecondAPI(state).create(ArcsecondAPI.ENDPOINT_ACTIVITIES, kwargs)
+    api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_ACTIVITIES, state)
+    if method == 'create':
+        api.create(kwargs)
+    elif method == 'read':
+        api.read(pk) # will handle list if pk is None
     elif method == 'update':
-        ArcsecondAPI(state).update(ArcsecondAPI.ENDPOINT_ACTIVITIES, pk, kwargs)
+        api.update(pk, kwargs)
     elif method == 'delete':
-        ArcsecondAPI(state).delete(ArcsecondAPI.ENDPOINT_ACTIVITIES, pk)
+        api.delete(pk)
