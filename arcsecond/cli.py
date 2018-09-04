@@ -76,7 +76,8 @@ def exoplanets(state, name):
 @open_options
 @pass_state
 def findingcharts(state, name):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, state).read(name)
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, state).list(name)
+
 
 
 @main.command(help='Play with the of observing activities (in the /activities/ API endpoint)')
