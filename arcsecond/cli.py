@@ -93,7 +93,6 @@ def findingcharts(state, name):
 @open_options
 @pass_state
 def activities(state, method, pk, **kwargs):
-    state.debug = True
     if method == 'read' and pk is None:
         ArcsecondAPI(state).list(ArcsecondAPI.ENDPOINT_ACTIVITIES)
     elif method == 'read' and pk is not None:
