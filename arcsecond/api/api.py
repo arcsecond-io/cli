@@ -11,6 +11,7 @@ from pygments.lexers.data import JsonLexer
 
 from arcsecond.config import config_file_path, config_file_save_api_key
 from arcsecond.options import State
+from .activities import ActivitiesAPIEndPoint
 from .auth import AuthAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .error import ArcsecondError, ArcsecondInvalidEndpointError
@@ -33,12 +34,14 @@ class ArcsecondAPI(object):
     ENDPOINT_FINDINGCHARTS = FindingChartsAPIEndPoint.name
     ENDPOINT_PROFILE = ProfileAPIEndPoint.name
     ENDPOINT_ME = PersonalProfileAPIEndPoint.name
+    ENDPOINT_ACTIVITIES = ActivitiesAPIEndPoint.name
 
     _mapping = {ENDPOINT_OBJECTS: ObjectsAPIEndPoint,
                 ENDPOINT_EXOPLANETS: ExoplanetsAPIEndPoint,
                 ENDPOINT_FINDINGCHARTS: FindingChartsAPIEndPoint,
                 ENDPOINT_PROFILE: ProfileAPIEndPoint,
-                ENDPOINT_ME: PersonalProfileAPIEndPoint}
+                ENDPOINT_ME: PersonalProfileAPIEndPoint,
+                ENDPOINT_ACTIVITIES: ActivitiesAPIEndPoint}
 
     @classmethod
     def pretty_print_dict(cls, d):

@@ -47,7 +47,7 @@ def me(state):
     ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_ME, username)
 
 
-@main.command(help='Request user profile(s) information (in the /profiles/<username>/ API endpoint)')
+@main.command(help='Request any user profile information (in the /profiles/<username>/ API endpoint)')
 @click.argument('username', required=True, nargs=-1)
 @open_options
 @pass_state
@@ -55,7 +55,7 @@ def profiles(state, username):
     ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_PROFILE, username)
 
 
-@main.command(help='Request object(s) information (in the /objects/<name>/ API endpoint)')
+@main.command(help='Request object information (in the /objects/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
@@ -63,7 +63,7 @@ def objects(state, name):
     ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_OBJECTS, name)
 
 
-@main.command(help='Request exoplanet(s) information (in the /exoplanets/<name>/ API endpoint)')
+@main.command(help='Request exoplanet information (in the /exoplanets/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
@@ -71,9 +71,16 @@ def exoplanets(state, name):
     ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_EXOPLANETS, name)
 
 
-@main.command(help='Request object(s) finding charts (in the /findingcharts/<name>/ API endpoint)')
+@main.command(help='Request object finding charts (in the /findingcharts/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
 def findingcharts(state, name):
     ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, name)
+
+
+@main.command(help='Request observing activities (in the /activities/ API endpoint)')
+@open_options
+@pass_state
+def activities(state):
+    ArcsecondAPI(state).list(ArcsecondAPI.ENDPOINT_ACTIVITIES)
