@@ -1,5 +1,8 @@
 import click
 import requests
+import threading
+
+from progress.spinner import Spinner
 
 from arcsecond.config import config_file_read_api_key
 from .error import ArcsecondError
@@ -29,25 +32,42 @@ class APIEndPoint(object):
 
     def _check_and_set_api_key(self, headers, url=''):
         if self.state.verbose:
-            click.echo('Checking local API key.')
+            click.echo('Checking local API key... ', nl=False)
         api_key = config_file_read_api_key(self.state.debug)
         if not api_key and not ('login' in url or 'Authorization' in headers.keys()):
             raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
         headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
+        if self.state.verbose:
+            click.echo('OK')
         return headers
 
     def _perform_request(self, url, method, payload=None, **headers):
         if not isinstance(method, str) or callable(method):
             raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
+
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
         headers = self._check_and_set_api_key(headers, url or '')
         if self.state.verbose:
-            click.echo('Requesting : ' + url)
-        r = method(url, data=payload, headers=headers)
-        if r.status_code >= 200 and r.status_code < 300:
-            return (r.json(), None)
+            click.echo('Sending request to ' + url)
+
+        def _async_perform_requests(storage, method, url, payload, headers):
+            storage['response'] = method(url, data=payload, headers=headers)
+
+        storage = {}
+        thread = threading.Thread(target=_async_perform_requests, args=(storage, method, url, payload, headers))
+        thread.start()
+
+        spinner = Spinner()
+        while thread.is_alive():
+            if self.state.verbose: spinner.next()
+        thread.join()
+        click.echo()
+
+        response = storage['response']
+        if response.status_code >= 200 and response.status_code < 300:
+            return (response.json(), None)
         else:
-            return (None, r.text)
+            return (None, response.text)
 
     def list(self):
         return self._perform_request(self._list_url(), 'get')
