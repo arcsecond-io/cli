@@ -72,3 +72,17 @@ def open_options(f):
     f = open_option_constructor(f)
     return f
 
+
+class MethodChoiceParamType(click.ParamType):
+    name = 'method'
+
+    def __init__(self, *args):
+        super().__init__()
+        self.allowed_methods = args or ['list', 'create', 'read', 'update', 'delete']
+
+    def convert(self, value, param, ctx):
+        if value.lower() not in self.allowed_methods:
+            msg = '{} is not a valid method. '.format(value)
+            msg += 'It must be one of {}.'.format(' '.join(self.allowed_methods))
+            self.fail('%s is not a valid method' % value, param, ctx)
+        return value.lower()

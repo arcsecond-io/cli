@@ -2,7 +2,7 @@ import click
 
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
-from .options import AliasedGroup, State, basic_options, open_options
+from .options import AliasedGroup, State, MethodChoiceParamType, basic_options, open_options
 
 __version__ = '0.3.5'
 
@@ -79,8 +79,24 @@ def findingcharts(state, name):
     ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, name)
 
 
-@main.command(help='Request observing activities (in the /activities/ API endpoint)')
+@main.command(help='Play with the of observing activities (in the /activities/ API endpoint)')
+@click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
+@click.argument('pk', required=False, nargs=1)
+@click.option('--title', required=False, nargs=1)
+@click.option('--content', required=False, nargs=1)
+@click.option('--observing_site', required=False, nargs=1)
+@click.option('--telescope', required=False, nargs=1)
+@click.option('--instrument', required=False, nargs=1)
+@click.option('--target', required=False, nargs=1)
+@click.option('--organisation', required=False, nargs=1)
+@click.option('--collaboration', required=False, nargs=1)
 @open_options
 @pass_state
-def activities(state):
-    ArcsecondAPI(state).list(ArcsecondAPI.ENDPOINT_ACTIVITIES)
+def activities(state, method, pk, **kwargs):
+    state.debug = True
+    if method == 'read' and pk is None:
+        ArcsecondAPI(state).list(ArcsecondAPI.ENDPOINT_ACTIVITIES)
+    elif method == 'read' and pk is not None:
+        ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_ACTIVITIES, pk)
+    elif method == 'create':
+        ArcsecondAPI(state).create(ArcsecondAPI.ENDPOINT_ACTIVITIES, kwargs)
