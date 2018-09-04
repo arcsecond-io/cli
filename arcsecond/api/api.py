@@ -78,6 +78,17 @@ class ArcsecondAPI(object):
         if error:
             return self._echo_error(error)
 
+    def create(self, endpoint, payload):
+        if endpoint not in ArcsecondAPI.ENDPOINTS:
+            raise ArcsecondInvalidEndpointError(endpoint, ArcsecondAPI.ENDPOINTS)
+
+        endpoint = ArcsecondAPI._mapping[endpoint](self.state)
+        result, error = endpoint.create(payload)
+        if result:
+            return self._echo_result(result)
+        if error:
+            return self._echo_error(error)
+
     def read(self, endpoint, name):
         if endpoint not in ArcsecondAPI.ENDPOINTS:
             raise ArcsecondInvalidEndpointError(endpoint, ArcsecondAPI.ENDPOINTS)
