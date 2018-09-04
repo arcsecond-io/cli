@@ -99,3 +99,7 @@ def activities(state, method, pk, **kwargs):
         ArcsecondAPI(state).read(ArcsecondAPI.ENDPOINT_ACTIVITIES, pk)
     elif method == 'create':
         ArcsecondAPI(state).create(ArcsecondAPI.ENDPOINT_ACTIVITIES, kwargs)
+    elif method == 'update':
+        ArcsecondAPI(state).update(ArcsecondAPI.ENDPOINT_ACTIVITIES, pk, kwargs)
+    elif method == 'delete':
+        ArcsecondAPI(state).delete(ArcsecondAPI.ENDPOINT_ACTIVITIES, pk)
