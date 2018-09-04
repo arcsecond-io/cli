@@ -21,27 +21,24 @@ from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPI
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
 
+__all__ = ["ArcsecondAPI"]
+
+ENDPOINTS = [ActivitiesAPIEndPoint,
+             FindingChartsAPIEndPoint,
+             ObjectsAPIEndPoint,
+             ExoplanetsAPIEndPoint,
+             ProfileAPIEndPoint,
+             PersonalProfileAPIEndPoint]
+
 
 def set_endpoints_property(cls):
-    setattr(cls, 'ENDPOINTS', cls._mapping.keys())
+    for endpoint_class in ENDPOINTS:
+        setattr(cls, 'ENDPOINT_' + endpoint_class.name.upper(), endpoint_class)
     return cls
 
 
 @set_endpoints_property
 class ArcsecondAPI(object):
-    ENDPOINT_OBJECTS = ObjectsAPIEndPoint.name
-    ENDPOINT_EXOPLANETS = ExoplanetsAPIEndPoint.name
-    ENDPOINT_FINDINGCHARTS = FindingChartsAPIEndPoint.name
-    ENDPOINT_PROFILE = ProfileAPIEndPoint.name
-    ENDPOINT_ME = PersonalProfileAPIEndPoint.name
-    ENDPOINT_ACTIVITIES = ActivitiesAPIEndPoint.name
-
-    _mapping = {ENDPOINT_OBJECTS: ObjectsAPIEndPoint,
-                ENDPOINT_EXOPLANETS: ExoplanetsAPIEndPoint,
-                ENDPOINT_FINDINGCHARTS: FindingChartsAPIEndPoint,
-                ENDPOINT_PROFILE: ProfileAPIEndPoint,
-                ENDPOINT_ME: PersonalProfileAPIEndPoint,
-                ENDPOINT_ACTIVITIES: ActivitiesAPIEndPoint}
 
     @classmethod
     def pretty_print_dict(cls, d):
@@ -71,50 +68,41 @@ class ArcsecondAPI(object):
             if 'non_field_errors' in json_obj.keys():
                 click.echo(ECHO_PREFIX + json_obj['non_field_errors'])
 
-    def list(self, endpoint):
-        if endpoint not in ArcsecondAPI.ENDPOINTS:
-            raise ArcsecondInvalidEndpointError(endpoint, ArcsecondAPI.ENDPOINTS)
-
-        endpoint = ArcsecondAPI._mapping[endpoint](self.state)
-        result, error = endpoint.list()
-        if result:
+    def _echo_response(self, response):
+        result, error = response
+        if result is not None:  # check against None, to avoid skipping empty lists.
             return self._echo_result(result)
-        if error:
+        if error is not None:
             return self._echo_error(error)
+
+    def _check_endpoint(self, endpoint):
+        if endpoint not in ENDPOINTS:
+            raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
+
+    def list(self, endpoint):
+        self._check_endpoint(endpoint)
+        self._echo_response(endpoint(self.state).list())
 
     def create(self, endpoint, payload):
-        if endpoint not in ArcsecondAPI.ENDPOINTS:
-            raise ArcsecondInvalidEndpointError(endpoint, ArcsecondAPI.ENDPOINTS)
+        self._check_endpoint(endpoint)
+        self._echo_response(endpoint(self.state).create(payload))
 
-        endpoint = ArcsecondAPI._mapping[endpoint](self.state)
-        result, error = endpoint.create(payload)
-        if result:
-            return self._echo_result(result)
-        if error:
-            return self._echo_error(error)
+    def read(self, endpoint, id_name_uuid):
+        self._check_endpoint(endpoint)
+        if not id_name_uuid:
+            raise ArcsecondError("Invalid 'id_name_uuid' parameter: {}.".format(id_name_uuid))
 
-    def read(self, endpoint, name):
-        if endpoint not in ArcsecondAPI.ENDPOINTS:
-            raise ArcsecondInvalidEndpointError(endpoint, ArcsecondAPI.ENDPOINTS)
-        if not name:
-            raise ArcsecondError("Invalid 'name' parameter: {}.".format(name))
-
-        endpoint = ArcsecondAPI._mapping[endpoint](self.state)
-
-        if type(name) is tuple:
-            name = " ".join(name)
+        if type(id_name_uuid) is tuple:
+            id_name_uuid = " ".join(id_name_uuid)
 
         if self.state.open:
-            url = endpoint._open_url(name)
+            url = endpoint(self.state)._open_url(id_name_uuid)
             if self.state.verbose:
                 click.echo('Opening URL in browser : ' + url)
             webbrowser.open(url)
         else:
-            result, error = endpoint.read(name)
-            if result:
-                return self._echo_result(result)
-            if error:
-                return self._echo_error(error)
+            self._echo_response(endpoint(self.state).read(id_name_uuid))
+
 
     def _get_and_save_api_key(self, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
