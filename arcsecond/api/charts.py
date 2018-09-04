@@ -6,7 +6,7 @@ class FindingChartsAPIEndPoint(APIEndPoint):
 
 
     def __init__(self, state):
-        super(FindingChartsAPIEndPoint, self).__init__(state, False)
+        super(FindingChartsAPIEndPoint, self).__init__(state)
 
 
     def _detail_url(self, name):
