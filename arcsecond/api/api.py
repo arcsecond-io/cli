@@ -119,9 +119,9 @@ class ArcsecondAPI(object):
     def _get_and_save_api_key(self, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
         result, error = ProfileAPIKeyAPIEndPoint(self.state).read(username, **headers)
-        if error:
+        if error is not None:
             return self._echo_error(error)
-        if result:
+        if result is not None:
             api_key = result['api_key']
             config_file_save_api_key(api_key, username, self.state.debug)
             if self.state.verbose:
@@ -130,14 +130,14 @@ class ArcsecondAPI(object):
 
     def login(self, username, password):
         result, error = AuthAPIEndPoint(self.state).authenticate(username, password)
-        if error:
+        if error is not None:
             return self._echo_error(error)
-        if result:
+        if result is not None:
             return self._get_and_save_api_key(username, result['key'])
 
     def register(self, username, email, password1, password2):
         result, error = AuthAPIEndPoint(self.state).register(username, email, password1, password2)
-        if error:
+        if error is not None:
             return self._echo_error(error)
-        if result:
+        if result is not None:
             return self._get_and_save_api_key(username, result['key'])
