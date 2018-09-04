@@ -103,6 +103,15 @@ class ArcsecondAPI(object):
         else:
             self._echo_response(endpoint(self.state).read(id_name_uuid))
 
+    def update(self, endpoint_name, id_name_uuid, payload):
+        self._check_endpoint(endpoint_name)
+        endpoint = ArcsecondAPI._mapping[endpoint_name](self.state)
+        self._echo_response(endpoint(self.state).update(id_name_uuid, payload))
+
+    def delete(self, endpoint_name, id_name_uuid):
+        self._check_endpoint(endpoint_name)
+        endpoint = ArcsecondAPI._mapping[endpoint_name](self.state)
+        self._echo_response(endpoint(self.state).delete(id_name_uuid))
 
     def _get_and_save_api_key(self, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
