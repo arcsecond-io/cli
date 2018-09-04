@@ -55,11 +55,11 @@ class APIEndPoint(object):
     def create(self, payload):
         return self._perform_request(self._list_url(), 'post', payload)
 
-    def read(self, name_or_id, **headers):
-        return self._perform_request(self._detail_url(name_or_id), 'get', **headers)
+    def read(self, id_name_uuid, **headers):
+        return self._perform_request(self._detail_url(id_name_uuid), 'get', **headers)
 
-    def update(self, name_or_id, payload, **headers):
-        return self._perform_request(self._detail_url(name_or_id), 'put', payload, **headers)
+    def update(self, id_name_uuid, payload, **headers):
+        return self._perform_request(self._detail_url(id_name_uuid), 'put', payload, **headers)
 
-    def delete(self, name_or_id, **headers):
-        return self._perform_request(self._detail_url(name_or_id), 'delete', **headers)
+    def delete(self, id_name_uuid, **headers):
+        return self._perform_request(self._detail_url(id_name_uuid), 'delete', **headers)
