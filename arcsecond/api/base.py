@@ -21,7 +21,7 @@ class APIEndPoint(object):
         if hasattr(self.state, 'open'):
             return 'http://localhost:8080' if self.state.debug is True else 'https://www.arcsecond.io'
 
-    def _list_url(self):
+    def _list_url(self, name=None):
         raise Exception('You must override this method.')
 
     def _detail_url(self, name_or_id):
