@@ -27,38 +27,39 @@ class APIEndPoint(object):
     def _open_url(self, name_or_id):
         raise Exception('You must override this method.')
 
-    def _send_get_request(self, url, **headers):
-        key = config_file_read_api_key(self.state.debug)
-        if 'Authorization' not in headers.keys():
-            if not key:
-                raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + key
-        return requests.get(url, headers=headers)
+    def _check_and_set_api_key(self, headers, url=''):
+        if self.state.verbose:
+            click.echo('Checking local API key.')
+        api_key = config_file_read_api_key(self.state.debug)
+        if not api_key and not ('login' in url or 'Authorization' in headers.keys()):
+            raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
+        headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
+        return headers
 
-    def _send_post_request(self, url, payload, **headers):
-        key = config_file_read_api_key(self.state.debug)
-        if 'login' not in url:
-            if not key and 'login' not in url:
-                raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + key
-        return requests.post(url, payload, headers=headers)
+    def _perform_request(self, url, method, payload=None, **headers):
+        if not isinstance(method, str) or callable(method):
+            raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
+        method = getattr(requests, method.lower()) if isinstance(method, str) else method
+        headers = self._check_and_set_api_key(headers, url or '')
+        if self.state.verbose:
+            click.echo('Requesting : ' + url)
+        r = method(url, data=payload, headers=headers)
+        if r.status_code >= 200 and r.status_code < 300:
+            return (r.json(), None)
+        else:
+            return (None, r.text)
 
     def list(self):
-        url = self._list_url()
-        if self.state.verbose:
-            click.echo('Requesting : ' + url)
-        r = self._send_get_request(url)
-        if r.status_code >= 200 and r.status_code < 300:
-            return (r.json(), None)
-        else:
-            return (None, r.text)
+        return self._perform_request(self._list_url(), 'get')
+
+    def create(self, payload):
+        return self._perform_request(self._list_url(), 'post', payload)
 
     def read(self, name_or_id, **headers):
-        url = self._detail_url(name_or_id)
-        if self.state.verbose:
-            click.echo('Requesting : ' + url)
-        r = self._send_get_request(url, **headers)
-        if r.status_code >= 200 and r.status_code < 300:
-            return (r.json(), None)
-        else:
-            return (None, r.text)
+        return self._perform_request(self._detail_url(name_or_id), 'get', **headers)
+
+    def update(self, name_or_id, payload, **headers):
+        return self._perform_request(self._detail_url(name_or_id), 'put', payload, **headers)
+
+    def delete(self, name_or_id, **headers):
+        return self._perform_request(self._detail_url(name_or_id), 'delete', **headers)
