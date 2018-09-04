@@ -22,12 +22,11 @@ class AliasedGroup(click.Group):
         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
 
 
-def verbose_option(f):
+def verbose_option_constructor(f):
     def callback(ctx, param, value):
         state = ctx.ensure_object(State)
         state.verbose = value
         return value
-
 
     return click.option('--verbose',
                         count=True,
@@ -36,12 +35,11 @@ def verbose_option(f):
                         callback=callback)(f)
 
 
-def debug_option(f):
+def debug_option_constructor(f):
     def callback(ctx, param, value):
         state = ctx.ensure_object(State)
         state.debug = value
         return value
-
 
     return click.option('--debug',
                         is_flag=True,
@@ -50,12 +48,11 @@ def debug_option(f):
                         callback=callback)(f)
 
 
-def open_option(f):
+def open_option_constructor(f):
     def callback(ctx, param, value):
         state = ctx.ensure_object(State)
         state.open = value
         return value
-
 
     return click.option('--open',
                         is_flag=True,
@@ -65,12 +62,13 @@ def open_option(f):
 
 
 def basic_options(f):
-    f = verbose_option(f)
-    f = debug_option(f)
+    f = verbose_option_constructor(f)
+    f = debug_option_constructor(f)
     return f
 
 
 def open_options(f):
     f = basic_options(f)
-    f = open_option(f)
+    f = open_option_constructor(f)
     return f
+
