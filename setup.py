@@ -5,8 +5,6 @@ from setuptools import find_packages, setup
 
 from arcsecond.cli import __version__
 
-dependencies = ['click', 'requests', 'pygments', 'configparser', 'progress']
-
 setup(
     name='arcsecond',
     version=__version__,
@@ -20,7 +18,13 @@ setup(
     include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=dependencies,
+    install_requires=[
+        'click',
+        'requests',
+        'pygments',
+        'configparser',
+        'progress'
+    ],
     entry_points={
         'console_scripts': [
             'arcsecond = arcsecond.cli:main',
