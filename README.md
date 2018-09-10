@@ -1,4 +1,3 @@
-[![Build Status](https://img.shields.io/travis/arcsecond-io/cli.svg)](https://travis-ci.org/arcsecond-io/cli)
 [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
 
 # Arcsecond CLI
@@ -29,6 +28,10 @@ To skip prompts:
 
     $ arcsecond login --username <username> --password <password>
 
+You can also register directly from there:
+
+    $ arcsecond register 
+
 Your private API key will be stored in the config file in `~/.arcsecond.ini`. Then, you can access public and private APIs. 
 
 ## Public APIs
@@ -56,4 +59,3 @@ The available endpoints (and thus, subcommands) available so far are: `objects`,
 As of now, you can simply access your own fill profile:
 
     $ arcsecond me    
-
