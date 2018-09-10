@@ -1,9 +1,15 @@
 """
  CLI for arcsecond.io
 """
+import ast
+import re
+
 from setuptools import find_packages, setup
 
-from arcsecond.__version__ import __version__
+_version_re = re.compile(r'__version__\s+=\s+(.*)')
+
+with open('arcsecond/__init__.py', 'rb') as f:
+    __version__ = str(ast.literal_eval(_version_re.search(f.read().decode('utf-8')).group(1)))
 
 setup(
     name='arcsecond',
