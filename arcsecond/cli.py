@@ -4,8 +4,6 @@ from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
 from .options import AliasedGroup, State, MethodChoiceParamType, basic_options, open_options
 
-__version__ = '0.3.5'
-
 pass_state = click.make_pass_decorator(State, ensure=True)
 
 
@@ -14,6 +12,7 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 @click.pass_context
 def main(ctx, version=False):
     if ctx.invoked_subcommand is None and version:
+        from .__version__ import __version__
         click.echo(__version__)
 
 

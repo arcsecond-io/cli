@@ -3,7 +3,7 @@
 """
 from setuptools import find_packages, setup
 
-from arcsecond.cli import __version__
+from arcsecond.__version__ import __version__
 
 setup(
     name='arcsecond',
