@@ -78,11 +78,18 @@ def findingcharts(state, name):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, state).list(name)
 
 
-@main.command(help='Request the list of instruments (in the /instruments/ API endpoint)')
+@main.command(help='Request the list of observing sites (in the /observingsites/ API endpoint)')
 @open_options
 @pass_state
-def sites(state, name):
+def sites(state):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBSERVINGSITES, state).list()
+
+
+@main.command(help='Request the list of telescopes (in the /telescopes/ API endpoint)')
+@open_options
+@pass_state
+def telescopes(state):
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_TELESCOPES, state).list()
 
 
 @main.command(help='Request the list of instruments (in the /instruments/ API endpoint)')
@@ -90,6 +97,20 @@ def sites(state, name):
 @pass_state
 def instruments(state, name):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_INSTRUMENTS, state).list()
+
+
+@main.command(help='Request the list of observing runs (in the /observingruns/ API endpoint)')
+@open_options
+@pass_state
+def runs(state):
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBSERVINGRUNS, state).list()
+
+
+@main.command(help='Request the list of telescopes (in the /nightlogs/ API endpoint)')
+@open_options
+@pass_state
+def logs(state):
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_NIGHTLOGS, state).list()
 
 
 @main.command(help='Play with the of observing activities (in the /activities/ API endpoint)')
