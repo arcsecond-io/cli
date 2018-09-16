@@ -11,5 +11,4 @@ class ActivitiesAPIEndPoint(APIEndPoint):
         return self._root_url() + '/activities/' + pk + '/'
 
     def _open_url(self, name):
-        # Yes, in the web, the url is unified with objects.
         return self._root_open_url() + '/live/'
