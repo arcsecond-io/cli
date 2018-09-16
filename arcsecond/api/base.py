@@ -1,3 +1,4 @@
+import uuid
 import threading
 
 import click
@@ -29,6 +30,14 @@ class APIEndPoint(object):
 
     def _open_url(self, name_or_id):
         raise Exception('You must override this method.')
+
+    def _check_uuid(self, uuid_str):
+        if not uuid_str:
+            raise ArcsecondError('Missing UUID')
+        try:
+            uuid.UUID(uuid_str)
+        except:
+            raise ArcsecondError('Invalid UUID {}.'.format(uuid_str))
 
     def _check_and_set_api_key(self, headers, url=''):
         if self.state.verbose:
