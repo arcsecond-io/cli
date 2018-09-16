@@ -16,7 +16,8 @@ from .auth import AuthAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .error import ArcsecondInvalidEndpointError
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
-from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint
+from .observingsites import InstrumentsAPIEndPoint, TelescopesAPIEndPoint, ObservingSitesAPIEndPoint
+from .observingruns import ObservingRunsAPIEndPoint, NightLogAPIEndPoint
 from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
@@ -31,7 +32,10 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              ProfileAPIEndPoint,
              PersonalProfileAPIEndPoint,
              ObservingSitesAPIEndPoint,
-             InstrumentsAPIEndPoint]
+             TelescopesAPIEndPoint,
+             InstrumentsAPIEndPoint,
+             ObservingRunsAPIEndPoint,
+             NightLogAPIEndPoint]
 
 
 def set_endpoints_property(cls):
