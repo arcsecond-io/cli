@@ -16,7 +16,7 @@ class APIEndPoint(object):
         self.state = state
 
     def _root_url(self):
-        return 'http://api.lvh.me:8000' if self.state.debug is True else 'https://api.arcsecond.io'
+        return 'http://localhost:8000' if self.state.debug is True else 'https://api.arcsecond.io'
 
     def _root_open_url(self):
         if hasattr(self.state, 'open'):
