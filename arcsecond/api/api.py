@@ -62,11 +62,14 @@ class ArcsecondAPI(object):
             self.state.verbose = kwargs.get('verbose')
 
     def _echo_result(self, result):
-        if not self._is_using_cli: return result  # Making sure to return json as it is for module usage.
+        if not self._is_using_cli:
+            return result  # Making sure to return json as it is for module usage.
         ArcsecondAPI.pretty_print_dict(result)
 
     def _echo_error(self, error):
-        if not self._is_using_cli: return error
+        if not self._is_using_cli:
+            return error
+
         if self.state.debug:
             click.echo(error)
         else:

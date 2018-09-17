@@ -24,7 +24,7 @@ def config_file_save_api_key(api_key, username, debug=False):
     config = SafeConfigParser()
     config.read(config_file_path())
     section = 'debug' if debug else 'main'
-    if not section in config.keys():
+    if section not in config.keys():
         config.add_section(section)
     config.set(section, 'username', username)
     config.set(section, 'api_key', api_key)
@@ -36,7 +36,8 @@ def config_file_read_key(key, debug=False):
     config = SafeConfigParser()
     config.read(config_file_path())
     section = 'debug' if debug else 'main'
-    if section not in config.sections(): return None
+    if section not in config.sections():
+        return None
     return config[section].get(key)
 
 

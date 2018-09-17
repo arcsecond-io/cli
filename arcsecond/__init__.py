@@ -1,6 +1,6 @@
-name = 'arcsecond'
+from .api import ArcsecondAPI, ArcsecondError
 
-from .api import *
+name = 'arcsecond'
 
 __all__ = ["ArcsecondAPI", "ArcsecondError"]
 __version__ = '0.3.5'

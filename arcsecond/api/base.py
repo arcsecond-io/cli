@@ -36,7 +36,7 @@ class APIEndPoint(object):
             raise ArcsecondError('Missing UUID')
         try:
             uuid.UUID(uuid_str)
-        except:
+        except ValueError:
             raise ArcsecondError('Invalid UUID {}.'.format(uuid_str))
 
     def _check_and_set_api_key(self, headers, url=''):
@@ -68,9 +68,11 @@ class APIEndPoint(object):
 
         spinner = Spinner()
         while thread.is_alive():
-            if self.state.verbose: spinner.next()
+            if self.state.verbose:
+                spinner.next()
         thread.join()
-        if self.state.verbose: click.echo()
+        if self.state.verbose:
+            click.echo()
 
         response = storage['response']
         if response.status_code >= 200 and response.status_code < 300:

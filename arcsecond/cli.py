@@ -41,8 +41,9 @@ def login(state, username, password):
 @pass_state
 def me(state):
     username = config_file_read_username(state.debug)
-    if not username: raise ArcsecondError(
-        'Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username))
+    if not username:
+        msg = 'Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username)
+        raise ArcsecondError(msg)
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_ME, state).read(username)
 
 
