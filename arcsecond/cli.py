@@ -9,7 +9,7 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 
 
 @click.group(cls=AliasedGroup, invoke_without_command=True)
-@click.option('-v', '--version', is_flag=True, help="Show the CLI version and exit.")
+@click.option('--version', is_flag=True, help="Show the CLI version and exit.")
 @click.pass_context
 def main(ctx, version=False):
     if ctx.invoked_subcommand is None and version:
@@ -117,14 +117,14 @@ def logs(state):
 @main.command(help='Play with the of observing activities (in the /activities/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
-@click.option('--title', required=False, nargs=1)
-@click.option('--content', required=False, nargs=1)
-@click.option('--observing_site', required=False, nargs=1)
-@click.option('--telescope', required=False, nargs=1)
-@click.option('--instrument', required=False, nargs=1)
-@click.option('--target', required=False, nargs=1)
-@click.option('--organisation', required=False, nargs=1)
-@click.option('--collaboration', required=False, nargs=1)
+@click.option('--title', required=False, nargs=1, help="The activity title. Optional.")
+@click.option('--content', required=False, nargs=1, help="The activity content body. Optional.")
+@click.option('--observing_site', required=False, nargs=1, help="The observing site UUID. Optional.")
+@click.option('--telescope', required=False, nargs=1, help="The telescope UUID. Optional.")
+@click.option('--instrument', required=False, nargs=1, help="The instrument UUID. Optional.")
+@click.option('--target', required=False, nargs=1, help="The target name. Optional")
+@click.option('--organisation', required=False, nargs=1, help="Your organisation acronym (for organisations). Optional")
+@click.option('--collaboration', required=False, nargs=1, help="Your collaboration acronym. Optional")
 @open_options
 @pass_state
 def activities(state, method, pk, **kwargs):

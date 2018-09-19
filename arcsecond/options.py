@@ -46,7 +46,7 @@ def debug_option_constructor(f):
                         '--debug',
                         is_flag=True,
                         expose_value=False,
-                        help='Enables or disables debug mode.',
+                        help='Enables or disables debug mode (for arcsecond developers).',
                         callback=callback)(f)
 
 
