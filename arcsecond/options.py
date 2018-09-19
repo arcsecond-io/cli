@@ -28,7 +28,8 @@ def verbose_option_constructor(f):
         state.verbose = value
         return value
 
-    return click.option('--verbose',
+    return click.option('-V',
+                        '--verbose',
                         count=True,
                         expose_value=False,
                         help='Increases verbosity.',
@@ -41,7 +42,8 @@ def debug_option_constructor(f):
         state.debug = value
         return value
 
-    return click.option('--debug',
+    return click.option('-D',
+                        '--debug',
                         is_flag=True,
                         expose_value=False,
                         help='Enables or disables debug mode.',
@@ -54,7 +56,8 @@ def open_option_constructor(f):
         state.open = value
         return value
 
-    return click.option('--open',
+    return click.option('-O',
+                        '--open',
                         is_flag=True,
                         expose_value=False,
                         help="Open the corresponding webpage in the default browser.",
