@@ -92,10 +92,10 @@ class ArcsecondAPI(object):
         return endpoint
 
     def list(self, name=None):
-        self._echo_response(self._endpoint(self.state).list(name))
+        return self._echo_response(self._endpoint(self.state).list(name))
 
     def create(self, payload):
-        self._echo_response(self._endpoint(self.state).create(payload))
+        return self._echo_response(self._endpoint(self.state).create(payload))
 
     def read(self, id_name_uuid):
         if not id_name_uuid:
@@ -111,13 +111,13 @@ class ArcsecondAPI(object):
                 click.echo('Opening URL in browser : ' + url)
             webbrowser.open(url)
         else:
-            self._echo_response(self._endpoint(self.state).read(id_name_uuid))
+            return self._echo_response(self._endpoint(self.state).read(id_name_uuid))
 
     def update(self, id_name_uuid, payload):
-        self._echo_response(self._endpoint(self.state).update(id_name_uuid, payload))
+        return self._echo_response(self._endpoint(self.state).update(id_name_uuid, payload))
 
     def delete(self, id_name_uuid):
-        self._echo_response(self._endpoint(self.state).delete(id_name_uuid))
+        return self._echo_response(self._endpoint(self.state).delete(id_name_uuid))
 
     def _get_and_save_api_key(self, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
