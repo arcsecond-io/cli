@@ -1,5 +1,5 @@
-import uuid
 import threading
+import uuid
 
 import click
 import requests
