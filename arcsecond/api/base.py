@@ -75,6 +75,9 @@ class APIEndPoint(object):
             click.echo()
 
         response = storage['response']
+        if self.state.verbose:
+            click.echo('Request status code ' + str(response.status_code))
+
         if response.status_code >= 200 and response.status_code < 300:
             return (response.json(), None)
         else:
