@@ -54,10 +54,11 @@ class APIEndPoint(object):
         if not isinstance(method, str) or callable(method):
             raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
 
+        method_name = method.upper() if isinstance(method, str) else ''
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
         headers = self._check_and_set_api_key(headers, url or '')
         if self.state.verbose:
-            click.echo('Sending request to ' + url)
+            click.echo('Sending {} request to {}'.format(method_name, url))
 
         def _async_perform_requests(storage, method, url, payload, headers):
             storage['response'] = method(url, data=payload, headers=headers)
