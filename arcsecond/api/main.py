@@ -14,6 +14,7 @@ from arcsecond.options import State
 from .activities import ActivitiesAPIEndPoint
 from .auth import AuthAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
+from .datasets import DatasetsAPIEndPoint, FITSFilesAPIEndPoint
 from .error import ArcsecondInvalidEndpointError
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
 from .observingruns import NightLogAPIEndPoint, ObservingRunsAPIEndPoint
@@ -35,7 +36,9 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              TelescopesAPIEndPoint,
              InstrumentsAPIEndPoint,
              ObservingRunsAPIEndPoint,
-             NightLogAPIEndPoint]
+             NightLogAPIEndPoint,
+             DatasetsAPIEndPoint,
+             FITSFilesAPIEndPoint]
 
 
 def set_endpoints_property(cls):
