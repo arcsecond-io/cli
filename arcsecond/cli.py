@@ -140,3 +140,24 @@ def activities(state, method, pk, **kwargs):
     else:
         api.list()
 
+
+@main.command(help='Play with the datasets (in the /datasets/ API endpoint)')
+@click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
+@click.argument('uuid', required=False, nargs=1)
+@click.option('--name', required=False, nargs=1, help="The dataset name.")
+@basic_options
+@pass_state
+def datasets(state, method, uuid, **kwargs):
+    api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_DATASETS, state)
+    if method == 'create':
+        api.create(kwargs)
+    elif method == 'read':
+        api.read(uuid)  # will handle list if pk is None
+    elif method == 'update':
+        api.update(uuid, kwargs)
+    elif method == 'delete':
+        api.delete(uuid)
+    else:
+        api.list()
+
+
