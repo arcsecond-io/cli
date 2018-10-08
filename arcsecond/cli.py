@@ -114,7 +114,7 @@ def logs(state):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_NIGHTLOGS, state).list()
 
 
-@main.command(help='Play with the of observing activities (in the /activities/ API endpoint)')
+@main.command(help='Play with the observing activities (in the /activities/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
 @click.option('--title', required=False, nargs=1, help="The activity title. Optional.")
