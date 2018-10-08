@@ -86,11 +86,11 @@ class APIEndPoint(object):
         else:
             return (None, response.text)
 
-    def list(self, name=None):
-        return self._perform_request(self._list_url(name), 'get')
+    def list(self, name=None, **headers):
+        return self._perform_request(self._list_url(name), 'get', **headers)
 
-    def create(self, payload):
-        return self._perform_request(self._list_url(), 'post', payload)
+    def create(self, payload, **headers):
+        return self._perform_request(self._list_url(), 'post', payload, **headers)
 
     def read(self, id_name_uuid, **headers):
         return self._perform_request(self._detail_url(id_name_uuid), 'get', **headers)
