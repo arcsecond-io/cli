@@ -12,11 +12,13 @@ from .error import ArcsecondError
 class APIEndPoint(object):
     name = None
 
-    def __init__(self, state):
+    def __init__(self, state, prefix=''):
         self.state = state
+        self.prefix = prefix
+        if len(prefix) and prefix[0] != '/': self.prefix = '/' + self.prefix
 
     def _root_url(self):
-        return 'http://localhost:8000' if self.state.debug is True else 'https://api.arcsecond.io'
+        return 'http://localhost:8000' + self.prefix if self.state.debug is True else 'https://api.arcsecond.io' + self.prefix
 
     def _root_open_url(self):
         if hasattr(self.state, 'open'):
