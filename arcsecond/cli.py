@@ -161,3 +161,24 @@ def datasets(state, method, uuid, **kwargs):
         api.list()
 
 
+@main.command(help='Play with the fitsfiles (in the /fitsfiles/ API endpoint)')
+@click.argument('dataset', required=True, nargs=1)
+@click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
+@click.argument('pk', required=False, nargs=1)
+@click.option('--file', required=False, nargs=1, help="The FITS file to upload.")
+@basic_options
+@pass_state
+def fitsfiles(state, dataset, method, pk, **kwargs):
+    api = ArcsecondAPI(endpoint=ArcsecondAPI.ENDPOINT_FITSFILES, state=state, prefix='/datasets/' + dataset)
+    if method == 'create':
+        # headers = {'Content-Type': 'multipart/form-data'}
+        # kwargs['file'] = open(kwargs['file'], 'rb')
+        api.create(kwargs)
+    elif method == 'read':
+        api.read(pk)  # will handle list if pk is None
+    elif method == 'update':
+        api.update(pk, kwargs)
+    elif method == 'delete':
+        api.delete(pk)
+    else:
+        api.list()
