@@ -3,7 +3,7 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
-from .options import AliasedGroup, State, MethodChoiceParamType, basic_options, open_options
+from .options import AliasedGroup, MethodChoiceParamType, State, basic_options, open_options
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
