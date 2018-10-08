@@ -137,3 +137,6 @@ def activities(state, method, pk, **kwargs):
         api.update(pk, kwargs)
     elif method == 'delete':
         api.delete(pk)
+    else:
+        api.list()
+
