@@ -52,21 +52,13 @@ class APIEndPoint(object):
             click.echo('OK')
         return headers
 
-    def _perform_request(self, url, method, payload=None, **headers):
-        if not isinstance(method, str) or callable(method):
-            raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
-
-        method_name = method.upper() if isinstance(method, str) else ''
-        method = getattr(requests, method.lower()) if isinstance(method, str) else method
-        headers = self._check_and_set_api_key(headers, url or '')
-        if self.state.verbose:
-            click.echo('Sending {} request to {}'.format(method_name, url))
-
-        def _async_perform_requests(storage, method, url, payload, headers):
-            storage['response'] = method(url, data=payload, headers=headers)
+    def _async_perform_request(self, url, method, payload=None, files=None, **headers):
+        def _async_perform_request_store_response(storage, method, url, payload, files, headers):
+            storage['response'] = method(url, data=payload, files=files, headers=headers)
 
         storage = {}
-        thread = threading.Thread(target=_async_perform_requests, args=(storage, method, url, payload, headers))
+        thread = threading.Thread(target=_async_perform_request_store_response,
+                                  args=(storage, method, url, payload, files, headers))
         thread.start()
 
         spinner = Spinner()
@@ -77,7 +69,22 @@ class APIEndPoint(object):
         if self.state.verbose:
             click.echo()
 
-        response = storage['response']
+        return storage['response']
+
+    def _perform_request(self, url, method, payload=None, **headers):
+        if not isinstance(method, str) or callable(method):
+            raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
+
+        method_name = method.upper() if isinstance(method, str) else ''
+        method = getattr(requests, method.lower()) if isinstance(method, str) else method
+        headers = self._check_and_set_api_key(headers, url or '')
+        files = payload.pop('files', None)
+
+        if self.state.verbose:
+            click.echo('Sending {} request to {}'.format(method_name, url))
+            
+        response = self._async_perform_request(url, method, payload, files, **headers)
+
         if self.state.verbose:
             click.echo('Request status code ' + str(response.status_code))
 
