@@ -16,7 +16,9 @@ class APIEndPoint(object):
     def __init__(self, state=None, prefix=''):
         self.state = state or State()
         self.prefix = prefix
-        if len(prefix) and prefix[0] != '/': self.prefix = '/' + self.prefix
+        if len(prefix) and prefix[0] != '/':
+            self.prefix = '/' + self.prefix
+
 
     def _root_url(self):
         return 'http://localhost:8000' + self.prefix if self.state.debug is True else 'https://api.arcsecond.io' + self.prefix
