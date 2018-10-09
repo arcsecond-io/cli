@@ -9,17 +9,19 @@ from .options import MethodChoiceParamType, State, basic_options, open_options
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
+VERSION_HELP_STRING = "Show the CLI version and exit."
+
 
 @click.group(invoke_without_command=True)
-@click.option('--version', is_flag=True, help="Show the CLI version and exit.")
-@click.option('-V', is_flag=True, help="Show the CLI version and exit.")
+@click.option('--version', is_flag=True, help=VERSION_HELP_STRING)
+@click.option('-V', is_flag=True, help=VERSION_HELP_STRING)
 @click.pass_context
 def main(ctx, version=False, v=False):
     if ctx.invoked_subcommand is None and (version or v):
         click.echo(__version__)
 
 
-@main.command(help='Display the CLI version')
+@main.command(help=VERSION_HELP_STRING)
 def version():
     click.echo(__version__)
 
