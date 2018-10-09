@@ -13,7 +13,7 @@ from .error import ArcsecondError, ArcsecondConnectionError
 class APIEndPoint(object):
     name = None
 
-    def __init__(self, state: State = None, prefix=''):
+    def __init__(self, state=None, prefix=''):
         self.state = state or State()
         self.prefix = prefix
         if len(prefix) and prefix[0] != '/': self.prefix = '/' + self.prefix
@@ -75,7 +75,7 @@ class APIEndPoint(object):
 
         if storage['error']:
             raise storage['error']
-        
+
         return storage['response']
 
     def _perform_request(self, url, method, payload=None, **headers):

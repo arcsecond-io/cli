@@ -56,7 +56,7 @@ class ArcsecondAPI(object):
         json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
         click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
-    def __init__(self, endpoint: APIEndPoint.__class__ = None, state: State = None, **kwargs):
+    def __init__(self, endpoint=None, state=None, **kwargs):
         self.state = state or State(is_using_cli=False)
         if 'debug' in kwargs.keys():
             self.state.debug = kwargs.get('debug')
