@@ -5,12 +5,12 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
-from .options import AliasedGroup, MethodChoiceParamType, State, basic_options, open_options
+from .options import MethodChoiceParamType, State, basic_options, open_options
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
 
-@click.group(cls=AliasedGroup, invoke_without_command=True)
+@click.group(invoke_without_command=True)
 @click.option('--version', is_flag=True, help="Show the CLI version and exit.")
 @click.pass_context
 def main(ctx, version=False):
