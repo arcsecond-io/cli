@@ -26,7 +26,7 @@ def main(ctx, version=False):
 @basic_options
 @pass_state
 def register(state, username, email, password1, password2):
-    ArcsecondAPI.register(state, username, email, password1, password2)
+    ArcsecondAPI.register(username, email, password1, password2, state)
 
 
 @main.command(help='Login to your personnal Arcsecond.io account, and retrieve the API key.')
@@ -35,7 +35,7 @@ def register(state, username, email, password1, password2):
 @basic_options
 @pass_state
 def login(state, username, password):
-    ArcsecondAPI.login(state, username, password)
+    ArcsecondAPI.login(username, password, state)
 
 
 @main.command(help='Request your user profile.')
