@@ -26,7 +26,7 @@ def version():
     click.echo(__version__)
 
 
-@main.command(help='Register for a free personnal Arcsecond.io account, and retrieve the API key.')
+@main.command(short_help='Register a free Arcsecond.io account.')
 @click.option('--username', required=True, nargs=1, prompt=True)
 @click.option('--email', required=True, nargs=1, prompt=True)
 @click.option('--password1', required=True, nargs=1, prompt=True, hide_input=True)
@@ -34,22 +34,25 @@ def version():
 @basic_options
 @pass_state
 def register(state, username, email, password1, password2):
+    """Register for a free personal Arcsecond.io account, and retrieve the associated API key."""
     ArcsecondAPI.register(username, email, password1, password2, state)
 
 
-@main.command(help='Login to your personnal Arcsecond.io account, and retrieve the API key.')
+@main.command(help='Login to a personal Arcsecond.io account')
 @click.option('--username', required=True, nargs=1, prompt=True)
 @click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
 @basic_options
 @pass_state
 def login(state, username, password):
+    """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
     ArcsecondAPI.login(username, password, state)
 
 
-@main.command(help='Request your user profile.')
+@main.command(help='Fetch your complete user profile.')
 @open_options
 @pass_state
 def me(state):
+    """Fetch your complete user profile."""
     username = config_file_read_username(state.debug)
     if not username:
         msg = 'Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username)
@@ -57,12 +60,16 @@ def me(state):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_ME, state).read(username)
 
 
-@main.command(help='Request any user profile (in the /profiles/<username>/ API endpoint)')
-@click.argument('username', required=True, nargs=-1)
+@main.command(help='List the existing profiles.')
+@click.argument('username', required=False, nargs=-1)
 @open_options
 @pass_state
 def profiles(state, username):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_PROFILEstate).read(username)
+    """List the existing user profiles.
+
+    Only public information is provided: username, first and last name.
+    """
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_PROFILES, state).read(username)
 
 
 @main.command(help='Request object (in the /objects/<name>/ API endpoint)')
