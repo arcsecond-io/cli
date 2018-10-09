@@ -6,14 +6,15 @@ import requests
 from progress.spinner import Spinner
 
 from arcsecond.config import config_file_read_api_key
+from arcsecond.options import State
 from .error import ArcsecondError
 
 
 class APIEndPoint(object):
     name = None
 
-    def __init__(self, state, prefix=''):
-        self.state = state
+    def __init__(self, state: State = None, prefix=''):
+        self.state = state or State()
         self.prefix = prefix
         if len(prefix) and prefix[0] != '/': self.prefix = '/' + self.prefix
 
