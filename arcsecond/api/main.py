@@ -13,7 +13,6 @@ from arcsecond.config import config_file_path, config_file_save_api_key
 from arcsecond.options import State
 from .activities import ActivitiesAPIEndPoint
 from .auth import AuthAPIEndPoint
-from .base import APIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .datasets import DatasetsAPIEndPoint, FITSFilesAPIEndPoint
 from .error import ArcsecondInvalidEndpointError
