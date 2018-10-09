@@ -19,9 +19,11 @@ class APIEndPoint(object):
         if len(prefix) and prefix[0] != '/':
             self.prefix = '/' + self.prefix
 
+    def _base_url(self):
+        return 'http://localhost:8000' if self.state.debug else 'https://api.arcsecond.io'
 
     def _root_url(self):
-        return 'http://localhost:8000' + self.prefix if self.state.debug is True else 'https://api.arcsecond.io' + self.prefix
+        return self._base_url() + self.prefix
 
     def _root_open_url(self):
         if hasattr(self.state, 'open'):
@@ -60,7 +62,7 @@ class APIEndPoint(object):
             try:
                 storage['response'] = method(url, data=payload, files=files, headers=headers)
             except requests.exceptions.ConnectionError:
-                storage['error'] = ArcsecondConnectionError(self._root_url())
+                storage['error'] = ArcsecondConnectionError(self._base_url())
 
         storage = {}
         thread = threading.Thread(target=_async_perform_request_store_response,
