@@ -78,10 +78,10 @@ class APIEndPoint(object):
         if self.state.verbose:
             click.echo()
 
-        if storage['error']:
-            raise storage['error']
+        if 'error' in storage.keys():
+            raise storage.get('error')
 
-        return storage['response']
+        return storage.get('response', None)
 
     def _perform_request(self, url, method, payload=None, **headers):
         if not isinstance(method, str) or callable(method):
