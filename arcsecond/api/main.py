@@ -65,16 +65,18 @@ class ArcsecondAPI(object):
         endpoint_class = self._check_endpoint_class(endpoint)  # this an endpoint *class*
         self.endpoint = endpoint_class(self.state, prefix=kwargs.get('prefix', '')) if endpoint_class else None
 
-    def _echo_result(self, result):
-        if not self._is_using_cli:
+    @classmethod
+    def _echo_result(cls, state, result):
+        if not state.is_using_cli:
             return result  # Making sure to return json as it is for module usage.
         ArcsecondAPI.pretty_print_dict(result)
 
-    def _echo_error(self, error):
-        if not self._is_using_cli:
+    @classmethod
+    def _echo_error(cls, state, error):
+        if not state.is_using_cli:
             return error
 
-        if self.state.debug:
+        if state and state.debug:
             click.echo(error)
         else:
             json_obj = json.loads(error)
@@ -83,12 +85,18 @@ class ArcsecondAPI(object):
             if 'non_field_errors' in json_obj.keys():
                 click.echo(ECHO_PREFIX + json_obj['non_field_errors'])
 
+    def _echo_request_result(self, result):
+        ArcsecondAPI._echo_result(self.state, result)
+
+    def _echo_request_error(self, error):
+        ArcsecondAPI._echo_error(self.state, error)
+
     def _echo_response(self, response):
         result, error = response
         if result is not None:  # check against None, to avoid skipping empty lists.
-            return self._echo_result(result)
+            return self._echo_request_result(result)
         if error is not None:
-            return self._echo_error(error)
+            return self._echo_request_error(error)
 
     def _check_endpoint_class(self, endpoint):
         if endpoint is not None and endpoint not in ENDPOINTS:
@@ -123,28 +131,33 @@ class ArcsecondAPI(object):
     def delete(self, id_name_uuid, **headers):
         return self._echo_response(self.endpoint.delete(id_name_uuid, **headers))
 
-    def _get_and_save_api_key(self, username, auth_token):
+    @classmethod
+    def _get_and_save_api_key(cls, state, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
-        result, error = ProfileAPIKeyAPIEndPoint(self.state).read(username, **headers)
+        result, error = ProfileAPIKeyAPIEndPoint(state).read(username, **headers)
         if error is not None:
-            return self._echo_error(error)
+            return ArcsecondAPI._echo_error(state, error)
         if result is not None:
             api_key = result['api_key']
-            config_file_save_api_key(api_key, username, self.state.debug)
-            if self.state.verbose:
+            config_file_save_api_key(api_key, username, state.debug)
+            if state.verbose:
                 click.echo('Successfull API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
-            return self._echo_result(result)
+            return ArcsecondAPI._echo_result(state, result)
 
-    def login(self, username, password):
-        result, error = AuthAPIEndPoint(self.state).authenticate(username, password)
+    @classmethod
+    def login(cls, username, password, state=None):
+        state = state or State()
+        result, error = AuthAPIEndPoint(state).authenticate(username, password)
         if error is not None:
-            return self._echo_error(error)
+            return ArcsecondAPI._echo_error(state, error)
         if result is not None:
-            return self._get_and_save_api_key(username, result['key'])
+            return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
 
-    def register(self, username, email, password1, password2):
-        result, error = AuthAPIEndPoint(self.state).register(username, email, password1, password2)
+    @classmethod
+    def register(cls, username, email, password1, password2, state=None):
+        state = state or State()
+        result, error = AuthAPIEndPoint(state).register(username, email, password1, password2)
         if error is not None:
-            return self._echo_error(error)
+            return ArcsecondAPI._echo_request_error(state, error)
         if result is not None:
-            return self._get_and_save_api_key(username, result['key'])
+            return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
