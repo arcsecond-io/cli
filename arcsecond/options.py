@@ -2,10 +2,11 @@ import click
 
 
 class State(object):
-    def __init__(self):
-        self.verbose = 0
-        self.debug = False
-        self.open = None
+    def __init__(self, verbose=0, debug=False, open=None, is_using_cli=True):
+        self.verbose = verbose
+        self.debug = debug
+        self.open = open
+        self.is_using_cli = is_using_cli
 
 
 class AliasedGroup(click.Group):
