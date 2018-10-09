@@ -1,4 +1,4 @@
-[![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
+[![CircleCI](https://circleci.com/gh/arcsecond-io/cli.svg?style=svg)](https://circleci.com/gh/arcsecond-io/cli) [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
 
 # Arcsecond CLI
 
