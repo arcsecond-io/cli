@@ -78,18 +78,18 @@ class APIEndPoint(object):
         method_name = method.upper() if isinstance(method, str) else ''
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
         headers = self._check_and_set_api_key(headers, url or '')
-        files = payload.pop('files', None)
+        files = payload.pop('files', None) if payload else None
 
         if self.state.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
-            
+
         response = self._async_perform_request(url, method, payload, files, **headers)
 
         if self.state.verbose:
             click.echo('Request status code ' + str(response.status_code))
 
         if response.status_code >= 200 and response.status_code < 300:
-            return (response.json(), None)
+            return (response.json() if response.text else {}, None)
         else:
             return (None, response.text)
 
