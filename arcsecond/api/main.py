@@ -63,7 +63,7 @@ class ArcsecondAPI(object):
         if 'verbose' in kwargs.keys():
             self.state.verbose = kwargs.get('verbose')
         endpoint_class = self._check_endpoint_class(endpoint)  # this an endpoint *class*
-        self.endpoint = endpoint_class(self.state, prefix=kwargs.get('prefix', ''))
+        self.endpoint = endpoint_class(self.state, prefix=kwargs.get('prefix', '')) if endpoint_class else None
 
     def _echo_result(self, result):
         if not self._is_using_cli:
