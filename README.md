@@ -122,6 +122,13 @@ To upload a FITS file:
 To delete a FITS file, one use its "id/pk" (pk = Primary Key == ID):
 
     $ arcsecond fitsfiles <dataset uuid> delete <FITS file pk>
+    
+As a Python module:
+
+    >>> from arcsecond import ArcsecondAPI
+    >>> ArcsecondAPI(ArcsecondAPI.ENDPOINT_FITSFILES, prefix='/datasets/<dataset_uuid>').create({'files':{'file': open(os.path.abspath('<local file path>'), 'rb')}})    
+
+Okay, this could be a bit simpler. We are working on it.
 
 # Observing Activities
 
