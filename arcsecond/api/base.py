@@ -52,7 +52,7 @@ class APIEndPoint(object):
         api_key = config_file_read_api_key(self.state.debug)
         if not api_key and not ('login' in url or 'Authorization' in headers.keys()):
             raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
-        if not 'login' in url and not 'register' in 'url':
+        if 'login' not in url and 'register' not in 'url':
             headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
         if self.state.verbose:
             click.echo('OK')
