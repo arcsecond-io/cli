@@ -7,7 +7,7 @@ from progress.spinner import Spinner
 
 from arcsecond.config import config_file_read_api_key
 from arcsecond.options import State
-from .error import ArcsecondError
+from .error import ArcsecondError, ArcsecondConnectionError
 
 
 class APIEndPoint(object):
@@ -55,7 +55,10 @@ class APIEndPoint(object):
 
     def _async_perform_request(self, url, method, payload=None, files=None, **headers):
         def _async_perform_request_store_response(storage, method, url, payload, files, headers):
-            storage['response'] = method(url, data=payload, files=files, headers=headers)
+            try:
+                storage['response'] = method(url, data=payload, files=files, headers=headers)
+            except requests.exceptions.ConnectionError:
+                storage['error'] = ArcsecondConnectionError(self._root_url())
 
         storage = {}
         thread = threading.Thread(target=_async_perform_request_store_response,
@@ -70,6 +73,9 @@ class APIEndPoint(object):
         if self.state.verbose:
             click.echo()
 
+        if storage['error']:
+            raise storage['error']
+        
         return storage['response']
 
     def _perform_request(self, url, method, payload=None, **headers):
