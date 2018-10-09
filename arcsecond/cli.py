@@ -12,10 +12,16 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 
 @click.group(invoke_without_command=True)
 @click.option('--version', is_flag=True, help="Show the CLI version and exit.")
+@click.option('-V', is_flag=True, help="Show the CLI version and exit.")
 @click.pass_context
-def main(ctx, version=False):
-    if ctx.invoked_subcommand is None and version:
+def main(ctx, version=False, v=False):
+    if ctx.invoked_subcommand is None and (version or v):
         click.echo(__version__)
+
+
+@main.command(help='Display the CLI version')
+def version():
+    click.echo(__version__)
 
 
 @main.command(help='Register for a free personnal Arcsecond.io account, and retrieve the API key.')

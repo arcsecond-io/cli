@@ -29,7 +29,7 @@ def verbose_option_constructor(f):
         state.verbose = value
         return value
 
-    return click.option('-V',
+    return click.option('-v',
                         '--verbose',
                         count=True,
                         expose_value=False,
@@ -43,7 +43,7 @@ def debug_option_constructor(f):
         state.debug = value
         return value
 
-    return click.option('-D',
+    return click.option('-d',
                         '--debug',
                         is_flag=True,
                         expose_value=False,
@@ -57,7 +57,7 @@ def open_option_constructor(f):
         state.open = value
         return value
 
-    return click.option('-O',
+    return click.option('-o',
                         '--open',
                         is_flag=True,
                         expose_value=False,
