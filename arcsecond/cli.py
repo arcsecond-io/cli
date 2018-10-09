@@ -67,16 +67,25 @@ def me(state):
 def profiles(state, username):
     """List the existing user profiles.
 
-    Only public information is provided: username, first and last name.
+    Only public information is provided: username, first and last name, and
+    the membership_date.
+
+    Results are paginated.
     """
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_PROFILES, state).read(username)
 
 
-@main.command(help='Request object (in the /objects/<name>/ API endpoint)')
+@main.command(help='Get an object.')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
 def objects(state, name):
+    """Using the /objects/<object name>/ API endpoint, get the object
+    information from the CDS in Strasbourg.
+
+    The NED information, as well as being able to choose the source
+    will be implemented in the future.
+    """
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBJECTS, state).read(name)
 
 
