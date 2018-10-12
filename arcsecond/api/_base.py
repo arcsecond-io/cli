@@ -70,6 +70,8 @@ class APIEndPoint(object):
                 storage['response'] = method(url, data=payload, files=files, headers=headers)
             except requests.exceptions.ConnectionError:
                 storage['error'] = ArcsecondConnectionError(self._base_url())
+            except Exception as e:
+                storage['error'] = ArcsecondError(str(e))
 
         storage = {}
         thread = threading.Thread(target=_async_perform_request_store_response,
@@ -105,6 +107,9 @@ class APIEndPoint(object):
             click.echo('Sending {} request to {}'.format(method_name, url))
 
         response = self._async_perform_request(url, method, payload, files, **headers)
+
+        if response is None:
+            raise ArcsecondConnectionError(url)
 
         if self.state.verbose:
             click.echo('Request status code ' + str(response.status_code))
