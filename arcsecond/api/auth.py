@@ -1,17 +1,18 @@
 from ._base import APIEndPoint
 from ._error import ArcsecondError
+from ._constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
 
 
 class AuthAPIEndPoint(APIEndPoint):
     name = 'auth'
 
-    def authenticate(self, username, password):
+    def login(self, username, password):
         if not username:
             raise ArcsecondError("Invalid 'username' parameter {}.".format(username))
         if not password:
             raise ArcsecondError("Invalid 'password' parameter {}.".format(password))
 
-        url = self._root_url() + '/auth/login/'
+        url = self._root_url() + API_AUTH_PATH_LOGIN
         return self._perform_request(url, 'post', {'username': username, 'password': password})
 
     def register(self, username, email, password1, password2):
@@ -22,6 +23,6 @@ class AuthAPIEndPoint(APIEndPoint):
         if password1 != password2:
             raise ArcsecondError("The two passwords don't match")
 
-        url = self._root_url() + '/auth/registration/'
+        url = self._root_url() + API_AUTH_PATH_REGISTER
         payload = {'username': username, 'email': email, 'password1': password1, 'password2': password2}
         return self._perform_request(url, 'post', payload)
