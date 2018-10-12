@@ -3,7 +3,9 @@ import pytest
 import httpretty
 from click.testing import CliRunner
 from arcsecond import cli, ArcsecondConnectionError
-from arcsecond.api._constants import *
+from arcsecond.api._constants import (API_AUTH_PATH_LOGIN,
+                                      ARCSECOND_API_URL_DEV,
+                                      ARCSECOND_API_URL_PROD)
 
 
 @pytest.fixture
