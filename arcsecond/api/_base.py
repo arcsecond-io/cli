@@ -95,9 +95,10 @@ class APIEndPoint(object):
         if not isinstance(method, str) or callable(method):
             raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
 
+        headers = self._check_and_set_api_key(headers, url)
+
         method_name = method.upper() if isinstance(method, str) else ''
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
-        headers = self._check_and_set_api_key(headers, url)
         files = payload.pop('files', None) if payload else None
 
         if self.state.verbose:
