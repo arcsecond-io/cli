@@ -19,6 +19,8 @@ VERSION_HELP_STRING = "Show the CLI version and exit."
 def main(ctx, version=False, v=False):
     if ctx.invoked_subcommand is None and (version or v):
         click.echo(__version__)
+    else:
+        click.echo(ctx.get_help())
 
 
 @main.command(help=VERSION_HELP_STRING)
