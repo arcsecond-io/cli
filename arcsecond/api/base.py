@@ -46,16 +46,22 @@ class APIEndPoint(object):
         except ValueError:
             raise ArcsecondError('Invalid UUID {}.'.format(uuid_str))
 
-    def _check_and_set_api_key(self, headers, url=''):
+    def _check_and_set_api_key(self, headers, url):
+        if 'login' in url or 'register' in url or 'Authorization' in headers.keys():
+            return headers
+
         if self.state.verbose:
             click.echo('Checking local API key... ', nl=False)
+
         api_key = config_file_read_api_key(self.state.debug)
-        if not api_key and not ('login' in url or 'Authorization' in headers.keys()):
+        if not api_key:
             raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
-        if 'login' not in url and 'register' not in 'url':
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
+
+        headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
+
         if self.state.verbose:
             click.echo('OK')
+            
         return headers
 
     def _async_perform_request(self, url, method, payload=None, files=None, **headers):
@@ -83,13 +89,15 @@ class APIEndPoint(object):
 
         return storage.get('response', None)
 
-    def _perform_request(self, url, method, payload=None, **headers):
+    def _perform_request(self, url, method, payload, **headers):
+        assert (url and method)
+
         if not isinstance(method, str) or callable(method):
             raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
 
         method_name = method.upper() if isinstance(method, str) else ''
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
-        headers = self._check_and_set_api_key(headers, url or '')
+        headers = self._check_and_set_api_key(headers, url)
         files = payload.pop('files', None) if payload else None
 
         if self.state.verbose:
