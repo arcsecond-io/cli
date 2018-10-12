@@ -82,7 +82,9 @@ class ArcsecondAPI(object):
             if 'detail' in json_obj.keys():
                 click.echo(ECHO_PREFIX + json_obj['detail'])
             if 'non_field_errors' in json_obj.keys():
-                click.echo(ECHO_PREFIX + json_obj['non_field_errors'])
+                errors = json_obj['non_field_errors']
+                message = ', '.join(errors) if isinstance(error, list) else str(errors)
+                click.echo(ECHO_PREFIX + message)
 
     def _echo_request_result(self, result):
         ArcsecondAPI._echo_result(self.state, result)
