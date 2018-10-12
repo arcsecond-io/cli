@@ -61,7 +61,6 @@ class APIEndPoint(object):
 
         if self.state.verbose:
             click.echo('OK')
-            
         return headers
 
     def _async_perform_request(self, url, method, payload=None, files=None, **headers):
