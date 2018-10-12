@@ -1,5 +1,5 @@
-from .base import APIEndPoint
-from .error import ArcsecondError
+from ._base import APIEndPoint
+from ._error import ArcsecondError
 
 
 class AuthAPIEndPoint(APIEndPoint):

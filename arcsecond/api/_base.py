@@ -7,7 +7,7 @@ from progress.spinner import Spinner
 
 from arcsecond.config import config_file_read_api_key
 from arcsecond.options import State
-from .error import ArcsecondError, ArcsecondConnectionError
+from ._error import ArcsecondError, ArcsecondConnectionError
 
 
 class APIEndPoint(object):

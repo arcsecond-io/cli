@@ -15,7 +15,7 @@ from .activities import ActivitiesAPIEndPoint
 from .auth import AuthAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .datasets import DatasetsAPIEndPoint, FITSFilesAPIEndPoint
-from .error import ArcsecondInvalidEndpointError
+from ._error import ArcsecondInvalidEndpointError
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
 from .observingruns import NightLogAPIEndPoint, ObservingRunsAPIEndPoint
 from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint, TelescopesAPIEndPoint

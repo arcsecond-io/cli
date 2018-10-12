@@ -1,4 +1,4 @@
-from .base import APIEndPoint
+from ._base import APIEndPoint
 
 
 class FindingChartsAPIEndPoint(APIEndPoint):
