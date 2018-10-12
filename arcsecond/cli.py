@@ -17,9 +17,9 @@ VERSION_HELP_STRING = "Show the CLI version and exit."
 @click.option('-V', is_flag=True, help=VERSION_HELP_STRING)
 @click.pass_context
 def main(ctx, version=False, v=False):
-    if ctx.invoked_subcommand is None and (version or v):
+    if version or v:
         click.echo(__version__)
-    else:
+    elif ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
 
 
