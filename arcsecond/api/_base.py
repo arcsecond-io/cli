@@ -7,7 +7,8 @@ from progress.spinner import Spinner
 
 from arcsecond.config import config_file_read_api_key
 from arcsecond.options import State
-from ._error import ArcsecondError, ArcsecondConnectionError
+from ._error import *
+from ._constants import *
 
 
 class APIEndPoint(object):
@@ -20,14 +21,14 @@ class APIEndPoint(object):
             self.prefix = '/' + self.prefix
 
     def _base_url(self):
-        return 'http://localhost:8000' if self.state.debug else 'https://api.arcsecond.io'
+        return ARCSECOND_API_URL_DEV if self.state.debug else ARCSECOND_API_URL_PROD
 
     def _root_url(self):
         return self._base_url() + self.prefix
 
     def _root_open_url(self):
         if hasattr(self.state, 'open'):
-            return 'http://localhost:8080' if self.state.debug is True else 'https://www.arcsecond.io'
+            return ARCSECOND_WWW_URL_DEV if self.state.debug is True else ARCSECOND_WWW_URL_PROD
 
     def _list_url(self, name=None):
         raise Exception('You must override this method.')
