@@ -136,9 +136,9 @@ class ArcsecondAPI(object):
     def _get_and_save_api_key(cls, state, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
         result, error = ProfileAPIKeyAPIEndPoint(state).read(username, **headers)
-        if error is not None:
+        if error:
             return ArcsecondAPI._echo_error(state, error)
-        if result is not None:
+        if result:
             api_key = result['api_key']
             config_file_save_api_key(api_key, username, state.debug)
             if state.verbose:
@@ -149,16 +149,16 @@ class ArcsecondAPI(object):
     def login(cls, username, password, state=None):
         state = state or State()
         result, error = AuthAPIEndPoint(state).authenticate(username, password)
-        if error is not None:
+        if error:
             return ArcsecondAPI._echo_error(state, error)
-        if result is not None:
+        if result:
             return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
 
     @classmethod
     def register(cls, username, email, password1, password2, state=None):
         state = state or State()
         result, error = AuthAPIEndPoint(state).register(username, email, password1, password2)
-        if error is not None:
+        if error:
             return ArcsecondAPI._echo_request_error(state, error)
-        if result is not None:
+        if result:
             return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
