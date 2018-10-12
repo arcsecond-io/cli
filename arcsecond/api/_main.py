@@ -148,7 +148,7 @@ class ArcsecondAPI(object):
     @classmethod
     def login(cls, username, password, state=None):
         state = state or State()
-        result, error = AuthAPIEndPoint(state).authenticate(username, password)
+        result, error = AuthAPIEndPoint(state).login(username, password)
         if error:
             return ArcsecondAPI._echo_error(state, error)
         if result:
