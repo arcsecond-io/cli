@@ -13,7 +13,20 @@ from arcsecond.config import config_file_path, config_file_save_api_key
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .error import ArcsecondInvalidEndpointError
-from .endpoints import *
+from .endpoints import (ActivitiesAPIEndPoint,
+                        FindingChartsAPIEndPoint,
+                        ObjectsAPIEndPoint,
+                        ExoplanetsAPIEndPoint,
+                        ProfileAPIEndPoint,
+                        PersonalProfileAPIEndPoint,
+                        ProfileAPIKeyAPIEndPoint,
+                        ObservingSitesAPIEndPoint,
+                        TelescopesAPIEndPoint,
+                        InstrumentsAPIEndPoint,
+                        ObservingRunsAPIEndPoint,
+                        NightLogAPIEndPoint,
+                        DatasetsAPIEndPoint,
+                        FITSFilesAPIEndPoint)
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '

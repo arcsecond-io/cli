@@ -8,7 +8,10 @@ from progress.spinner import Spinner
 from arcsecond.config import config_file_read_api_key
 from arcsecond.options import State
 from arcsecond.api.error import ArcsecondError, ArcsecondConnectionError
-from arcsecond.api.constants import ARCSECOND_API_URL_PROD, ARCSECOND_API_URL_DEV, ARCSECOND_WWW_URL_PROD, ARCSECOND_WWW_URL_DEV
+from arcsecond.api.constants import (ARCSECOND_API_URL_PROD,
+                                     ARCSECOND_API_URL_DEV,
+                                     ARCSECOND_WWW_URL_PROD,
+                                     ARCSECOND_WWW_URL_DEV)
 
 
 class APIEndPoint(object):
