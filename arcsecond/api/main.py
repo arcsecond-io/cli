@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import json
 import pprint
 import webbrowser
@@ -171,3 +172,7 @@ class ArcsecondAPI(object):
             return ArcsecondAPI._echo_request_error(state, error)
         if result:
             return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
+
+    @classmethod
+    def make_file_upload_payload(cls, filepath):
+        return {'files': {'file': open(os.path.abspath(filepath), 'rb')}}

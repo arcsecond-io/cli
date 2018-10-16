@@ -1,5 +1,3 @@
-import os
-
 import click
 
 from . import __version__
@@ -204,7 +202,7 @@ def fitsfiles(state, dataset, method, pk, **kwargs):
     api = ArcsecondAPI(endpoint=ArcsecondAPI.ENDPOINT_FITSFILES, state=state, prefix='/datasets/' + dataset)
     if method == 'create':
         # Pop 'file' and put 'files' instead, to be used internally to create files= parameter.
-        kwargs.update(files={'file': open(os.path.abspath(kwargs.pop('file')), 'rb')})
+        kwargs.update(**ArcsecondAPI.make_file_upload_payload(kwargs.pop('file')))
         api.create(kwargs)
     elif method == 'read':
         api.read(pk)  # will handle list if pk is None
