@@ -189,7 +189,7 @@ def datasets(state, method, uuid, **kwargs):
         api.list()
 
 
-@main.command(help='Play with the fitsfiles (in the /fitsfiles/ API endpoint)')
+@main.command(help='Read and write FITS files')
 @click.argument('dataset', required=True, nargs=1)
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
@@ -197,6 +197,10 @@ def datasets(state, method, uuid, **kwargs):
 @basic_options
 @pass_state
 def fitsfiles(state, dataset, method, pk, **kwargs):
+    """Requests the list of FITS files associated with a given dataset.
+
+    When the method is either 'create' or 'update', a file can be uploaded.
+    """
     api = ArcsecondAPI(endpoint=ArcsecondAPI.ENDPOINT_FITSFILES, state=state, prefix='/datasets/' + dataset)
     if method == 'create':
         # Pop 'file' and put 'files' instead, to be used internally to create files= parameter.
