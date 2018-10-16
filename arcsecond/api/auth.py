@@ -1,6 +1,6 @@
-from ._base import APIEndPoint
-from ._error import ArcsecondError
-from ._constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
+from .endpoints._base import APIEndPoint
+from .error import ArcsecondError
+from .constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
 
 
 class AuthAPIEndPoint(APIEndPoint):

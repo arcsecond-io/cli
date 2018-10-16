@@ -11,15 +11,9 @@ from pygments.lexers.data import JsonLexer
 
 from arcsecond.config import config_file_path, config_file_save_api_key
 from arcsecond.options import State
-from .activities import ActivitiesAPIEndPoint
 from .auth import AuthAPIEndPoint
-from .charts import FindingChartsAPIEndPoint
-from .datasets import DatasetsAPIEndPoint, FITSFilesAPIEndPoint
-from ._error import ArcsecondInvalidEndpointError
-from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
-from .observingruns import NightLogAPIEndPoint, ObservingRunsAPIEndPoint
-from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint, TelescopesAPIEndPoint
-from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
+from .error import ArcsecondInvalidEndpointError
+from .endpoints import *
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
