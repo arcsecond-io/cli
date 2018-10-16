@@ -111,7 +111,7 @@ To create a dataset:
 
     $ arcsecond datasets create --name "this is a new dataset"
 
-To delete a dataset (**warning: this will also erase the associated FITS files!**):
+To delete a dataset (**warning: this will also delete the associated FITS files!**):
 
     $ arcsecond datasets delete <dataset uuid>
     
