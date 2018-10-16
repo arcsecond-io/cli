@@ -210,3 +210,10 @@ def fitsfiles(state, dataset, method, pk, **kwargs):
         api.delete(pk)
     else:
         api.list()
+
+
+@main.command(help='Request the list of satellites (in the /satellites/ API endpoint)')
+@open_options
+@pass_state
+def satellites(state):
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_SATELLITES, state).list()

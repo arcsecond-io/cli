@@ -2,7 +2,7 @@ from ._base import APIEndPoint
 
 
 class SatellitesAPIEndPoint(APIEndPoint):
-    name = 'profiles'
+    name = 'satellites'
 
     def _list_url(self, name=None):
         return self._root_url() + '/satellites/'

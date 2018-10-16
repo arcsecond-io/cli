@@ -26,7 +26,8 @@ from .endpoints import (ActivitiesAPIEndPoint,
                         ObservingRunsAPIEndPoint,
                         NightLogAPIEndPoint,
                         DatasetsAPIEndPoint,
-                        FITSFilesAPIEndPoint)
+                        FITSFilesAPIEndPoint,
+                        SatellitesAPIEndPoint)
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
@@ -45,7 +46,8 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              ObservingRunsAPIEndPoint,
              NightLogAPIEndPoint,
              DatasetsAPIEndPoint,
-             FITSFilesAPIEndPoint]
+             FITSFilesAPIEndPoint,
+             SatellitesAPIEndPoint]
 
 
 def set_endpoints_property(cls):
