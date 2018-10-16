@@ -82,6 +82,7 @@ The available **read-only** API endpoints (and thus, subcommands) available so f
 * `objects`, `exoplanets`, and `findingcharts` (public)
 * `observingsites`, `telescopes` and `instruments` (public)
 * `profiles` (public)
+* `satellites` (public)
 * `observingruns` and `nightlogs` (private)
 * `me` (personal profile, private)
 
@@ -125,8 +126,8 @@ To delete a FITS file, one use its "id/pk" (pk = Primary Key == ID):
     
 As a Python module:
 
-    >>> from arcsecond import ArcsecondAPI
-    >>> ArcsecondAPI(ArcsecondAPI.ENDPOINT_FITSFILES, prefix='/datasets/<dataset_uuid>').create({'files':{'file': open(os.path.abspath('<local file path>'), 'rb')}})    
+    >>> from arcsecond import ArcsecondAPI, make_file_upload_payload
+    >>> ArcsecondAPI(ArcsecondAPI.ENDPOINT_FITSFILES, prefix='/datasets/<dataset_uuid>').create(make_file_upload_payload('<file path>'))    
 
 Okay, this could be a bit simpler. We are working on it.
 

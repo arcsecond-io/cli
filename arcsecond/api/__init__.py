@@ -1,7 +1,9 @@
+from .error import ArcsecondConnectionError, ArcsecondError, ArcsecondInvalidEndpointError
+from .helpers import make_file_upload_payload
 from .main import ArcsecondAPI
-from .error import ArcsecondError, ArcsecondConnectionError, ArcsecondInvalidEndpointError
 
 __all__ = ["ArcsecondAPI",
            "ArcsecondError",
            "ArcsecondConnectionError",
-           "ArcsecondInvalidEndpointError"]
+           "ArcsecondInvalidEndpointError",
+           "make_file_upload_payload"]

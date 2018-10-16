@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
 import json
 import pprint
 import webbrowser
@@ -13,22 +12,22 @@ from pygments.lexers.data import JsonLexer
 from arcsecond.config import config_file_path, config_file_save_api_key
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
-from .error import ArcsecondInvalidEndpointError
 from .endpoints import (ActivitiesAPIEndPoint,
-                        FindingChartsAPIEndPoint,
-                        ObjectsAPIEndPoint,
-                        ExoplanetsAPIEndPoint,
-                        ProfileAPIEndPoint,
-                        PersonalProfileAPIEndPoint,
-                        ProfileAPIKeyAPIEndPoint,
-                        ObservingSitesAPIEndPoint,
-                        TelescopesAPIEndPoint,
-                        InstrumentsAPIEndPoint,
-                        ObservingRunsAPIEndPoint,
-                        NightLogAPIEndPoint,
                         DatasetsAPIEndPoint,
+                        ExoplanetsAPIEndPoint,
                         FITSFilesAPIEndPoint,
-                        SatellitesAPIEndPoint)
+                        FindingChartsAPIEndPoint,
+                        InstrumentsAPIEndPoint,
+                        NightLogAPIEndPoint,
+                        ObjectsAPIEndPoint,
+                        ObservingRunsAPIEndPoint,
+                        ObservingSitesAPIEndPoint,
+                        PersonalProfileAPIEndPoint,
+                        ProfileAPIEndPoint,
+                        ProfileAPIKeyAPIEndPoint,
+                        SatellitesAPIEndPoint,
+                        TelescopesAPIEndPoint)
+from .error import ArcsecondInvalidEndpointError
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
@@ -172,7 +171,3 @@ class ArcsecondAPI(object):
             return ArcsecondAPI._echo_request_error(state, error)
         if result:
             return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
-
-    @classmethod
-    def make_file_upload_payload(cls, filepath):
-        return {'files': {'file': open(os.path.abspath(filepath), 'rb')}}

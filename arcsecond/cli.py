@@ -1,7 +1,7 @@
 import click
 
 from . import __version__
-from .api import ArcsecondAPI, ArcsecondError
+from .api import ArcsecondAPI, ArcsecondError, make_file_upload_payload
 from .config import config_file_read_username
 from .options import MethodChoiceParamType, State, basic_options, open_options
 
@@ -202,7 +202,7 @@ def fitsfiles(state, dataset, method, pk, **kwargs):
     api = ArcsecondAPI(endpoint=ArcsecondAPI.ENDPOINT_FITSFILES, state=state, prefix='/datasets/' + dataset)
     if method == 'create':
         # Pop 'file' and put 'files' instead, to be used internally to create files= parameter.
-        kwargs.update(**ArcsecondAPI.make_file_upload_payload(kwargs.pop('file')))
+        kwargs.update(**make_file_upload_payload(kwargs.pop('file')))
         api.create(kwargs)
     elif method == 'read':
         api.read(pk)  # will handle list if pk is None
@@ -214,8 +214,17 @@ def fitsfiles(state, dataset, method, pk, **kwargs):
         api.list()
 
 
-@main.command(help='Request the list of satellites (in the /satellites/ API endpoint)')
-@open_options
+@main.command(help='Read satellites')
+@click.argument('catalogue_number', required=False, nargs=1)
+@basic_options
 @pass_state
-def satellites(state):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_SATELLITES, state).list()
+def satellites(state, catalogue_number):
+    """Request the list of satellites, or the details of one (in the /satellites/ API endpoint).
+
+    If a catalogue_number is provided, only the info of that specific satellite is returned.
+    If not, the wole list of available satellites is returned.
+
+    Data is extracted from celestrak.com.
+    """
+    # If catalogue_number is None, ArcsecondAPI fallback to .list()
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_SATELLITES, state).read(catalogue_number)
