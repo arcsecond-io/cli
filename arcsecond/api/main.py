@@ -13,7 +13,6 @@ from pygments.lexers.data import JsonLexer
 from arcsecond.config import config_file_path, config_file_save_api_key
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
-from .endpoints._base import APIEndPoint
 from .endpoints import (ActivitiesAPIEndPoint,
                         DatasetsAPIEndPoint,
                         ExoplanetsAPIEndPoint,
