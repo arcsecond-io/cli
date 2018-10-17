@@ -1,7 +1,7 @@
 import click
 
 from . import __version__
-from .api import ArcsecondAPI, ArcsecondError, make_file_upload_payload
+from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
 from .options import MethodChoiceParamType, State, basic_options, open_options
 
@@ -204,8 +204,6 @@ def fitsfiles(state, dataset, method, pk, **kwargs):
     """
     api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_FITSFILES, state=state, dataset=dataset)
     if method == 'create':
-        # Pop 'file' and put 'files' instead, to be used internally to create files= parameter.
-        kwargs.update(**make_file_upload_payload(kwargs.pop('file')))
         api.create(kwargs)
     elif method == 'read':
         api.read(pk)  # will handle list if pk is None

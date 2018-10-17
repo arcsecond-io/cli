@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import json
 import pprint
 import webbrowser
@@ -29,6 +30,7 @@ from .endpoints import (ActivitiesAPIEndPoint,
                         SatellitesAPIEndPoint,
                         TelescopesAPIEndPoint)
 from .error import ArcsecondInvalidEndpointError, ArcsecondTooManyPrefixesError
+from .helpers import make_file_upload_payload
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
@@ -127,10 +129,23 @@ class ArcsecondAPI(object):
             raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
         return endpoint
 
+    def _check_for_file_in_payload(self, payload):
+        if isinstance(payload, str) and os.path.exists(payload) and os.path.isfile(payload):
+            return make_file_upload_payload(payload)  # transform a str into a dict
+        elif isinstance(payload, dict) and 'file' in payload.keys():
+            file_value = payload.pop('file')  # .pop() not .get()
+            if os.path.exists(file_value) and os.path.isfile(file_value):
+                payload.update(**make_file_upload_payload(file_value))  # unpack the resulting dict of make_file...()
+            else:
+                payload.update(file=file_value)  # do nothing, it's not a file...
+        else:
+            return payload  # do nothing
+
     def list(self, name=None, **headers):
         return self._echo_response(self.endpoint.list(name, **headers))
 
     def create(self, payload, **headers):
+        payload = self._check_for_file_in_payload(payload)
         return self._echo_response(self.endpoint.create(payload, **headers))
 
     def read(self, id_name_uuid, **headers):
@@ -150,6 +165,7 @@ class ArcsecondAPI(object):
             return self._echo_response(self.endpoint.read(id_name_uuid, **headers))
 
     def update(self, id_name_uuid, payload, **headers):
+        payload = self._check_for_file_in_payload(payload)
         return self._echo_response(self.endpoint.update(id_name_uuid, payload, **headers))
 
     def delete(self, id_name_uuid, **headers):
