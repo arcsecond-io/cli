@@ -3,9 +3,8 @@ import os
 import httpretty
 import json
 from click.testing import CliRunner
-from arcsecond import cli, ArcsecondConnectionError
-from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
-
+from arcsecond import cli
+from arcsecond.api.constants import ARCSECOND_API_URL_DEV
 
 @httpretty.activate
 def test_empty_datasets_list():

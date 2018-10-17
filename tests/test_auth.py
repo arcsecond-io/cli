@@ -1,6 +1,6 @@
 import httpretty
 from click.testing import CliRunner
-from arcsecond import cli, ArcsecondConnectionError
+from arcsecond import cli
 from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
 
 
