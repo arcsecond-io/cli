@@ -12,6 +12,7 @@ from pygments.lexers.data import JsonLexer
 from arcsecond.config import config_file_path, config_file_save_api_key
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
+from .endpoints._base import APIEndPoint
 from .endpoints import (ActivitiesAPIEndPoint,
                         DatasetsAPIEndPoint,
                         ExoplanetsAPIEndPoint,
@@ -27,7 +28,7 @@ from .endpoints import (ActivitiesAPIEndPoint,
                         ProfileAPIKeyAPIEndPoint,
                         SatellitesAPIEndPoint,
                         TelescopesAPIEndPoint)
-from .error import ArcsecondInvalidEndpointError
+from .error import ArcsecondInvalidEndpointError, ArcsecondTooManyPrefixesError
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
@@ -49,6 +50,8 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              FITSFilesAPIEndPoint,
              SatellitesAPIEndPoint]
 
+VALID_PREFIXES = {'dataset': '/datasets/'}
+
 
 def set_endpoints_property(cls):
     for endpoint_class in ENDPOINTS:
@@ -64,14 +67,25 @@ class ArcsecondAPI(object):
         json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
         click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
-    def __init__(self, endpoint=None, state=None, **kwargs):
+    def __init__(self, endpoint_class=None, state=None, **kwargs):
         self.state = state or State(is_using_cli=False)
         if 'debug' in kwargs.keys():
             self.state.debug = kwargs.get('debug')
         if 'verbose' in kwargs.keys():
             self.state.verbose = kwargs.get('verbose')
-        endpoint_class = self._check_endpoint_class(endpoint)  # this an endpoint *class*
-        self.endpoint = endpoint_class(self.state, prefix=kwargs.get('prefix', '')) if endpoint_class else None
+
+        prefix = kwargs.get('prefix', '')
+        possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
+        if len(possible_prefixes) > 1:
+            raise ArcsecondTooManyPrefixesError(possible_prefixes)
+        elif len(possible_prefixes) == 1 and prefix:
+            raise ArcsecondTooManyPrefixesError([possible_prefixes.pop(), prefix])
+        elif len(possible_prefixes) == 1 and not prefix:
+            prefix_key = possible_prefixes.pop()
+            prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
+
+        endpoint_class = self._check_endpoint_class(endpoint_class)  # type: APIEndPoint
+        self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
 
     @classmethod
     def _echo_result(cls, state, result):

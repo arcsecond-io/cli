@@ -14,3 +14,10 @@ class ArcsecondConnectionError(ArcsecondError):
         msg = "Unable to connect to API server {}.\n".format(url)
         msg += "Suggestion: Test whether it's reachable, by typing for instance: 'ping {}'".format(url)
         super(ArcsecondConnectionError, self).__init__(msg)
+
+
+class ArcsecondTooManyPrefixesError(ArcsecondError):
+    def __init__(self, prefixes):
+        msg = "Too many endpoint prefixes: {}.\n".format(', '.join(prefixes))
+        msg += "Only one can be used at a time."
+        super(ArcsecondTooManyPrefixesError, self).__init__(msg)

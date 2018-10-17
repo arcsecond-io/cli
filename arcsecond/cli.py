@@ -198,9 +198,11 @@ def datasets(state, method, uuid, **kwargs):
 def fitsfiles(state, dataset, method, pk, **kwargs):
     """Requests the list of FITS files associated with a given dataset.
 
-    When the method is either 'create' or 'update', a file can be uploaded.
+    The UUID of the datasets must be provided. See arcsecond datasets to list all datasets (private).
+
+    When the method is either 'create' or 'update', a file can be uploaded, with the --file option.
     """
-    api = ArcsecondAPI(endpoint=ArcsecondAPI.ENDPOINT_FITSFILES, state=state, prefix='/datasets/' + dataset)
+    api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_FITSFILES, state=state, dataset=dataset)
     if method == 'create':
         # Pop 'file' and put 'files' instead, to be used internally to create files= parameter.
         kwargs.update(**make_file_upload_payload(kwargs.pop('file')))
