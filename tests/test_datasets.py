@@ -7,11 +7,12 @@ from arcsecond import cli
 from arcsecond.api.constants import ARCSECOND_API_URL_DEV
 from .utils import register_successful_login
 
+
 @httpretty.activate
 def test_empty_datasets_list():
     runner = CliRunner()
     register_successful_login(runner)
-    
+
     httpretty.register_uri(
         httpretty.GET,
         ARCSECOND_API_URL_DEV + '/datasets/',
