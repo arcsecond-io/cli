@@ -1,5 +1,5 @@
 import os
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 
 
 def config_file_path():
@@ -14,14 +14,14 @@ def config_file_exists():
 def config_file_is_valid(debug=False):
     if not config_file_exists():
         return False
-    config = SafeConfigParser()
+    config = ConfigParser()
     config.read(config_file_path())
     section = 'debug' if debug else 'main'
     return config[section].get('api_key')
 
 
 def config_file_save_api_key(api_key, username, debug=False):
-    config = SafeConfigParser()
+    config = ConfigParser()
     config.read(config_file_path())
     section = 'debug' if debug else 'main'
     if section not in config.keys():
@@ -33,7 +33,7 @@ def config_file_save_api_key(api_key, username, debug=False):
 
 
 def config_file_read_key(key, debug=False):
-    config = SafeConfigParser()
+    config = ConfigParser()
     config.read(config_file_path())
     section = 'debug' if debug else 'main'
     if section not in config.sections():
