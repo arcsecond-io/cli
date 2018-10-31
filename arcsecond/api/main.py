@@ -27,7 +27,9 @@ from .endpoints import (ActivitiesAPIEndPoint,
                         ProfileAPIEndPoint,
                         ProfileAPIKeyAPIEndPoint,
                         SatellitesAPIEndPoint,
-                        TelescopesAPIEndPoint)
+                        TelescopesAPIEndPoint,
+                        TelegramsATelAPIEndPoint)
+
 from .error import ArcsecondInvalidEndpointError, ArcsecondTooManyPrefixesError
 from .helpers import make_file_upload_payload
 
@@ -37,19 +39,20 @@ ECHO_PREFIX = u' • '
 __all__ = ["ArcsecondAPI"]
 
 ENDPOINTS = [ActivitiesAPIEndPoint,
-             FindingChartsAPIEndPoint,
-             ObjectsAPIEndPoint,
-             ExoplanetsAPIEndPoint,
-             ProfileAPIEndPoint,
-             PersonalProfileAPIEndPoint,
-             ObservingSitesAPIEndPoint,
-             TelescopesAPIEndPoint,
-             InstrumentsAPIEndPoint,
-             ObservingRunsAPIEndPoint,
-             NightLogAPIEndPoint,
              DatasetsAPIEndPoint,
+             ExoplanetsAPIEndPoint,
              FITSFilesAPIEndPoint,
-             SatellitesAPIEndPoint]
+             FindingChartsAPIEndPoint,
+             InstrumentsAPIEndPoint,
+             NightLogAPIEndPoint,
+             ObjectsAPIEndPoint,
+             ObservingRunsAPIEndPoint,
+             ObservingSitesAPIEndPoint,
+             PersonalProfileAPIEndPoint,
+             ProfileAPIEndPoint, # And not ProfileAPIKeyAPIEndPoint...
+             SatellitesAPIEndPoint,
+             TelescopesAPIEndPoint,
+             TelegramsATelAPIEndPoint]
 
 VALID_PREFIXES = {'dataset': '/datasets/'}
 

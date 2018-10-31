@@ -6,6 +6,7 @@ from .observingruns import NightLogAPIEndPoint, ObservingRunsAPIEndPoint
 from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint, TelescopesAPIEndPoint
 from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
 from .satellites import SatellitesAPIEndPoint
+from .telegrams import TelegramsATelAPIEndPoint
 
 __all__ = ["ActivitiesAPIEndPoint",
            "FindingChartsAPIEndPoint",
@@ -21,4 +22,5 @@ __all__ = ["ActivitiesAPIEndPoint",
            "PersonalProfileAPIEndPoint",
            "ProfileAPIEndPoint",
            "ProfileAPIKeyAPIEndPoint",
-           "SatellitesAPIEndPoint"]
+           "SatellitesAPIEndPoint",
+           "TelegramsATelAPIEndPoint"]

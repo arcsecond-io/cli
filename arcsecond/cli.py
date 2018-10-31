@@ -229,3 +229,16 @@ def satellites(state, catalogue_number):
     """
     # If catalogue_number is None, ArcsecondAPI fallback to .list()
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_SATELLITES, state).read(catalogue_number)
+
+
+@main.command(help='Read telegrams (ATel)')
+@click.argument('identifier', required=False, nargs=1)
+@basic_options
+@pass_state
+def telegrams(state, identifier):
+    """Request the list of telegrams from ATel, or the details of one (in the /telegrams/ATel/ API endpoint).
+
+    The other sources of telegrams will be added in the future.
+    """
+    # If catalogue_number is None, ArcsecondAPI fallback to .list()
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_TELEGRAMS_ATEL, state).read(identifier)
