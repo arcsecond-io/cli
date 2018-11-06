@@ -203,6 +203,9 @@ def fitsfiles(state, dataset, method, pk, **kwargs):
 
     When the method is either 'create' or 'update', a file can be uploaded, with the --file option.
     """
+    if state.organisation:
+        # If organisation is provided as argument, don't put in payload too!
+        kwargs.pop('organisation')
     api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_FITSFILES, state=state, dataset=dataset)
     if method == 'create':
         api.create(kwargs)
