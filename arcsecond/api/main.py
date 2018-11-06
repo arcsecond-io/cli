@@ -193,15 +193,16 @@ class ArcsecondAPI(object):
     @classmethod
     def _get_and_save_api_key(cls, state, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
-        result, error = ProfileAPIKeyAPIEndPoint(state).read(username, **headers)
+        silent_state = state.make_new_silent()
+        result, error = ProfileAPIKeyAPIEndPoint(silent_state).read(username, **headers)
         if error:
             return ArcsecondAPI._echo_error(state, error)
         if result:
             api_key = result['api_key']
             config_file_save_api_key(api_key, username, state.debug)
             if state.verbose:
-                click.echo('Successfull API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
-            return ArcsecondAPI._echo_result(state, result)
+                click.echo('Successful API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
+            return ArcsecondAPI._echo_result(silent_state, result)
 
     @classmethod
     def login(cls, username, password, subdomain, state=None):
