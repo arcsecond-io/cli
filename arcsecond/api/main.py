@@ -94,8 +94,10 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _echo_result(cls, state, result):
-        ArcsecondAPI.pretty_print_dict(result)
-        return result  # Making sure to return json as it is for module usage.
+        if not state.is_using_cli:
+            return result  # Making sure to return json as it is for module usage.
+        if state.verbose:
+            ArcsecondAPI.pretty_print_dict(result)
 
     @classmethod
     def _echo_error(cls, state, error):
