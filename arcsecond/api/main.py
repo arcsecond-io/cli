@@ -49,7 +49,7 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              ObservingRunsAPIEndPoint,
              ObservingSitesAPIEndPoint,
              PersonalProfileAPIEndPoint,
-             ProfileAPIEndPoint, # And not ProfileAPIKeyAPIEndPoint...
+             ProfileAPIEndPoint,  # And not ProfileAPIKeyAPIEndPoint...
              SatellitesAPIEndPoint,
              TelescopesAPIEndPoint,
              TelegramsATelAPIEndPoint]
@@ -187,7 +187,7 @@ class ArcsecondAPI(object):
             memberships = {m['organisation']['subdomain']: m['role'] for m in profile['memberships']}
             if subdomain in memberships.keys():
                 if state.verbose:
-                    click.echo('Membership confirmed. Role is "{}", stored in {}.' \
+                    click.echo('Membership confirmed. Role is "{}", stored in {}.'
                                .format(memberships[subdomain], config_file_path()))
                 config_file_save_membership_role(subdomain, memberships[subdomain], state.debug)
             else:
@@ -207,7 +207,7 @@ class ArcsecondAPI(object):
             if state.verbose:
                 click.echo('Successful API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
             return result
-        
+
     @classmethod
     def login(cls, username, password, subdomain, state=None):
         state = state or State()
