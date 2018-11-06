@@ -20,14 +20,19 @@ class APIEndPoint(object):
     def __init__(self, state=None, prefix=''):
         self.state = state or State()
         self.prefix = prefix
-        if len(prefix) and prefix[0] != '/':
-            self.prefix = '/' + self.prefix
 
-    def _base_url(self):
+    def _get_base_url(self):
         return ARCSECOND_API_URL_DEV if self.state.debug else ARCSECOND_API_URL_PROD
 
     def _root_url(self):
-        return self._base_url() + self.prefix
+        url = self._get_base_url()
+        for fragment in [self.organisation, self.prefix]:
+            url = parse.urljoin(url, fragment)
+        return url
+
+    def _build_url(self, *args):
+        fragments = [f for f in [self.organisation, self.prefix] + list(args) if f]
+        return self._get_base_url() + '/' + '/'.join(fragments) + '/'
 
     def _root_open_url(self):
         if hasattr(self.state, 'open'):
@@ -72,7 +77,7 @@ class APIEndPoint(object):
             try:
                 storage['response'] = method(url, data=payload, files=files, headers=headers)
             except requests.exceptions.ConnectionError:
-                storage['error'] = ArcsecondConnectionError(self._base_url())
+                storage['error'] = ArcsecondConnectionError(self._get_base_url())
             except Exception as e:
                 storage['error'] = ArcsecondError(str(e))
 
