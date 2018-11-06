@@ -96,8 +96,7 @@ class ArcsecondAPI(object):
     def _echo_result(cls, state, result):
         if not state.is_using_cli:
             return result  # Making sure to return json as it is for module usage.
-        if state.verbose:
-            ArcsecondAPI.pretty_print_dict(result)
+        ArcsecondAPI.pretty_print_dict(result)
 
     @classmethod
     def _echo_error(cls, state, error):
@@ -207,8 +206,8 @@ class ArcsecondAPI(object):
             config_file_save_api_key(api_key, username, state.debug)
             if state.verbose:
                 click.echo('Successful API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
-            return ArcsecondAPI._echo_result(silent_state, result)
-
+            return result
+        
     @classmethod
     def login(cls, username, password, subdomain, state=None):
         state = state or State()
