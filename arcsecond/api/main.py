@@ -140,7 +140,7 @@ class ArcsecondAPI(object):
             return make_file_upload_payload(payload)  # transform a str into a dict
         elif isinstance(payload, dict) and 'file' in payload.keys():
             file_value = payload.pop('file')  # .pop() not .get()
-            if os.path.exists(file_value) and os.path.isfile(file_value):
+            if file_value and os.path.exists(file_value) and os.path.isfile(file_value):
                 payload.update(**make_file_upload_payload(file_value))  # unpack the resulting dict of make_file...()
             else:
                 payload.update(file=file_value)  # do nothing, it's not a file...
