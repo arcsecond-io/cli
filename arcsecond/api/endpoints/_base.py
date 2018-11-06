@@ -38,7 +38,7 @@ class APIEndPoint(object):
         if hasattr(self.state, 'open'):
             return ARCSECOND_WWW_URL_DEV if self.state.debug is True else ARCSECOND_WWW_URL_PROD
 
-    def _list_url(self, name=None):
+    def _list_url(self, name=''):
         raise Exception('You must override this method.')
 
     def _detail_url(self, name_or_id):
@@ -127,7 +127,7 @@ class APIEndPoint(object):
         else:
             return (None, response.text)
 
-    def list(self, name=None, **headers):
+    def list(self, name='', **headers):
         return self._perform_request(self._list_url(name), 'get', None, **headers)
 
     def create(self, payload, **headers):
