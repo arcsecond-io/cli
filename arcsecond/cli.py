@@ -3,7 +3,7 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
-from .options import MethodChoiceParamType, State, basic_options, open_options
+from .options import MethodChoiceParamType, State, basic_options, open_options, organisation_options
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
@@ -42,11 +42,12 @@ def register(state, username, email, password1, password2):
 @main.command(help='Login to a personal Arcsecond.io account')
 @click.option('--username', required=True, nargs=1, prompt=True)
 @click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
+@click.option('--organisation', required=False, help='organisation subdomain')
 @basic_options
 @pass_state
-def login(state, username, password):
+def login(state, username, password, organisation=None):
     """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI.login(username, password, state)
+    ArcsecondAPI.login(username, password, organisation, state)
 
 
 @main.command(help='Fetch your complete user profile.')
@@ -172,7 +173,7 @@ def activities(state, method, pk, **kwargs):
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('uuid', required=False, nargs=1)
 @click.option('--name', required=False, nargs=1, help="The dataset name.")
-@basic_options
+@organisation_options
 @pass_state
 def datasets(state, method, uuid, **kwargs):
     api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_DATASETS, state)
@@ -193,7 +194,7 @@ def datasets(state, method, uuid, **kwargs):
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
 @click.option('--file', required=False, nargs=1, help="The FITS file to upload.")
-@basic_options
+@organisation_options
 @pass_state
 def fitsfiles(state, dataset, method, pk, **kwargs):
     """Requests the list of FITS files associated with a given dataset.

@@ -2,10 +2,11 @@ import click
 
 
 class State(object):
-    def __init__(self, verbose=0, debug=False, open=None, is_using_cli=True):
+    def __init__(self, verbose=0, debug=False, open=None, organisation=None, is_using_cli=True):
         self.verbose = verbose
         self.debug = debug
         self.open = open
+        self.organisation = organisation
         self.is_using_cli = is_using_cli
 
 
@@ -51,6 +52,17 @@ def debug_option_constructor(f):
                         callback=callback)(f)
 
 
+def organisation_option_constructor(f):
+    def callback(ctx, param, value):
+        state = ctx.ensure_object(State)
+        state.organisation = value
+        return value
+
+    return click.option('--organisation',
+                        help='Perform action as an organisation member. Requires to login as such first.',
+                        callback=callback)(f)
+
+
 def open_option_constructor(f):
     def callback(ctx, param, value):
         state = ctx.ensure_object(State)
@@ -68,6 +80,12 @@ def open_option_constructor(f):
 def basic_options(f):
     f = verbose_option_constructor(f)
     f = debug_option_constructor(f)
+    return f
+
+
+def organisation_options(f):
+    f = basic_options(f)
+    f = organisation_option_constructor(f)
     return f
 
 

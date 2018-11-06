@@ -1,17 +1,16 @@
 import threading
 import uuid
+from urllib import parse
 
 import click
 import requests
 from progress.spinner import Spinner
 
+from arcsecond.api.constants import (ARCSECOND_API_URL_DEV, ARCSECOND_API_URL_PROD, ARCSECOND_WWW_URL_DEV,
+                                     ARCSECOND_WWW_URL_PROD)
+from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
 from arcsecond.config import config_file_read_api_key
 from arcsecond.options import State
-from arcsecond.api.error import ArcsecondError, ArcsecondConnectionError
-from arcsecond.api.constants import (ARCSECOND_API_URL_PROD,
-                                     ARCSECOND_API_URL_DEV,
-                                     ARCSECOND_WWW_URL_PROD,
-                                     ARCSECOND_WWW_URL_DEV)
 
 
 class APIEndPoint(object):
@@ -20,6 +19,7 @@ class APIEndPoint(object):
     def __init__(self, state=None, prefix=''):
         self.state = state or State()
         self.prefix = prefix
+        self.organisation = state.organisation or ''
 
     def _get_base_url(self):
         return ARCSECOND_API_URL_DEV if self.state.debug else ARCSECOND_API_URL_PROD

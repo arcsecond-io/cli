@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import os
 import json
+import os
 import pprint
 import webbrowser
 
@@ -10,7 +10,7 @@ from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from arcsecond.config import config_file_path, config_file_save_api_key
+from arcsecond.config import config_file_path, config_file_save_api_key, config_file_save_membership_role
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .endpoints import (ActivitiesAPIEndPoint,
@@ -54,7 +54,8 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              TelescopesAPIEndPoint,
              TelegramsATelAPIEndPoint]
 
-VALID_PREFIXES = {'dataset': '/datasets/'}
+# Tricky but values must NOT have leading slash, but MUST have trailing one...
+VALID_PREFIXES = {'dataset': 'datasets/'}
 
 
 def set_endpoints_property(cls):
@@ -172,6 +173,24 @@ class ArcsecondAPI(object):
         return self._echo_response(self.endpoint.delete(id_name_uuid, **headers))
 
     @classmethod
+    def _check_organisation_membership(cls, state, username, subdomain):
+        if state.verbose:
+            click.echo('Checking Membership of Organisation with subdomain "{}"...'.format(subdomain))
+        profile, error = PersonalProfileAPIEndPoint(State(verbose=False, debug=state.debug)).read(username)
+        if error:
+            ArcsecondAPI._echo_error(state, error)
+        else:
+            memberships = {m['organisation']['subdomain']: m['role'] for m in profile['memberships']}
+            if subdomain in memberships.keys():
+                if state.verbose:
+                    click.echo('Membership confirmed. Role is "{}", stored in {}.' \
+                               .format(memberships[subdomain], config_file_path()))
+                config_file_save_membership_role(subdomain, memberships[subdomain], state.debug)
+            else:
+                if state.verbose:
+                    click.echo('Membership denied.')
+
+    @classmethod
     def _get_and_save_api_key(cls, state, username, auth_token):
         headers = {'Authorization': 'Token ' + auth_token}
         result, error = ProfileAPIKeyAPIEndPoint(state).read(username, **headers)
@@ -185,13 +204,16 @@ class ArcsecondAPI(object):
             return ArcsecondAPI._echo_result(state, result)
 
     @classmethod
-    def login(cls, username, password, state=None):
+    def login(cls, username, password, subdomain, state=None):
         state = state or State()
         result, error = AuthAPIEndPoint(state).login(username, password)
         if error:
             return ArcsecondAPI._echo_error(state, error)
-        if result:
-            return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
+        elif result:
+            result = ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
+            if subdomain:
+                ArcsecondAPI._check_organisation_membership(state, username, subdomain)
+            return result
 
     @classmethod
     def register(cls, username, email, password1, password2, state=None):

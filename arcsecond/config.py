@@ -32,6 +32,17 @@ def config_file_save_api_key(api_key, username, debug=False):
         config.write(f)
 
 
+def config_file_save_membership_role(subdomain, role, debug=False):
+    config = ConfigParser()
+    config.read(config_file_path())
+    section = 'debug' if debug else 'main'
+    if section not in config.keys():
+        config.add_section(section)
+    config.set(section, subdomain, role)
+    with open(config_file_path(), 'w') as f:
+        config.write(f)
+
+
 def config_file_read_key(key, debug=False):
     config = ConfigParser()
     config.read(config_file_path())
