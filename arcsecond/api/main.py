@@ -144,8 +144,7 @@ class ArcsecondAPI(object):
                 payload.update(**make_file_upload_payload(file_value))  # unpack the resulting dict of make_file...()
             else:
                 payload.update(file=file_value)  # do nothing, it's not a file...
-        else:
-            return payload  # do nothing
+        return payload
 
     def list(self, name=None, **headers):
         return self._echo_response(self.endpoint.list(name, **headers))
