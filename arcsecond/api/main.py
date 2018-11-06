@@ -110,6 +110,8 @@ class ArcsecondAPI(object):
             json_obj = json.loads(error)
             if 'detail' in json_obj.keys():
                 click.echo(ECHO_PREFIX + json_obj['detail'])
+            elif 'error' in json_obj.keys():
+                click.echo(ECHO_PREFIX + json_obj['error'])
             elif 'non_field_errors' in json_obj.keys():
                 errors = json_obj['non_field_errors']
                 message = ', '.join(errors) if isinstance(error, list) else str(errors)
