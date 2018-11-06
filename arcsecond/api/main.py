@@ -93,9 +93,8 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _echo_result(cls, state, result):
-        if not state.is_using_cli:
-            return result  # Making sure to return json as it is for module usage.
         ArcsecondAPI.pretty_print_dict(result)
+        return result  # Making sure to return json as it is for module usage.
 
     @classmethod
     def _echo_error(cls, state, error):
@@ -114,10 +113,10 @@ class ArcsecondAPI(object):
                 click.echo(ECHO_PREFIX + message)
 
     def _echo_request_result(self, result):
-        ArcsecondAPI._echo_result(self.state, result)
+        return ArcsecondAPI._echo_result(self.state, result)
 
     def _echo_request_error(self, error):
-        ArcsecondAPI._echo_error(self.state, error)
+        return ArcsecondAPI._echo_error(self.state, error)
 
     def _echo_response(self, response):
         result, error = response
@@ -152,8 +151,7 @@ class ArcsecondAPI(object):
 
     def read(self, id_name_uuid, **headers):
         if not id_name_uuid:
-            self.list()
-            return
+            return self.list()
 
         if type(id_name_uuid) is tuple:
             id_name_uuid = " ".join(id_name_uuid)
