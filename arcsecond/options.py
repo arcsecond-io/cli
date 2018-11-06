@@ -9,6 +9,13 @@ class State(object):
         self.organisation = organisation
         self.is_using_cli = is_using_cli
 
+    def make_new_silent(self):
+        return State(verbose=0,
+                     debug=self.debug,
+                     open=self.open,
+                     organisation=self.organisation,
+                     is_using_cli=self.is_using_cli)
+
 
 # class AliasedGroup(click.Group):
 #
