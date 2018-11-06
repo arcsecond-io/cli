@@ -1,6 +1,5 @@
 import threading
 import uuid
-from urllib import parse
 
 import click
 import requests
@@ -25,10 +24,10 @@ class APIEndPoint(object):
         return ARCSECOND_API_URL_DEV if self.state.debug else ARCSECOND_API_URL_PROD
 
     def _root_url(self):
-        url = self._get_base_url()
-        for fragment in [self.organisation, self.prefix]:
-            url = parse.urljoin(url, fragment)
-        return url
+        prefix = self.prefix
+        if len(prefix) and prefix[0] != '/':
+            prefix = '/' + prefix
+        return self._get_base_url() + prefix
 
     def _build_url(self, *args):
         fragments = [f for f in [self.organisation, self.prefix] + list(args) if f]
