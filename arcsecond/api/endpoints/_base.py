@@ -72,9 +72,11 @@ class APIEndPoint(object):
         return headers
 
     def _async_perform_request(self, url, method, payload=None, files=None, **headers):
+        print(payload)
+
         def _async_perform_request_store_response(storage, method, url, payload, files, headers):
             try:
-                storage['response'] = method(url, data=payload, files=files, headers=headers)
+                storage['response'] = method(url, json=payload, files=files, headers=headers)
             except requests.exceptions.ConnectionError:
                 storage['error'] = ArcsecondConnectionError(self._get_base_url())
             except Exception as e:
