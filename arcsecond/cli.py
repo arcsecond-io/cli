@@ -2,6 +2,7 @@ import click
 
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
+from .api.helpers import make_coords_dict
 from .config import config_file_read_username
 from .options import MethodChoiceParamType, State, basic_options, open_options, organisation_options
 
@@ -150,7 +151,11 @@ def logs(state):
 @click.option('--observing_site', required=False, nargs=1, help="The observing site UUID. Optional.")
 @click.option('--telescope', required=False, nargs=1, help="The telescope UUID. Optional.")
 @click.option('--instrument', required=False, nargs=1, help="The instrument UUID. Optional.")
-@click.option('--target', required=False, nargs=1, help="The target name. Optional")
+@click.option('--target_name', required=False, nargs=1, help="The target name. Optional")
+@click.option('--coordinates',
+              required=False,
+              nargs=1,
+              help="The target coordinates. Optional. Decimal degrees, format: coordinates=RA,Dec")
 @click.option('--organisation', required=False, nargs=1, help="Your organisation acronym (for organisations). Optional")
 @click.option('--collaboration', required=False, nargs=1, help="Your collaboration acronym. Optional")
 @open_options
@@ -158,6 +163,7 @@ def logs(state):
 def activities(state, method, pk, **kwargs):
     api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_ACTIVITIES, state)
     if method == 'create':
+        kwargs.update(coordinates=make_coords_dict(kwargs))
         api.create(kwargs)
     elif method == 'read':
         api.read(pk)  # will handle list if pk is None
