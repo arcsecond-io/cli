@@ -42,7 +42,6 @@ def test_activities_with_invalid_coordinates():
     site_uuid = str(uuid.uuid4())
     coords_ra = 2.33
     coords_dec = 4.55
-
     coords = "{}$$${}".format(coords_ra, coords_dec)
     result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '-d'])
     assert result.exit_code != 0
@@ -56,7 +55,6 @@ def test_activities_with_invalid_coordinates2():
     site_uuid = str(uuid.uuid4())
     coords_ra = 2.33
     coords_dec = 4.55
-
     coords = "{},{},{}".format(coords_ra, coords_dec, coords_dec)
     result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '-d'])
     assert result.exit_code != 0
@@ -69,7 +67,6 @@ def test_activities_with_invalid_coordinates3():
     register_successful_login(runner)
     site_uuid = str(uuid.uuid4())
     coords_ra = 2.33
-
     coords = "yoyo,{}".format(coords_ra)
     result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '-d'])
     assert result.exit_code != 0
