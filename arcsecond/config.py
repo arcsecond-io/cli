@@ -3,7 +3,7 @@ from configparser import ConfigParser
 
 
 def config_file_path():
-    return os.path.expanduser('~/.arcsecond.ini').decode("utf-8")
+    return os.path.expanduser('~/.arcsecond.ini')
 
 
 def config_file_exists():
