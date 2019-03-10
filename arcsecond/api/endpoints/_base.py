@@ -72,8 +72,6 @@ class APIEndPoint(object):
         return headers
 
     def _async_perform_request(self, url, method, payload=None, files=None, **headers):
-        print(payload)
-
         def _async_perform_request_store_response(storage, method, url, payload, files, headers):
             try:
                 storage['response'] = method(url, json=payload, files=files, headers=headers)
