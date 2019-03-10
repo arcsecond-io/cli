@@ -1,8 +1,10 @@
-import uuid
-import os
-import httpretty
 import json
+import os
+import uuid
+
+import httpretty
 from click.testing import CliRunner
+
 from arcsecond import cli
 from arcsecond.api.constants import ARCSECOND_API_URL_DEV
 from .utils import register_successful_login
