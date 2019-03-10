@@ -89,7 +89,7 @@ class ArcsecondAPI(object):
             prefix_key = possible_prefixes.pop()
             prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
 
-        endpoint_class = self._check_endpoint_class(endpoint_class)  # type: APIEndPoint
+        endpoint_class = self._check_endpoint_class(endpoint_class)
         self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
 
     @classmethod
