@@ -225,7 +225,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def is_logged_in(cls, state=None):
-        return config_file_read_api_key() is not None
+        return config_file_read_api_key(debug=state.debug) is not None
 
     @classmethod
     def login(cls, username, password, subdomain, state=None):
