@@ -78,6 +78,9 @@ class ArcsecondAPI(object):
         click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
     def __init__(self, endpoint_class=None, state=None, **kwargs):
+        if not self.__class__.is_logged_in(self.state):
+            raise ArcsecondNotLoggedInError()
+
         self.state = state or State(is_using_cli=False)
         if 'debug' in kwargs.keys():
             self.state.debug = kwargs.get('debug')
@@ -136,10 +139,6 @@ class ArcsecondAPI(object):
         if error is not None:
             return self._echo_request_error(error)
 
-    def _check_login_state(self):
-        if not self.__class__.is_logged_in(self.state):
-            raise ArcsecondNotLoggedInError()
-
     def _check_endpoint_class(self, endpoint):
         if endpoint is not None and endpoint not in ENDPOINTS:
             raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
@@ -157,17 +156,13 @@ class ArcsecondAPI(object):
         return payload
 
     def list(self, name=None, **headers):
-        self._check_login_state()
         return self._echo_response(self.endpoint.list(name, **headers))
 
     def create(self, payload, **headers):
-        self._check_login_state()
         payload = self._check_for_file_in_payload(payload)
         return self._echo_response(self.endpoint.create(payload, **headers))
 
     def read(self, id_name_uuid, **headers):
-        self._check_login_state()
-
         if not id_name_uuid:
             return self.list()
 
@@ -183,12 +178,10 @@ class ArcsecondAPI(object):
             return self._echo_response(self.endpoint.read(id_name_uuid, **headers))
 
     def update(self, id_name_uuid, payload, **headers):
-        self._check_login_state()
         payload = self._check_for_file_in_payload(payload)
         return self._echo_response(self.endpoint.update(id_name_uuid, payload, **headers))
 
     def delete(self, id_name_uuid, **headers):
-        self._check_login_state()
         return self._echo_response(self.endpoint.delete(id_name_uuid, **headers))
 
     @classmethod
