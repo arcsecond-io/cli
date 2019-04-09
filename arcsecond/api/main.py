@@ -78,10 +78,11 @@ class ArcsecondAPI(object):
         click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
     def __init__(self, endpoint_class=None, state=None, **kwargs):
+        self.state = state or State(is_using_cli=False)
+
         if not self.__class__.is_logged_in(self.state):
             raise ArcsecondNotLoggedInError()
 
-        self.state = state or State(is_using_cli=False)
         if 'debug' in kwargs.keys():
             self.state.debug = kwargs.get('debug')
         if 'verbose' in kwargs.keys():
