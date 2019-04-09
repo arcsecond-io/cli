@@ -49,7 +49,7 @@ def config_file_read_key(key, debug=False):
     section = 'debug' if debug else 'main'
     if section not in config.sections():
         return None
-    return config[section].get(key)
+    return config[section].get(key, None)
 
 
 def config_file_read_api_key(debug=False):
