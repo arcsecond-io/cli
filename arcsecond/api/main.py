@@ -10,7 +10,12 @@ from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from arcsecond.config import config_file_path, config_file_save_api_key, config_file_save_membership_role
+from arcsecond.config import \
+    (config_file_path,
+     config_file_save_api_key,
+     config_file_save_membership_role,
+     config_file_read_api_key)
+
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .endpoints import (ActivitiesAPIEndPoint,
@@ -30,7 +35,7 @@ from .endpoints import (ActivitiesAPIEndPoint,
                         TelescopesAPIEndPoint,
                         TelegramsATelAPIEndPoint)
 
-from .error import ArcsecondInvalidEndpointError, ArcsecondTooManyPrefixesError
+from .error import ArcsecondInvalidEndpointError, ArcsecondTooManyPrefixesError, ArcsecondNotLoggedInError
 from .helpers import make_file_upload_payload
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
@@ -73,6 +78,9 @@ class ArcsecondAPI(object):
         click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
     def __init__(self, endpoint_class=None, state=None, **kwargs):
+        if not self.__class__.is_logged_in(state):
+            raise ArcsecondNotLoggedInError()
+
         self.state = state or State(is_using_cli=False)
         if 'debug' in kwargs.keys():
             self.state.debug = kwargs.get('debug')
@@ -207,6 +215,10 @@ class ArcsecondAPI(object):
             if state.verbose:
                 click.echo('Successful API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
             return result
+
+    @classmethod
+    def is_logged_in(cls, state=None):
+        return config_file_read_api_key() is not None
 
     @classmethod
     def login(cls, username, password, subdomain, state=None):

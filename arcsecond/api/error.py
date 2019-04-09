@@ -7,6 +7,12 @@ class ArcsecondInputValueError(ArcsecondError):
         super(ArcsecondInputValueError, self).__init__(msg)
 
 
+class ArcsecondNotLoggedInError(ArcsecondError):
+    def __init__(self):
+        msg = "Not logged in. You must login (or register) first."
+        super(ArcsecondNotLoggedInError, self).__init__(msg)
+
+
 class ArcsecondInvalidEndpointError(ArcsecondError):
     def __init__(self, endpoint, endpoints):
         msg = "Unknown endpoint {}. ".format(endpoint)
