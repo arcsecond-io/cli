@@ -63,8 +63,7 @@ def me(state):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_ME, state).read(username)
 
 
-
-@main.command(help='Get an object.')
+@main.command(help='Request an object.')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
@@ -78,7 +77,7 @@ def objects(state, name):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBJECTS, state).read(name)
 
 
-@main.command(help='Request exoplanet (in the /exoplanets/<name>/ API endpoint)')
+@main.command(help='Request an exoplanet (in the /exoplanets/<name>/ API endpoint)')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
@@ -115,21 +114,21 @@ def instruments(state, name):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_INSTRUMENTS, state).list()
 
 
-@main.command(help='Request the list of observing runs (in the /observingruns/ API endpoint)')
+@main.command(help='Request your own list of observing runs (in the /observingruns/ API endpoint)')
 @open_options
 @pass_state
 def runs(state):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBSERVINGRUNS, state).list()
 
 
-@main.command(help='Request the list of telescopes (in the /nightlogs/ API endpoint)')
+@main.command(help='Request your own list of night logs (in the /nightlogs/ API endpoint)')
 @open_options
 @pass_state
 def logs(state):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_NIGHTLOGS, state).list()
 
 
-@main.command(help='Play with the observing activities (in the /activities/ API endpoint)')
+@main.command(help='Access and modify the observing activities (in the /activities/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
 @click.option('--title', required=False, nargs=1, help="The activity title. Optional.")
@@ -161,7 +160,7 @@ def activities(state, method, pk, **kwargs):
         api.list()
 
 
-@main.command(help='Play with the datasets (in the /datasets/ API endpoint)')
+@main.command(help='Access and modify your own datasets (in the /datasets/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('uuid', required=False, nargs=1)
 @click.option('--name', required=False, nargs=1, help="The dataset name.")
@@ -181,7 +180,7 @@ def datasets(state, method, uuid, **kwargs):
         api.list()
 
 
-@main.command(help='Read and write FITS files')
+@main.command(help='Access and modify your own FITS files')
 @click.argument('dataset', required=True, nargs=1)
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
