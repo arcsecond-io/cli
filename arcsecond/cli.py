@@ -63,20 +63,6 @@ def me(state):
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_ME, state).read(username)
 
 
-@main.command(help='List the existing profiles.')
-@click.argument('username', required=False, nargs=-1)
-@open_options
-@pass_state
-def profiles(state, username):
-    """List the existing user profiles.
-
-    Only public information is provided: username, first and last name, and
-    the membership_date.
-
-    Results are paginated.
-    """
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_PROFILES, state).read(username)
-
 
 @main.command(help='Get an object.')
 @click.argument('name', required=True, nargs=-1)
