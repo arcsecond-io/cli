@@ -1,4 +1,5 @@
 from .activities import ActivitiesAPIEndPoint
+from .catalogues import CataloguesAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .datasets import DatasetsAPIEndPoint, FITSFilesAPIEndPoint
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
@@ -9,6 +10,7 @@ from .satellites import SatellitesAPIEndPoint
 from .telegrams import TelegramsATelAPIEndPoint
 
 __all__ = ["ActivitiesAPIEndPoint",
+           "CataloguesAPIEndPoint",
            "FindingChartsAPIEndPoint",
            "DatasetsAPIEndPoint",
            "FITSFilesAPIEndPoint",

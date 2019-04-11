@@ -252,3 +252,17 @@ def telegrams(state, identifier):
     """
     # If catalogue_number is None, ArcsecondAPI fallback to .list()
     ArcsecondAPI(ArcsecondAPI.ENDPOINT_TELEGRAMS_ATEL, state).read(identifier)
+
+
+@main.command(help='Read catalogues (standard stars)')
+@click.argument('identifier', required=False, nargs=1)
+@basic_options
+@pass_state
+def catalogues(state, identifier):
+    """Request the list of identifier or the details of one (in the /catalogues/ API endpoint).
+    """
+    # If identifier is None, ArcsecondAPI fallback to .list()
+    if identifier:
+        ArcsecondAPI(ArcsecondAPI.ENDPOINT_CATALOGUES, state).read(identifier)
+    else:
+        ArcsecondAPI(ArcsecondAPI.ENDPOINT_CATALOGUES, state).list()

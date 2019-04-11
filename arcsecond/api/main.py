@@ -18,22 +18,7 @@ from arcsecond.config import \
 
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
-from .endpoints import (ActivitiesAPIEndPoint,
-                        DatasetsAPIEndPoint,
-                        ExoplanetsAPIEndPoint,
-                        FITSFilesAPIEndPoint,
-                        FindingChartsAPIEndPoint,
-                        InstrumentsAPIEndPoint,
-                        NightLogAPIEndPoint,
-                        ObjectsAPIEndPoint,
-                        ObservingRunsAPIEndPoint,
-                        ObservingSitesAPIEndPoint,
-                        PersonalProfileAPIEndPoint,
-                        ProfileAPIEndPoint,
-                        ProfileAPIKeyAPIEndPoint,
-                        SatellitesAPIEndPoint,
-                        TelescopesAPIEndPoint,
-                        TelegramsATelAPIEndPoint)
+from .endpoints import *
 
 from .error import ArcsecondInvalidEndpointError, ArcsecondTooManyPrefixesError, ArcsecondNotLoggedInError
 from .helpers import make_file_upload_payload
@@ -44,6 +29,7 @@ ECHO_PREFIX = u' • '
 __all__ = ["ArcsecondAPI"]
 
 ENDPOINTS = [ActivitiesAPIEndPoint,
+             CataloguesAPIEndPoint,
              DatasetsAPIEndPoint,
              ExoplanetsAPIEndPoint,
              FITSFilesAPIEndPoint,
