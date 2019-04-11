@@ -241,13 +241,15 @@ def telegrams(state, identifier):
 
 @main.command(help='Read catalogues (standard stars)')
 @click.argument('identifier', required=False, nargs=1)
+@click.option('--rows', default=None, is_flag=True, nargs=1)
 @basic_options
 @pass_state
-def catalogues(state, identifier):
+def catalogues(state, identifier, rows):
     """Request the list of identifier or the details of one (in the /catalogues/ API endpoint).
     """
-    # If identifier is None, ArcsecondAPI fallback to .list()
+
     if identifier:
+        identifier = identifier + '/rows' if rows else identifier
         ArcsecondAPI(ArcsecondAPI.ENDPOINT_CATALOGUES, state).read(identifier)
     else:
         ArcsecondAPI(ArcsecondAPI.ENDPOINT_CATALOGUES, state).list()
