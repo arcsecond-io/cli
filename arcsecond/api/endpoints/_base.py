@@ -110,8 +110,12 @@ class APIEndPoint(object):
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
         files = payload.pop('files', None) if payload else None
 
+        if payload:
+            payload = {k: v for k, v in payload.items() if v is not None}
+
         if self.state.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
+            click.echo('Payload: {}'.format(payload))
 
         response = self._async_perform_request(url, method, payload, files, **headers)
 
