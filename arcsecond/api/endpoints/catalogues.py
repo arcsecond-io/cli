@@ -9,4 +9,3 @@ class CataloguesAPIEndPoint(APIEndPoint):
 
     def _detail_url(self, pk):
         return self._build_url('catalogues', str(pk))
-

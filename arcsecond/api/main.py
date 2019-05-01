@@ -10,17 +10,16 @@ from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from arcsecond.config import \
-    (config_file_path,
-     config_file_save_api_key,
-     config_file_save_membership_role,
-     config_file_read_api_key)
-
+from arcsecond.config import (config_file_path, config_file_read_api_key, config_file_save_api_key,
+                              config_file_save_membership_role)
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
-from .endpoints import *
-
-from .error import ArcsecondInvalidEndpointError, ArcsecondTooManyPrefixesError, ArcsecondNotLoggedInError
+from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAPIEndPoint, ExoplanetsAPIEndPoint,
+                        FITSFilesAPIEndPoint, FindingChartsAPIEndPoint, InstrumentsAPIEndPoint, NightLogAPIEndPoint,
+                        ObjectsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
+                        PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint,
+                        TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
+from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
 from .helpers import make_file_upload_payload
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
