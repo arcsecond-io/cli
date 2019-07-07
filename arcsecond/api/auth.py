@@ -1,3 +1,4 @@
+import six
 from .endpoints._base import APIEndPoint
 from .error import ArcsecondError
 from .constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
@@ -22,6 +23,12 @@ class AuthAPIEndPoint(APIEndPoint):
             raise ArcsecondError("Missing/invalid email: {}".format(email))
         if password1 != password2:
             raise ArcsecondError("The two passwords don't match")
+
+        msg = 'By registering, you confirm agreeing with Terms & Conditions (https://www.arcsecond.io/terms) [y/N]:'
+        terms_agreement = six.moves.input(msg)
+
+        if terms_agreement.lower() not in ['y', 'Y', 'yes', 'YES']:
+            raise ArcsecondError("Agreement to Terms and Conditions not accepted. Aborting registration.")
 
         url = self._root_url() + API_AUTH_PATH_REGISTER
         payload = {'username': username, 'email': email, 'password1': password1, 'password2': password2}

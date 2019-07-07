@@ -25,6 +25,7 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=[
+        'six',
         'click',
         'requests',
         'pygments',
