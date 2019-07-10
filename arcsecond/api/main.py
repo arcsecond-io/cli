@@ -18,7 +18,7 @@ from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAP
                         FITSFilesAPIEndPoint, FindingChartsAPIEndPoint, InstrumentsAPIEndPoint, NightLogAPIEndPoint,
                         ObjectsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
                         PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint,
-                        TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
+                        StandardStarsAPIEndPoint, TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
 from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
 from .helpers import make_file_upload_payload
 
@@ -41,6 +41,7 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              PersonalProfileAPIEndPoint,
              ProfileAPIEndPoint,  # And not ProfileAPIKeyAPIEndPoint...
              SatellitesAPIEndPoint,
+             StandardStarsAPIEndPoint,
              TelescopesAPIEndPoint,
              TelegramsATelAPIEndPoint]
 

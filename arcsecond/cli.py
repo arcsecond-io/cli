@@ -253,3 +253,18 @@ def catalogues(state, identifier, rows):
         ArcsecondAPI(ArcsecondAPI.ENDPOINT_CATALOGUES, state).read(identifier)
     else:
         ArcsecondAPI(ArcsecondAPI.ENDPOINT_CATALOGUES, state).list()
+
+
+@main.command(help='Request the list of standard stars (in the /standardstars/ API endpoint)')
+@click.argument('around', required=True, nargs=1)
+@click.argument('count', required=False, nargs=1, type=int)
+@open_options
+@pass_state
+def standardstars(state, around, count=5):
+    """Request the list of standard stars around a given position in the sky.
+
+    Provided coordinates must have the following format: "RA_in_decimal_degrees,Dec_in_decimal_degrees"
+
+    Coordinates are assumed to be Equatorial, with epoch J2000.
+    """
+    ArcsecondAPI(ArcsecondAPI.ENDPOINT_STANDARDSTARS, state).list()
