@@ -164,7 +164,7 @@ To start developing the arcsecond CLI, fork the project, `git clone` it, then, i
 
 ```bash
 $ cd ~/arcsecond-cli
-$ virtualenv env
+$ virtualenv --python=pythonX.Y env
 $ source env/bin/activate
 $ pip install -e .
 ``` 
