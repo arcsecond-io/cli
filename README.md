@@ -98,7 +98,7 @@ have only the `read` method, implicitly).
 
 See below for details.
 
-# Datasets and FITS files
+## Datasets and FITS files
 
 **You can entirely manage your datasets and FITS files (including upload) from this CLI / Python module.**
 
@@ -131,7 +131,7 @@ As a Python module:
 
 Okay, this could be a bit simpler. We are working on it.
 
-# Observing Activities
+## Observing Activities
 
 The Arcsecond CLI allows to list, create, read and update so-called observing `activitites`. It is a simple way to publish and let the world know what you are observing.
 
@@ -157,3 +157,16 @@ And finally, to create a full astronomical observing activity:
      $ arcsecond activities create --observing_site <uuid> --telescope <uuid> --instrument <uuid> --target <target name>
      
 The field of `observing_site`, `telescope` and `instrument` are optionals, and you can provide any (consistent) combination of all.
+
+# Development
+
+To start developing the arcsecond CLI, fork the project, `git clone` it, then, in the arcsecond-cli folder, do (assuming [virtualenv](https://virtualenv.pypa.io/en/stable/) is installed):
+
+```bash
+$ cd ~/arcsecond-cli
+$ virtualenv env
+$ source env/bin/activate
+$ pip install -e .
+``` 
+
+The last line ensure you can call the "locally installed" version of the code of that folder.
