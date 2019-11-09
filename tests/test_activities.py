@@ -13,8 +13,8 @@ from arcsecond.api.error import ArcsecondInputValueError
 from .utils import register_successful_login
 
 
-@pytest.mark.skipif(sys.version_info[:2] != (3, 5), reason="httpretty in test does not support python 3.5")
 @httpretty.activate
+@pytest.mark.skipif(sys.version_info[:2] != (3, 5), reason="httpretty in test does not support python 3.5")
 def test_activities_with_valid_coordinates():
     runner = CliRunner()
     register_successful_login(runner)
