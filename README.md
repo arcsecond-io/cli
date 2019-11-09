@@ -169,4 +169,4 @@ $ source env/bin/activate
 $ pip install -e .
 ``` 
 
-The last line ensure you can call the "locally installed" version of the code of that folder.
+The last line ensure you can call the "locally installed" version of the code of that folder. Once done one first time, only the `source env/bin/activate` is needed when you restart a debugging session.
