@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/arcsecond-io/cli.svg?style=svg)](https://circleci.com/gh/arcsecond-io/cli) [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
+[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Farcsecond-io%2Fcli%2Fbadge&style=flat)](https://actions-badge.atrox.dev/arcsecond-io/cli/goto) [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
 
 # Arcsecond CLI
 
