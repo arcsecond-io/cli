@@ -8,7 +8,7 @@ class ActivitiesAPIEndPoint(APIEndPoint):
         return self._build_url('activities')
 
     def _detail_url(self, pk):
-        return self._build_url('activities', pk)
+        return self._build_url('activities', str(pk))
 
     def _open_url(self, name):
         return self._root_open_url() + '/live/'
