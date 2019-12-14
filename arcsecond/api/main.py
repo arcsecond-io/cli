@@ -147,7 +147,7 @@ class ArcsecondAPI(object):
 
     def read(self, id_name_uuid, **headers):
         if not id_name_uuid:
-            return self.list()
+            return self.list(name=None, **headers)
 
         if type(id_name_uuid) is tuple:
             id_name_uuid = " ".join(id_name_uuid)
