@@ -3,6 +3,7 @@
 import json
 import os
 import pprint
+import types
 import webbrowser
 
 import click
@@ -45,9 +46,14 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
 VALID_PREFIXES = {'dataset': 'datasets/'}
 
 
-def set_endpoints_property(cls):
+def set_api_factory(cls):
+    def factory(endpoint_class_name, state, **kwargs):
+        return ArcsecondAPI(endpoint_class_name, state, **kwargs)
+
     for endpoint_class in ENDPOINTS:
-        setattr(cls, 'ENDPOINT_' + endpoint_class.name.upper(), endpoint_class)
+        func_name = 'create_' + endpoint_class.name + '_api'
+        setattr(cls, func_name, staticmethod(types.MethodType(factory, endpoint_class.name)))
+
     return cls
 
 
