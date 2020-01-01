@@ -85,6 +85,8 @@ class ArcsecondAPI(object):
             self.state.debug = kwargs.get('debug')
         if 'verbose' in kwargs.keys():
             self.state.verbose = kwargs.get('verbose')
+        if 'organisation' in kwargs.keys():
+            self.state.organisation = kwargs.get('organisation')
 
         prefix = kwargs.get('prefix', '')
         possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
