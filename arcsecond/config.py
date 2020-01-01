@@ -32,7 +32,7 @@ def config_file_save_api_key(api_key, username, debug=False):
         config.write(f)
 
 
-def config_file_save_membership_role(subdomain, role, debug=False):
+def config_file_save_organisation_membership(subdomain, role, debug=False):
     config = ConfigParser()
     config.read(config_file_path())
     section = 'debug' if debug else 'main'

@@ -11,8 +11,10 @@ from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from arcsecond.config import (config_file_path, config_file_read_api_key, config_file_save_api_key,
-                              config_file_save_membership_role)
+from arcsecond.config import (config_file_path,
+                              config_file_read_api_key,
+                              config_file_save_api_key,
+                              config_file_save_organisation_membership)
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
@@ -199,7 +201,7 @@ class ArcsecondAPI(object):
                 if state.verbose:
                     click.echo('Membership confirmed. Role is "{}", stored in {}.'
                                .format(memberships[subdomain], config_file_path()))
-                config_file_save_membership_role(subdomain, memberships[subdomain], state.debug)
+                config_file_save_organisation_membership(subdomain, memberships[subdomain], state.debug)
             else:
                 if state.verbose:
                     click.echo('Membership denied.')
