@@ -44,6 +44,16 @@ def config_file_save_organisation_membership(subdomain, role, debug=False):
         config.write(f)
 
 
+def config_file_read_organisation_memberships(debug=False):
+    config = ConfigParser()
+    config.read(config_file_path())
+    section = 'debug' if debug else 'main'
+    section += ':organisations'
+    if section not in config.sections():
+        return {}
+    return config[section]
+
+
 def config_file_read_key(key, debug=False):
     config = ConfigParser()
     config.read(config_file_path())
