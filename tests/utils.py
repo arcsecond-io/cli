@@ -73,3 +73,16 @@ def register_successful_organisation_login(runner, subdomain, role):
     )
     runner.invoke(cli.login, ['--organisation', subdomain, '-d'],
                   input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+
+
+def mock_url_path(method, path, body='', query='', status=200):
+    path = path + '/' if path[-1] != '/' else path
+    httpretty.register_uri(method, ARCSECOND_API_URL_DEV + path + query, status=status, body=body)
+
+
+def mock_http_get(path, body='{}', status=200):
+    mock_url_path(httpretty.GET, path, body, status=status)
+
+
+def mock_http_post(path, body='{}', status=200):
+    mock_url_path(httpretty.POST, path, body, status=status)

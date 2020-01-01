@@ -69,3 +69,14 @@ def config_file_read_api_key(debug=False):
 
 def config_file_read_username(debug=False):
     return config_file_read_key('username', debug=debug)
+
+
+def config_file_clear_debug_session():
+    config = ConfigParser()
+    config.read(config_file_path())
+    if 'debug' in config.sections():
+        del config['debug']
+    if 'debug:organisations' in config.sections():
+        del config['debug:organisations']
+    with open(config_file_path(), 'w') as f:
+        config.write(f)
