@@ -127,10 +127,10 @@ class APIEndPoint(object):
         if self.state.verbose:
             click.echo('Request status code ' + str(response.status_code))
 
-        if response.status_code >= 200 and response.status_code < 300:
-            return (response.json() if response.text else {}, None)
+        if 200 <= response.status_code < 300:
+            return response.json() if response.text else {}, None
         else:
-            return (None, response.text)
+            return None, response.text
 
     def list(self, name='', **headers):
         return self._perform_request(self._list_url(name), 'get', None, **headers)
