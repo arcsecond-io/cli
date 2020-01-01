@@ -1,7 +1,7 @@
 import click
 
 from . import __version__
-from .api import ArcsecondAPI, ArcsecondError
+from .api import Arcsecond, ArcsecondError
 from .api.helpers import make_coords_dict
 from .config import config_file_read_username
 from .options import MethodChoiceParamType, State, basic_options, open_options, organisation_options
@@ -37,7 +37,7 @@ def version():
 @pass_state
 def register(state, username, email, password1, password2):
     """Register for a free personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI.register(username, email, password1, password2, state)
+    Arcsecond.register(username, email, password1, password2, state)
 
 
 @main.command(help='Login to a personal Arcsecond.io account')
@@ -48,7 +48,7 @@ def register(state, username, email, password1, password2):
 @pass_state
 def login(state, username, password, organisation=None):
     """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI.login(username, password, organisation, state)
+    Arcsecond.login(username, password, organisation, state)
 
 
 @main.command(help='Fetch your complete user profile.')
@@ -60,7 +60,7 @@ def me(state):
     if not username:
         msg = 'Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username)
         raise ArcsecondError(msg)
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_ME, state).read(username)
+    Arcsecond.create_me_api(state).read(username)
 
 
 @main.command(help='Request an object.')
@@ -74,7 +74,7 @@ def objects(state, name):
     The NED information, as well as being able to choose the source
     will be implemented in the future.
     """
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBJECTS, state).read(name)
+    Arcsecond.create_objects_api(state).read(name)
 
 
 @main.command(help='Request an exoplanet (in the /exoplanets/<name>/ API endpoint)')
@@ -82,7 +82,7 @@ def objects(state, name):
 @open_options
 @pass_state
 def exoplanets(state, name):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_EXOPLANETS, state).read(name)
+    Arcsecond.create_exoplanets_api(state).read(name)
 
 
 @main.command(help='Request the list of object finding charts (in the /findingcharts/<name>/ API endpoint)')
@@ -90,42 +90,42 @@ def exoplanets(state, name):
 @open_options
 @pass_state
 def findingcharts(state, name):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_FINDINGCHARTS, state).list(name)
+    Arcsecond.create_findingcharts_api(state).list(name)
 
 
 @main.command(help='Request the list of observing sites (in the /observingsites/ API endpoint)')
 @open_options
 @pass_state
 def sites(state):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBSERVINGSITES, state).list()
+    Arcsecond.create_observingsites_api(state).list()
 
 
 @main.command(help='Request the list of telescopes (in the /telescopes/ API endpoint)')
 @open_options
 @pass_state
 def telescopes(state):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_TELESCOPES, state).list()
+    Arcsecond.create_telescopes_api(state).list()
 
 
 @main.command(help='Request the list of instruments (in the /instruments/ API endpoint)')
 @open_options
 @pass_state
 def instruments(state, name):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_INSTRUMENTS, state).list()
+    Arcsecond.create_instruments_api(state).list()
 
 
 @main.command(help='Request your own list of observing runs (in the /observingruns/ API endpoint)')
 @open_options
 @pass_state
 def runs(state):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_OBSERVINGRUNS, state).list()
+    Arcsecond.create_observingruns_api(state).list()
 
 
 @main.command(help='Request your own list of night logs (in the /nightlogs/ API endpoint)')
 @open_options
 @pass_state
 def logs(state):
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_NIGHTLOGS, state).list()
+    Arcsecond.create_nightlogs_api(state).list()
 
 
 @main.command(help='Access and modify the observing activities (in the /activities/ API endpoint)')
@@ -146,7 +146,7 @@ def logs(state):
 @open_options
 @pass_state
 def activities(state, method, pk, **kwargs):
-    api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_ACTIVITIES, state)
+    api = Arcsecond.create_activities_api(state)
     if method == 'create':
         kwargs.update(coordinates=make_coords_dict(kwargs))
         api.create(kwargs)
@@ -167,7 +167,7 @@ def activities(state, method, pk, **kwargs):
 @organisation_options
 @pass_state
 def datasets(state, method, uuid, **kwargs):
-    api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_DATASETS, state)
+    api = Arcsecond.create_datasets_api(state)
     if method == 'create':
         api.create(kwargs)
     elif method == 'read':
@@ -184,7 +184,7 @@ def datasets(state, method, uuid, **kwargs):
 @click.argument('dataset', required=True, nargs=1)
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
-@click.option('--file', required=False, nargs=1, help="The FITS file to upload.")
+@click.option('--file', required=False, nargs=1, help="The path to the FITS file to upload.")
 @organisation_options
 @pass_state
 def fitsfiles(state, dataset, method, pk, **kwargs):
@@ -197,7 +197,7 @@ def fitsfiles(state, dataset, method, pk, **kwargs):
     if state.organisation:
         # If organisation is provided as argument, don't put in payload too!
         kwargs.pop('organisation')
-    api = ArcsecondAPI(ArcsecondAPI.ENDPOINT_FITSFILES, state=state, dataset=dataset)
+    api = Arcsecond.create_fitsfiles_api(state=state, dataset=dataset)
     if method == 'create':
         api.create(kwargs)
     elif method == 'read':
@@ -223,7 +223,7 @@ def satellites(state, catalogue_number):
     Data is extracted from celestrak.com.
     """
     # If catalogue_number is None, ArcsecondAPI fallback to .list()
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_SATELLITES, state).read(catalogue_number)
+    Arcsecond.create_satellites_api(state).read(catalogue_number)
 
 
 @main.command(help='Read telegrams (ATel)')
@@ -236,7 +236,7 @@ def telegrams(state, identifier):
     The other sources of telegrams will be added in the future.
     """
     # If catalogue_number is None, ArcsecondAPI fallback to .list()
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_TELEGRAMS_ATEL, state).read(identifier)
+    Arcsecond.create_telegrams_api(state).read(identifier)
 
 
 @main.command(help='Read catalogues (standard stars)')
@@ -248,11 +248,12 @@ def catalogues(state, identifier, rows):
     """Request the list of identifier or the details of one (in the /catalogues/ API endpoint).
     """
 
+    api = Arcsecond.make_catalogues_api(state)
     if identifier:
         identifier = identifier + '/rows' if rows else identifier
-        ArcsecondAPI(ArcsecondAPI.ENDPOINT_CATALOGUES, state).read(identifier)
+        api.read(identifier)
     else:
-        ArcsecondAPI(ArcsecondAPI.ENDPOINT_CATALOGUES, state).list()
+        api.list()
 
 
 @main.command(help='Request the list of standard stars (in the /standardstars/ API endpoint)')
@@ -267,4 +268,4 @@ def standardstars(state, around, count=5):
 
     Coordinates are assumed to be Equatorial, with epoch J2000.
     """
-    ArcsecondAPI(ArcsecondAPI.ENDPOINT_STANDARDSTARS, state).list()
+    Arcsecond.create_standardstars_api(state).list()
