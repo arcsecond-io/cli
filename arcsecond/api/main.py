@@ -47,21 +47,32 @@ VALID_PREFIXES = {'dataset': 'datasets/'}
 
 
 def set_api_factory(cls):
-    def factory(endpoint_class_name, state, **kwargs):
-        return ArcsecondAPI(endpoint_class_name, state, **kwargs)
+    def factory(endpoint_class, state, **kwargs):
+        return ArcsecondAPI(endpoint_class, state, **kwargs)
 
     for endpoint_class in ENDPOINTS:
         func_name = 'create_' + endpoint_class.name + '_api'
-        setattr(cls, func_name, staticmethod(types.MethodType(factory, endpoint_class.name)))
+        setattr(cls, func_name, staticmethod(types.MethodType(factory, endpoint_class)))
 
     return cls
 
 
-@set_endpoints_property
-class ArcsecondAPI(object):
+@set_api_factory
+class Arcsecond(object):
+    @classmethod
+    def is_logged_in(cls, state=None):
+        return ArcsecondAPI.is_logged_in(state)
 
     @classmethod
+    def login(cls, username, password, subdomain, state=None):
+        return ArcsecondAPI.login(username, password, subdomain, state)
 
+    @classmethod
+    def register(cls, username, email, password1, password2, state=None):
+        return ArcsecondAPI.register(username, email, password1, password2, state)
+
+
+class ArcsecondAPI(object):
     def __init__(self, endpoint_class=None, state=None, **kwargs):
         self.state = state or State(is_using_cli=False)
 
