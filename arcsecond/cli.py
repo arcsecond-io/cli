@@ -184,7 +184,7 @@ def datasets(state, method, uuid, **kwargs):
 @click.argument('dataset', required=True, nargs=1)
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
-@click.option('--file', required=False, nargs=1, help="The path to the FITS file to upload.")
+@click.option('--file', required=False, nargs=1, help="The path to the FITS file to upload. Can be zipped with gzip or bzip2.")
 @organisation_options
 @pass_state
 def fitsfiles(state, dataset, method, pk, **kwargs):
