@@ -61,9 +61,6 @@ def set_api_factory(cls):
 class ArcsecondAPI(object):
 
     @classmethod
-    def pretty_print_dict(cls, d):
-        json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
-        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
     def __init__(self, endpoint_class=None, state=None, **kwargs):
         self.state = state or State(is_using_cli=False)
@@ -88,6 +85,11 @@ class ArcsecondAPI(object):
 
         endpoint_class = self._check_endpoint_class(endpoint_class)
         self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
+
+    @classmethod
+    def pretty_print_dict(cls, d):
+        json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
+        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
     @classmethod
     def _echo_result(cls, state, result):
