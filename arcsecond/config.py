@@ -36,6 +36,7 @@ def config_file_save_membership_role(subdomain, role, debug=False):
     config = ConfigParser()
     config.read(config_file_path())
     section = 'debug' if debug else 'main'
+    section += ':organisations'
     if section not in config.keys():
         config.add_section(section)
     config.set(section, subdomain, role)
