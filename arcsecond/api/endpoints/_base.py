@@ -7,8 +7,11 @@ from progress.spinner import Spinner
 
 from arcsecond.api.constants import *
 from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
-from arcsecond.config import config_file_read_api_key
+from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
 from arcsecond.options import State
+
+SAFE_METHODS = ['GET', 'OPTIONS']
+WRITABLE_MEMBERSHIPS = ['superadmin', 'admin', 'member']
 
 
 class APIEndPoint(object):
@@ -70,6 +73,14 @@ class APIEndPoint(object):
             click.echo('OK')
         return headers
 
+    def _check_organisation_membership_and_permission(self, method_name, organisation):
+        memberships = config_file_read_organisation_memberships(self.state.debug)
+        if self.state.organisation not in memberships.keys():
+            raise ArcsecondError('No membership found for organisation {}'.format(organisation))
+        membership = memberships[self.state.organisation]
+        if method_name not in SAFE_METHODS and membership not in WRITABLE_MEMBERSHIPS:
+            raise ArcsecondError('Membership for organisation {} has no write permission'.format(organisation))
+
     def _async_perform_request(self, url, method, payload=None, files=None, **headers):
         def _async_perform_request_store_response(storage, method, url, payload, files, headers):
             try:
@@ -110,6 +121,9 @@ class APIEndPoint(object):
         method_name = method.upper() if isinstance(method, str) else ''
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
         files = payload.pop('files', None) if payload else None
+
+        if self.state and self.state.organisation:
+            self._check_organisation_membership_and_permission(method_name, self.state.organisation)
 
         if payload:
             payload = {k: v for k, v in payload.items() if v is not None}
