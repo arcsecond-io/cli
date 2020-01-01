@@ -248,7 +248,7 @@ def catalogues(state, identifier, rows):
     """Request the list of identifier or the details of one (in the /catalogues/ API endpoint).
     """
 
-    api = Arcsecond.make_catalogues_api(state)
+    api = Arcsecond.create_catalogues_api(state)
     if identifier:
         identifier = identifier + '/rows' if rows else identifier
         api.read(identifier)
