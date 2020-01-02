@@ -57,7 +57,7 @@ class APIEndPoint(object):
             raise ArcsecondError('Invalid UUID {}.'.format(uuid_str))
 
     def _check_and_set_api_key(self, headers, url):
-        if 'login' in url or 'register' in url or 'Authorization' in headers.keys():
+        if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():
             return headers
 
         if self.state.verbose:
