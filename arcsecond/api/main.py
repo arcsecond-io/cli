@@ -132,18 +132,12 @@ class ArcsecondAPI(object):
             else:
                 click.echo(ECHO_PREFIX + str(error))
 
-    def _echo_request_result(self, result):
-        return ArcsecondAPI._echo_result(self.state, result)
-
-    def _echo_request_error(self, error):
-        return ArcsecondAPI._echo_error(self.state, error)
-
     def _echo_response(self, response):
         result, error = response
         if result is not None:  # check against None, to avoid skipping empty lists.
-            return self._echo_request_result(result)
+            return ArcsecondAPI._echo_result(self.state, result)
         if error is not None:
-            return self._echo_request_error(error)
+            return ArcsecondAPI._echo_error(self.state, error)
 
     def _check_endpoint_class(self, endpoint):
         if endpoint is not None and endpoint not in ENDPOINTS:
@@ -243,6 +237,6 @@ class ArcsecondAPI(object):
         state = state or State()
         result, error = AuthAPIEndPoint(state).register(username, email, password1, password2)
         if error:
-            return ArcsecondAPI._echo_request_error(state, error)
-        if result:
+            return ArcsecondAPI._echo_error(state, error)
+        elif result:
             return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
