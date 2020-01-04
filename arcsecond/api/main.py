@@ -3,6 +3,7 @@
 import json
 import os
 import pprint
+import types
 import webbrowser
 
 import click
@@ -10,8 +11,10 @@ from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from arcsecond.config import (config_file_path, config_file_read_api_key, config_file_save_api_key,
-                              config_file_save_membership_role)
+from arcsecond.config import (config_file_path,
+                              config_file_read_api_key,
+                              config_file_save_api_key,
+                              config_file_save_organisation_membership)
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
@@ -27,7 +30,7 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              CataloguesAPIEndPoint,
              DatasetsAPIEndPoint,
              ExoplanetsAPIEndPoint,
-             FITSFilesAPIEndPoint,
+             DataFilesAPIEndPoint,
              FindingChartsAPIEndPoint,
              InstrumentsAPIEndPoint,
              NightLogAPIEndPoint,
@@ -45,20 +48,33 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
 VALID_PREFIXES = {'dataset': 'datasets/'}
 
 
-def set_endpoints_property(cls):
+def set_api_factory(cls):
+    def factory(endpoint_class, state, **kwargs):
+        return ArcsecondAPI(endpoint_class, state, **kwargs)
+
     for endpoint_class in ENDPOINTS:
-        setattr(cls, 'ENDPOINT_' + endpoint_class.name.upper(), endpoint_class)
+        func_name = 'create_' + endpoint_class.name + '_api'
+        setattr(cls, func_name, staticmethod(types.MethodType(factory, endpoint_class)))
+
     return cls
 
 
-@set_endpoints_property
-class ArcsecondAPI(object):
+@set_api_factory
+class Arcsecond(object):
+    @classmethod
+    def is_logged_in(cls, state=None):
+        return ArcsecondAPI.is_logged_in(state)
 
     @classmethod
-    def pretty_print_dict(cls, d):
-        json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
-        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
+    def login(cls, username, password, subdomain, state=None):
+        return ArcsecondAPI.login(username, password, subdomain, state)
 
+    @classmethod
+    def register(cls, username, email, password1, password2, state=None):
+        return ArcsecondAPI.register(username, email, password1, password2, state)
+
+
+class ArcsecondAPI(object):
     def __init__(self, endpoint_class=None, state=None, **kwargs):
         self.state = state or State(is_using_cli=False)
 
@@ -69,6 +85,8 @@ class ArcsecondAPI(object):
             self.state.debug = kwargs.get('debug')
         if 'verbose' in kwargs.keys():
             self.state.verbose = kwargs.get('verbose')
+        if 'organisation' in kwargs.keys():
+            self.state.organisation = kwargs.get('organisation')
 
         prefix = kwargs.get('prefix', '')
         possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
@@ -82,6 +100,11 @@ class ArcsecondAPI(object):
 
         endpoint_class = self._check_endpoint_class(endpoint_class)
         self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
+
+    @classmethod
+    def pretty_print_dict(cls, d):
+        json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
+        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
     @classmethod
     def _echo_result(cls, state, result):
@@ -109,18 +132,12 @@ class ArcsecondAPI(object):
             else:
                 click.echo(ECHO_PREFIX + str(error))
 
-    def _echo_request_result(self, result):
-        return ArcsecondAPI._echo_result(self.state, result)
-
-    def _echo_request_error(self, error):
-        return ArcsecondAPI._echo_error(self.state, error)
-
     def _echo_response(self, response):
         result, error = response
         if result is not None:  # check against None, to avoid skipping empty lists.
-            return self._echo_request_result(result)
+            return ArcsecondAPI._echo_result(self.state, result)
         if error is not None:
-            return self._echo_request_error(error)
+            return ArcsecondAPI._echo_error(self.state, error)
 
     def _check_endpoint_class(self, endpoint):
         if endpoint is not None and endpoint not in ENDPOINTS:
@@ -180,7 +197,7 @@ class ArcsecondAPI(object):
                 if state.verbose:
                     click.echo('Membership confirmed. Role is "{}", stored in {}.'
                                .format(memberships[subdomain], config_file_path()))
-                config_file_save_membership_role(subdomain, memberships[subdomain], state.debug)
+                config_file_save_organisation_membership(subdomain, memberships[subdomain], state.debug)
             else:
                 if state.verbose:
                     click.echo('Membership denied.')
@@ -220,6 +237,6 @@ class ArcsecondAPI(object):
         state = state or State()
         result, error = AuthAPIEndPoint(state).register(username, email, password1, password2)
         if error:
-            return ArcsecondAPI._echo_request_error(state, error)
-        if result:
+            return ArcsecondAPI._echo_error(state, error)
+        elif result:
             return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])

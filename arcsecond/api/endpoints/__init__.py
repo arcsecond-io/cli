@@ -1,7 +1,7 @@
 from .activities import ActivitiesAPIEndPoint
 from .catalogues import CataloguesAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
-from .datasets import DatasetsAPIEndPoint, FITSFilesAPIEndPoint
+from .datasets import DatasetsAPIEndPoint, DataFilesAPIEndPoint
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
 from .observingruns import NightLogAPIEndPoint, ObservingRunsAPIEndPoint
 from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint, TelescopesAPIEndPoint
@@ -14,7 +14,7 @@ __all__ = ["ActivitiesAPIEndPoint",
            "CataloguesAPIEndPoint",
            "FindingChartsAPIEndPoint",
            "DatasetsAPIEndPoint",
-           "FITSFilesAPIEndPoint",
+           "DataFilesAPIEndPoint",
            "ExoplanetsAPIEndPoint",
            "ObjectsAPIEndPoint",
            "NightLogAPIEndPoint",

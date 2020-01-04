@@ -1,7 +1,7 @@
 from .error import ArcsecondConnectionError, ArcsecondError, ArcsecondInvalidEndpointError
-from .main import ArcsecondAPI
+from .main import Arcsecond
 
-__all__ = ["ArcsecondAPI",
+__all__ = ["Arcsecond",
            "ArcsecondError",
            "ArcsecondConnectionError",
            "ArcsecondInvalidEndpointError"]
