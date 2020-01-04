@@ -43,30 +43,16 @@ def test_register_refuse_agreement(monkeypatch):
     assert result.exit_code != 0 and result.exception
 
 
-@httpretty.activate
-def test_register_agree_on_agreement(monkeypatch):
-    runner = CliRunner()
-    monkeypatch.setattr('six.moves.input', lambda x: "y")
-    httpretty.register_uri(
-        httpretty.POST,
-        ARCSECOND_API_URL_DEV + API_AUTH_PATH_REGISTER,
-        status=201,
-        body='{"key": "dummy_api_key."}'
-    )
-    result = runner.invoke(cli.register, ['-d'], input='test16\ntest@test.com\ntest1\ntest1')
-    assert result.exit_code == 0 and not result.exception
-
 # I can't find a way to use httpretyy.activate and monkeypatch at the same time.
 # @httpretty.activate
-# def test_register_agree_agreement(monkeypatch):
+# def test_register_agree_on_agreement(monkeypatch):
 #     runner = CliRunner()
 #     httpretty.register_uri(
 #         httpretty.POST,
 #         ARCSECOND_API_URL_DEV + API_AUTH_PATH_REGISTER,
 #         status=201,
-#         body='{"token": "dummy_token."}'
+#         body='{"key": "dummy_api_key."}'
 #     )
-#     for answer in ['y', 'Y', 'yes', 'YES']:
-#         monkeypatch.setattr('six.moves.input', lambda x: answer)
-#         result = runner.invoke(cli.register, ['-d'], input='test\ntest@test.com\ntest1\ntest1')
-#         assert result.exit_code == 0 and not result.exception
+#     monkeypatch.setattr('six.moves.input', lambda x: "y")
+#     result = runner.invoke(cli.register, ['-d'], input='test16\ntest@test.com\ntest1\ntest1')
+#     assert result.exit_code == 0 and not result.exception
