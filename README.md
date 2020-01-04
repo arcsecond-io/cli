@@ -91,16 +91,16 @@ and Instruments, this is under study.
 
 The available **read-write** API endpoints available so far are: 
 * `activities` (public)
-* `datasets` and `fitsfiles` (private)
+* `datasets` and `datafiles` (private)
 
 Read-write APIs use the 4 standard CRUD methods: `create`, `read`, `update`, `delete` (while, read-only APIs
 have only the `read` method, implicitly).
 
 See below for details.
 
-## Datasets and FITS files
+## Datasets and Data files
 
-**You can entirely manage your datasets and FITS files (including upload) from this CLI / Python module.**
+**You can entirely manage your datasets and Data/FITS files (including upload) from this CLI / Python module.**
 
 To list your datasets (the two methods are identical, the second simply having its action name explicitly written):
 
@@ -111,25 +111,26 @@ To create a dataset:
 
     $ arcsecond datasets create --name "this is a new dataset"
 
-To delete a dataset (**warning: this will also delete the associated FITS files!**):
+To delete a dataset (**warning: this will also delete the associated data/FITS files!**):
 
     $ arcsecond datasets delete <dataset uuid>
     
-FITS files are necessarily associated with a dataset. Hence a dataset UUID must be provided.
-To upload a FITS file:
+Data files are necessarily associated with a dataset. Hence a dataset UUID must be provided.
+To upload a data file:
 
-    $ arcsecond fitsfiles <dataset uuid> create --file <path to a local FITS file>
+    $ arcsecond datafiles <dataset uuid> create --file <path to a local data file>
     
-To delete a FITS file, one use its "id/pk" (pk = Primary Key == ID):
+To delete a data file, one use its "id/pk" (pk = Primary Key == ID):
 
-    $ arcsecond fitsfiles <dataset uuid> delete <FITS file pk>
+    $ arcsecond datafiles <dataset uuid> delete <Data file pk>
     
 As a Python module:
 
     >>> from arcsecond import ArcsecondAPI
-    >>> ArcsecondAPI(ArcsecondAPI.ENDPOINT_FITSFILES, dataset='<dataset_uuid>').create(file='<file path>')    
+    >>> api = Arcsecond.create_datafiles_api(dataset='<dataset_uuid>')
+    >>> api.create(file='<file path>')    
 
-Okay, this could be a bit simpler. We are working on it.
+More documentation is coming.
 
 ## Observing Activities
 

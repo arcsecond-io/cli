@@ -12,11 +12,11 @@ class DatasetsAPIEndPoint(APIEndPoint):
         return self._build_url('datasets', uuid_str)
 
 
-class FITSFilesAPIEndPoint(APIEndPoint):
-    name = 'fitsfiles'
+class DataFilesAPIEndPoint(APIEndPoint):
+    name = 'datafiles'
 
     def _list_url(self, name=''):
-        return self._build_url('fitsfiles')
+        return self._build_url('datafiles')
 
     def _detail_url(self, pk_str):
-        return self._build_url('fitsfiles', pk_str)
+        return self._build_url('datafiles', pk_str)

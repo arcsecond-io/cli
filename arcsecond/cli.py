@@ -180,16 +180,16 @@ def datasets(state, method, uuid, **kwargs):
         api.list()
 
 
-@main.command(help='Access and modify your own FITS files')
+@main.command(help='Access and modify your own data files')
 @click.argument('dataset', required=True, nargs=1)
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
-@click.option('--file', required=False, nargs=1, help="The path to the FITS file to upload. Can be zipped with gzip or bzip2.")
+@click.option('--file', required=False, nargs=1, help="The path to the data file to upload. Can be zipped with gzip or bzip2.")
 @click.option('--instrument', required=False, nargs=1, help="The UUID of the instrument.")
 @organisation_options
 @pass_state
-def fitsfiles(state, dataset, method, pk, **kwargs):
-    """Requests the list of FITS files associated with a given dataset.
+def datafiles(state, dataset, method, pk, **kwargs):
+    """Requests the list of data files associated with a given dataset.
 
     The UUID of the datasets must be provided. See arcsecond datasets to list all datasets (private).
 
@@ -198,7 +198,7 @@ def fitsfiles(state, dataset, method, pk, **kwargs):
     if state.organisation:
         # If organisation is provided as argument, don't put in payload too!
         kwargs.pop('organisation')
-    api = Arcsecond.create_fitsfiles_api(state=state, dataset=dataset)
+    api = Arcsecond.create_datafiles_api(state=state, dataset=dataset)
     if method == 'create':
         api.create(kwargs)
     elif method == 'read':
