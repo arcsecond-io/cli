@@ -15,11 +15,17 @@ from arcsecond.config import (config_file_path,
                               config_file_read_api_key,
                               config_file_save_api_key,
                               config_file_save_organisation_membership)
+
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
 from .helpers import make_file_upload_payload
-from .endpoints import *
+
+from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAPIEndPoint, ExoplanetsAPIEndPoint,
+                        DataFilesAPIEndPoint, FindingChartsAPIEndPoint, InstrumentsAPIEndPoint, NightLogAPIEndPoint,
+                        ObjectsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
+                        PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint,
+                        StandardStarsAPIEndPoint, TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '

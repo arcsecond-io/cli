@@ -13,11 +13,11 @@ from .utils import (register_successful_personal_login,
 
 
 class DatasetsInOrganisationsTestCase(TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         config_file_clear_debug_session()
         httpretty.enable()
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         httpretty.disable()
 
     def test_datasets_list_unlogged(self):

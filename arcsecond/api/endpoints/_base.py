@@ -5,7 +5,14 @@ import click
 import requests
 from progress.spinner import Spinner
 
-from arcsecond.api.constants import *
+from arcsecond.api.constants import (
+    ARCSECOND_API_URL_DEV,
+    ARCSECOND_API_URL_PROD,
+    ARCSECOND_WWW_URL_DEV,
+    ARCSECOND_WWW_URL_PROD,
+    API_AUTH_PATH_LOGIN,
+    API_AUTH_PATH_REGISTER)
+
 from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
 from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
 from arcsecond.options import State
