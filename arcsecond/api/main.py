@@ -61,8 +61,6 @@ def get_api_state(state=None, **kwargs):
 
     if 'debug' in kwargs.keys():
         state.debug = kwargs.get('debug')
-    if 'test' in kwargs.keys():
-        state.test = kwargs.get('test')
     if 'verbose' in kwargs.keys():
         state.verbose = kwargs.get('verbose')
     if 'organisation' in kwargs.keys():
