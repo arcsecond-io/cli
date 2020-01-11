@@ -135,31 +135,37 @@ class APIEndPoint(object):
 
         return storage.get('response', None)
 
-    def _perform_request(self, url, method, payload, **headers):
+    def _prepare_request(self, url, method, payload, **headers):
         assert (url and method)
 
         if not isinstance(method, str) or callable(method):
             raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
 
-        # Check API key, hence login state. Must do before check for org.
-        headers = self._check_and_set_api_key(headers, url)
-
         # Put method name aside in its own var.
         method_name = method.upper() if isinstance(method, str) else ''
-        method = getattr(requests, method.lower()) if isinstance(method, str) else method
-        files = payload.pop('files', None) if payload else None
 
         if self.state and self.state.organisation:
             self._check_organisation_membership_and_permission(method_name, self.state.organisation)
 
+        # Check API key, hence login state. Must do before check for org.
+        headers = self._check_and_set_api_key(headers, url)
+        method = getattr(requests, method.lower()) if isinstance(method, str) else method
+
         if payload:
+            # Filtering None values out of payload.
             payload = {k: v for k, v in payload.items() if v is not None}
+
+        return url, method_name, method, payload, headers
+
+    def _perform_request(self, url, method, payload, callback=None, **headers):
+        url, method_name, method, payload, headers = self._prepare_request(url, method, payload, **headers)
 
         if self.state.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
             click.echo('Payload: {}'.format(payload))
 
-        response = self._async_perform_request(url, method, payload, files, **headers)
+        payload, files = self._extract_files_from_payload(payload)
+        response = method(url, json=payload, files=files, headers=headers)
 
         if response is None:
             raise ArcsecondConnectionError(url)
