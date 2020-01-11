@@ -212,7 +212,7 @@ class ArcsecondAPI(object):
     def _check_organisation_membership(cls, state, username, subdomain):
         if state.verbose:
             click.echo('Checking Membership of Organisation with subdomain "{}"...'.format(subdomain))
-        profile, error = PersonalProfileAPIEndPoint(State(verbose=False, debug=state.debug)).read(username)
+        profile, error = PersonalProfileAPIEndPoint(state.make_new_silent()).read(username)
         if error:
             ArcsecondAPI._echo_error(state, error)
         else:
