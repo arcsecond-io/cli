@@ -1,5 +1,6 @@
 import threading
 import uuid
+import os
 
 import click
 import requests
@@ -14,6 +15,7 @@ from arcsecond.api.constants import (
     API_AUTH_PATH_REGISTER)
 
 from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
+from arcsecond.api.helpers import make_file_upload_payload
 from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
 from arcsecond.options import State
 
@@ -84,9 +86,21 @@ class APIEndPoint(object):
         memberships = config_file_read_organisation_memberships(self.state.config_section())
         if self.state.organisation not in memberships.keys():
             raise ArcsecondError('No membership found for organisation {}'.format(organisation))
+
         membership = memberships[self.state.organisation]
         if method_name not in SAFE_METHODS and membership not in WRITABLE_MEMBERSHIPS:
             raise ArcsecondError('Membership for organisation {} has no write permission'.format(organisation))
+
+    def _check_for_file_in_payload(self, payload):
+        if isinstance(payload, str) and os.path.exists(payload) and os.path.isfile(payload):
+            return make_file_upload_payload(payload)  # transform a str into a dict
+        elif isinstance(payload, dict) and 'file' in payload.keys():
+            file_value = payload.pop('file')  # .pop() not .get()
+            if file_value and os.path.exists(file_value) and os.path.isfile(file_value):
+                payload.update(**make_file_upload_payload(file_value))  # unpack the resulting dict of make_file...()
+            else:
+                payload.update(file=file_value)  # do nothing, it's not a file...
+        return payload
 
     def _async_perform_request(self, url, method, payload=None, files=None, **headers):
         def _async_perform_request_store_response(storage, method, url, payload, files, headers):
@@ -156,6 +170,7 @@ class APIEndPoint(object):
         return self._perform_request(self._list_url(name), 'get', None, **headers)
 
     def create(self, payload, **headers):
+        payload = self._check_for_file_in_payload(payload)
         return self._perform_request(self._list_url(), 'post', payload, **headers)
 
     def read(self, id_name_uuid, **headers):
