@@ -147,7 +147,7 @@ class APIEndPoint(object):
 
         return url, method_name, method, payload, headers
 
-    def _perform_request(self, url, method, payload, **headers):
+    def _perform_request(self, url, method, payload, callback, **headers):
         if self.state.verbose:
             click.echo('Preparing request...')
 
@@ -159,13 +159,15 @@ class APIEndPoint(object):
         payload, fields = transform_payload_for_multipart_encoder_fields(payload)
         if fields:
             encoded_data = encoder.MultipartEncoder(fields=fields)
-            bar, bar_callback = None, None
+            bar, upload_callback = None, None
 
-            if self.state.verbose:
+            if self.state.is_using_cli is False and callback:
+                upload_callback = lambda m: callback(EVENT_METHOD_PROGRESS_PERCENT, m.bytes_read / m.len * 100)
+            elif self.state.verbose:
                 bar = Bar('Uploading ' + fields['file'][0], suffix='%(percent)d%%')
-                bar_callback = lambda m: bar.goto(m.bytes_read / m.len * 100)
+                upload_callback = lambda m: bar.goto(m.bytes_read / m.len * 100)
 
-            upload_monitor = encoder.MultipartEncoderMonitor(encoded_data, bar_callback)
+            upload_monitor = encoder.MultipartEncoderMonitor(encoded_data, upload_callback)
             headers.update(**{'Content-Type': upload_monitor.content_type})
             response = method(url, data=upload_monitor, headers=headers)
 
@@ -189,16 +191,16 @@ class APIEndPoint(object):
             return None, response.text
 
     def list(self, name='', **headers):
-        return self._perform_request(self._list_url(name), 'get', None, **headers)
+        return self._perform_request(self._list_url(name), 'get', None, None, **headers)
 
-    def create(self, payload, **headers):
-        return self._perform_request(self._list_url(), 'post', payload, **headers)
+    def create(self, payload, callback=None, **headers):
+        return self._perform_request(self._list_url(), 'post', payload, callback, **headers)
 
     def read(self, id_name_uuid, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'get', None, **headers)
+        return self._perform_request(self._detail_url(id_name_uuid), 'get', None, None, **headers)
 
     def update(self, id_name_uuid, payload, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'put', payload, **headers)
+        return self._perform_request(self._detail_url(id_name_uuid), 'put', payload, None, **headers)
 
     def delete(self, id_name_uuid, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, **headers)
+        return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, None, **headers)
