@@ -28,7 +28,6 @@ EVENT_METHOD_DID_FAIL = 'EVENT_METHOD_DID_FAIL'
 EVENT_METHOD_PROGRESS_PERCENT = 'EVENT_METHOD_PROGRESS_PERCENT'
 
 
-
 class APIEndPoint(object):
     name = None
 
@@ -164,7 +163,8 @@ class APIEndPoint(object):
             click.echo('Sending {} request to {}'.format(method_name, url))
             click.echo('Payload: {}'.format(payload))
 
-        payload, files = self._extract_files_from_payload(payload)
+        payload = self._check_for_file_in_payload(payload)
+        files = payload.pop('files', None) if payload else None
         response = method(url, json=payload, files=files, headers=headers)
 
         if response is None:
