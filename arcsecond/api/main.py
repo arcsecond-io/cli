@@ -230,6 +230,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def is_logged_in(cls, state=None):
+        state = get_api_state(state)
         return config_file_read_api_key(debug=state.debug) is not None
 
     @classmethod
