@@ -29,6 +29,7 @@ from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAP
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
+ECHO_ERROR_PREFIX = u' • [error] '
 
 __all__ = ["ArcsecondAPI"]
 
@@ -142,13 +143,15 @@ class ArcsecondAPI(object):
         else:
             json_obj = json.loads(error)
             if 'detail' in json_obj.keys():
-                click.echo(ECHO_PREFIX + json_obj['detail'])
+                detail_msg = ', '.join(json_obj['detail']) if isinstance(json_obj['detail'], list) else json_obj['detail']
+                click.echo(ECHO_ERROR_PREFIX + detail_msg)
             elif 'error' in json_obj.keys():
-                click.echo(ECHO_PREFIX + json_obj['error'])
+                error_msg = ', '.join(json_obj['error']) if isinstance(json_obj['error'], list) else json_obj['error']
+                click.echo(ECHO_ERROR_PREFIX + error_msg)
             elif 'non_field_errors' in json_obj.keys():
                 errors = json_obj['non_field_errors']
                 message = ', '.join(errors) if isinstance(error, list) else str(errors)
-                click.echo(ECHO_PREFIX + message)
+                click.echo(ECHO_ERROR_PREFIX + message)
             else:
                 click.echo(ECHO_PREFIX + str(error))
 
