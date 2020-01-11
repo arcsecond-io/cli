@@ -1,10 +1,12 @@
 import threading
 import uuid
-import os
 
 import click
 import requests
+from requests_toolbelt.multipart import encoder
+
 from progress.spinner import Spinner
+from progress.bar import Bar
 
 from arcsecond.api.constants import (
     ARCSECOND_API_URL_DEV,
@@ -15,7 +17,7 @@ from arcsecond.api.constants import (
     API_AUTH_PATH_REGISTER)
 
 from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
-from arcsecond.api.helpers import make_file_upload_payload
+from arcsecond.api.helpers import transform_payload_for_multipart_encoder_fields
 from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
 from arcsecond.options import State
 
@@ -96,23 +98,10 @@ class APIEndPoint(object):
         if method_name not in SAFE_METHODS and membership not in WRITABLE_MEMBERSHIPS:
             raise ArcsecondError('Membership for organisation {} has no write permission'.format(organisation))
 
-    def _check_for_file_in_payload(self, payload):
-        if isinstance(payload, str) and os.path.exists(payload) and os.path.isfile(payload):
-            return make_file_upload_payload(payload)  # transform a str into a dict
-
-        elif isinstance(payload, dict) and 'file' in payload.keys():
-            file_value = payload.pop('file')  # .pop() not .get()
-            if file_value and os.path.exists(file_value) and os.path.isfile(file_value):
-                payload.update(**make_file_upload_payload(file_value))  # unpack the resulting dict of make_file...()
-            else:
-                payload.update(file=file_value)  # do nothing, it's not a file...
-
-        return payload
-
-    def _async_perform_request(self, url, method, payload=None, files=None, **headers):
-        def _async_perform_request_store_response(storage, method, url, payload, files, headers):
+    def _async_perform_request(self, url, method, payload=None, **headers):
+        def _async_perform_request_store_response(storage, method, url, payload, headers):
             try:
-                storage['response'] = method(url, json=payload, files=files, headers=headers)
+                storage['response'] = method(url, json=payload, headers=headers)
             except requests.exceptions.ConnectionError:
                 storage['error'] = ArcsecondConnectionError(self._get_base_url())
             except Exception as e:
@@ -120,7 +109,7 @@ class APIEndPoint(object):
 
         storage = {}
         thread = threading.Thread(target=_async_perform_request_store_response,
-                                  args=(storage, method, url, payload, files, headers))
+                                  args=(storage, method, url, payload, headers))
         thread.start()
 
         spinner = Spinner()
@@ -158,18 +147,34 @@ class APIEndPoint(object):
 
         return url, method_name, method, payload, headers
 
-    def _perform_request(self, url, method, payload, callback=None, **headers):
+    def _perform_request(self, url, method, payload, **headers):
+        if self.state.verbose:
+            click.echo('Preparing request...')
+
         url, method_name, method, payload, headers = self._prepare_request(url, method, payload, **headers)
 
         if self.state.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
-            click.echo('Payload: {}'.format(payload))
 
-        payload = self._check_for_file_in_payload(payload)
-        files = payload.pop('files', None) if payload else None
-        if files:
-            response = method(url, json=payload, files=files, headers=headers)
+        payload, fields = transform_payload_for_multipart_encoder_fields(payload)
+        if fields:
+            encoded_data = encoder.MultipartEncoder(fields=fields)
+            bar, bar_callback = None, None
+
+            if self.state.verbose:
+                bar = Bar('Uploading ' + fields['file'][0], suffix='%(percent)d%%')
+                bar_callback = lambda m: bar.goto(m.bytes_read / m.len * 100)
+
+            upload_monitor = encoder.MultipartEncoderMonitor(encoded_data, bar_callback)
+            headers.update(**{'Content-Type': upload_monitor.content_type})
+            response = method(url, data=upload_monitor, headers=headers)
+
+            if self.state.verbose:
+                bar.finish()
         else:
+            if self.state.verbose:
+                click.echo('Payload: {}'.format(payload))
+
             response = self._async_perform_request(url, method, payload, **headers)
 
         if response is None:
@@ -187,7 +192,6 @@ class APIEndPoint(object):
         return self._perform_request(self._list_url(name), 'get', None, **headers)
 
     def create(self, payload, **headers):
-        payload = self._check_for_file_in_payload(payload)
         return self._perform_request(self._list_url(), 'post', payload, **headers)
 
     def read(self, id_name_uuid, **headers):
