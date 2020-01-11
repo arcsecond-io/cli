@@ -28,6 +28,7 @@ setup(
         'six',
         'click',
         'requests',
+        'requests_toolbelt',
         'pygments',
         'configparser',
         'progress'
