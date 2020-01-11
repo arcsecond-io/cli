@@ -219,7 +219,7 @@ class ArcsecondAPI(object):
                 if state.verbose:
                     click.echo('Membership confirmed. Role is "{}", stored in {}.'
                                .format(memberships[subdomain], config_file_path()))
-                config_file_save_organisation_membership(subdomain, memberships[subdomain], state.debug)
+                config_file_save_organisation_membership(subdomain, memberships[subdomain], state.config_section())
             else:
                 if state.verbose:
                     click.echo('Membership denied.')
@@ -233,7 +233,7 @@ class ArcsecondAPI(object):
             return ArcsecondAPI._echo_error(state, error)
         if result:
             api_key = result['api_key']
-            config_file_save_api_key(api_key, username, state.debug)
+            config_file_save_api_key(api_key, username, state.config_section())
             if state.verbose:
                 click.echo('Successful API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
             return result
