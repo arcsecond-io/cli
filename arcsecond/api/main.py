@@ -54,6 +54,19 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
 VALID_PREFIXES = {'dataset': 'datasets/'}
 
 
+def get_api_state(state=None, **kwargs):
+    state = state or State(is_using_cli=False)
+
+    if 'debug' in kwargs.keys():
+        state.debug = kwargs.get('debug')
+    if 'verbose' in kwargs.keys():
+        state.verbose = kwargs.get('verbose')
+    if 'organisation' in kwargs.keys():
+        state.organisation = kwargs.get('organisation')
+
+    return state
+
+
 def set_api_factory(cls):
     def factory(endpoint_class, state, **kwargs):
         return ArcsecondAPI(endpoint_class, state, **kwargs)
@@ -82,17 +95,10 @@ class Arcsecond(object):
 
 class ArcsecondAPI(object):
     def __init__(self, endpoint_class=None, state=None, **kwargs):
-        self.state = state or State(is_using_cli=False)
+        self.state = get_api_state(state, **kwargs)
 
         if not self.__class__.is_logged_in(self.state):
             raise ArcsecondNotLoggedInError()
-
-        if 'debug' in kwargs.keys():
-            self.state.debug = kwargs.get('debug')
-        if 'verbose' in kwargs.keys():
-            self.state.verbose = kwargs.get('verbose')
-        if 'organisation' in kwargs.keys():
-            self.state.organisation = kwargs.get('organisation')
 
         prefix = kwargs.get('prefix', '')
         possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
