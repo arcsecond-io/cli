@@ -56,7 +56,7 @@ def login(state, username, password, organisation=None):
 @pass_state
 def me(state):
     """Fetch your complete user profile."""
-    username = config_file_read_username(state.debug)
+    username = config_file_read_username(state.config_section())
     if not username:
         msg = 'Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username)
         raise ArcsecondError(msg)
