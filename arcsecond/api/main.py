@@ -234,7 +234,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def login(cls, username, password, subdomain, state=None):
-        state = state or State()
+        state = get_api_state(state)
         result, error = AuthAPIEndPoint(state).login(username, password)
         if error:
             return ArcsecondAPI._echo_error(state, error)
@@ -246,7 +246,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def register(cls, username, email, password1, password2, state=None):
-        state = state or State()
+        state = get_api_state(state)
         result, error = AuthAPIEndPoint(state).register(username, email, password1, password2)
         if error:
             return ArcsecondAPI._echo_error(state, error)
