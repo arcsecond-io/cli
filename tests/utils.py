@@ -82,13 +82,13 @@ def register_successful_organisation_login(runner, subdomain, role):
 def save_test_credentials(username, memberships=None):
     if memberships is None:
         memberships = dict()
-    config_file_save_api_key(TEST_API_KEY, username, section='test')
+    config_file_save_api_key(TEST_API_KEY, username, section='debug')
     for k, v in memberships.items():
-        config_file_save_organisation_membership(k, v, 'test')
+        config_file_save_organisation_membership(k, v, 'debug')
 
 
 def clear_test_credentials():
-    config_file_clear_section('test')
+    config_file_clear_section('debug')
 
 
 def mock_url_path(method, path, body='', query='', status=200):
