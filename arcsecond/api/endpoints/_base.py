@@ -99,12 +99,14 @@ class APIEndPoint(object):
     def _check_for_file_in_payload(self, payload):
         if isinstance(payload, str) and os.path.exists(payload) and os.path.isfile(payload):
             return make_file_upload_payload(payload)  # transform a str into a dict
+
         elif isinstance(payload, dict) and 'file' in payload.keys():
             file_value = payload.pop('file')  # .pop() not .get()
             if file_value and os.path.exists(file_value) and os.path.isfile(file_value):
                 payload.update(**make_file_upload_payload(file_value))  # unpack the resulting dict of make_file...()
             else:
                 payload.update(file=file_value)  # do nothing, it's not a file...
+
         return payload
 
     def _async_perform_request(self, url, method, payload=None, files=None, **headers):
@@ -165,7 +167,10 @@ class APIEndPoint(object):
 
         payload = self._check_for_file_in_payload(payload)
         files = payload.pop('files', None) if payload else None
-        response = method(url, json=payload, files=files, headers=headers)
+        if files:
+            response = method(url, json=payload, files=files, headers=headers)
+        else:
+            response = self._async_perform_request(url, method, payload, **headers)
 
         if response is None:
             raise ArcsecondConnectionError(url)
