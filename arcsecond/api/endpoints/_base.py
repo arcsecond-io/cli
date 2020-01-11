@@ -70,7 +70,7 @@ class APIEndPoint(object):
         if self.state.verbose:
             click.echo('Checking local API key... ', nl=False)
 
-        api_key = config_file_read_api_key(self.state.debug)
+        api_key = config_file_read_api_key(self.state.config_section())
         if not api_key:
             raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
 
@@ -81,7 +81,7 @@ class APIEndPoint(object):
         return headers
 
     def _check_organisation_membership_and_permission(self, method_name, organisation):
-        memberships = config_file_read_organisation_memberships(self.state.debug)
+        memberships = config_file_read_organisation_memberships(self.state.config_section())
         if self.state.organisation not in memberships.keys():
             raise ArcsecondError('No membership found for organisation {}'.format(organisation))
         membership = memberships[self.state.organisation]

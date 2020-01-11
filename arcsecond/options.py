@@ -9,6 +9,9 @@ class State(object):
         self.organisation = organisation
         self.is_using_cli = is_using_cli
 
+    def config_section(self):
+        return 'debug' if self.debug else 'main'
+
     def make_new_silent(self):
         return State(verbose=0,
                      debug=self.debug,

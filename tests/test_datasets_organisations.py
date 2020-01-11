@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from arcsecond import cli
 from arcsecond.api.error import ArcsecondError
-from arcsecond.config import config_file_clear_debug_session
+from arcsecond.config import config_file_clear_section
 
 from .utils import (register_successful_personal_login,
                     register_successful_organisation_login,
@@ -14,7 +14,7 @@ from .utils import (register_successful_personal_login,
 
 class DatasetsInOrganisationsTestCase(TestCase):
     def setUp(self):
-        config_file_clear_debug_session()
+        config_file_clear_section('debug')
         httpretty.enable()
 
     def tearDown(self):

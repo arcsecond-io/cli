@@ -14,6 +14,8 @@ from pygments.lexers.data import JsonLexer
 from arcsecond.config import (config_file_path,
                               config_file_read_api_key,
                               config_file_save_api_key,
+                              config_file_read_username,
+                              config_file_read_organisation_memberships,
                               config_file_save_organisation_membership)
 
 from arcsecond.options import State
@@ -81,8 +83,16 @@ def set_api_factory(cls):
 @set_api_factory
 class Arcsecond(object):
     @classmethod
-    def is_logged_in(cls, state=None):
-        return ArcsecondAPI.is_logged_in(state)
+    def is_logged_in(cls, state=None, **kwargs):
+        return ArcsecondAPI.is_logged_in(state, **kwargs)
+
+    @classmethod
+    def username(cls, state=None, **kwargs):
+        return ArcsecondAPI.username(state, **kwargs)
+
+    @classmethod
+    def memberships(cls, state=None, **kwargs):
+        return ArcsecondAPI.memberships(state, **kwargs)
 
     @classmethod
     def login(cls, username, password, subdomain, state=None):
@@ -200,7 +210,7 @@ class ArcsecondAPI(object):
     def _check_organisation_membership(cls, state, username, subdomain):
         if state.verbose:
             click.echo('Checking Membership of Organisation with subdomain "{}"...'.format(subdomain))
-        profile, error = PersonalProfileAPIEndPoint(State(verbose=False, debug=state.debug)).read(username)
+        profile, error = PersonalProfileAPIEndPoint(state.make_new_silent()).read(username)
         if error:
             ArcsecondAPI._echo_error(state, error)
         else:
@@ -209,7 +219,7 @@ class ArcsecondAPI(object):
                 if state.verbose:
                     click.echo('Membership confirmed. Role is "{}", stored in {}.'
                                .format(memberships[subdomain], config_file_path()))
-                config_file_save_organisation_membership(subdomain, memberships[subdomain], state.debug)
+                config_file_save_organisation_membership(subdomain, memberships[subdomain], state.config_section())
             else:
                 if state.verbose:
                     click.echo('Membership denied.')
@@ -223,15 +233,25 @@ class ArcsecondAPI(object):
             return ArcsecondAPI._echo_error(state, error)
         if result:
             api_key = result['api_key']
-            config_file_save_api_key(api_key, username, state.debug)
+            config_file_save_api_key(api_key, username, state.config_section())
             if state.verbose:
                 click.echo('Successful API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
             return result
 
     @classmethod
-    def is_logged_in(cls, state=None):
-        state = get_api_state(state)
-        return config_file_read_api_key(debug=state.debug) is not None
+    def is_logged_in(cls, state=None, **kwargs):
+        state = get_api_state(state, **kwargs)
+        return config_file_read_api_key(section=state.config_section()) is not None
+
+    @classmethod
+    def username(cls, state=None, **kwargs):
+        state = get_api_state(state, **kwargs)
+        return config_file_read_username(section=state.config_section()) or ''
+
+    @classmethod
+    def memberships(cls, state=None, **kwargs):
+        state = get_api_state(state, **kwargs)
+        return config_file_read_organisation_memberships(section=state.config_section())
 
     @classmethod
     def login(cls, username, password, subdomain, state=None):
