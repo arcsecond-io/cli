@@ -70,7 +70,7 @@ def config_file_clear_section(section):
     config = ConfigParser()
     config.read(config_file_path())
     if section in config.sections():
-        del config['debug']
+        del config[section]
     if section + ':organisations' in config.sections():
         del config[section + ':organisations']
     with open(config_file_path(), 'w') as f:
