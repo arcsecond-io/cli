@@ -30,7 +30,7 @@ class APIEndPoint(object):
         self.organisation = state.organisation or ''
 
     def _get_base_url(self):
-        return ARCSECOND_API_URL_DEV if (self.state.debug or self.state.test) else ARCSECOND_API_URL_PROD
+        return ARCSECOND_API_URL_DEV if self.state.debug else ARCSECOND_API_URL_PROD
 
     def _root_url(self):
         prefix = self.prefix
@@ -44,7 +44,7 @@ class APIEndPoint(object):
 
     def _root_open_url(self):
         if hasattr(self.state, 'open'):
-            return ARCSECOND_WWW_URL_DEV if (self.state.debug or self.state.test) is True else ARCSECOND_WWW_URL_PROD
+            return ARCSECOND_WWW_URL_DEV if self.state.debug is True else ARCSECOND_WWW_URL_PROD
 
     def _list_url(self, name=''):
         raise Exception('You must override this method.')
