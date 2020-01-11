@@ -1,8 +1,12 @@
 import json
 
 import httpretty
-from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
+
 from arcsecond import cli
+from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
+from arcsecond.config import (config_file_clear_section,
+                              config_file_save_api_key,
+                              config_file_save_organisation_membership)
 
 TEST_LOGIN_USERNAME = 'robot1'
 TEST_LOGIN_PASSWORD = 'robotpass'
@@ -73,6 +77,18 @@ def register_successful_organisation_login(runner, subdomain, role):
     )
     runner.invoke(cli.login, ['--organisation', subdomain, '-d'],
                   input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+
+
+def save_test_credentials(username, memberships=None):
+    if memberships is None:
+        memberships = dict()
+    config_file_save_api_key(TEST_API_KEY, username, section='test')
+    for k, v in memberships.items():
+        config_file_save_organisation_membership(k, v, 'test')
+
+
+def clear_test_credentials():
+    config_file_clear_section('test')
 
 
 def mock_url_path(method, path, body='', query='', status=200):
