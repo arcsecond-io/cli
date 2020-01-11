@@ -11,19 +11,17 @@ def config_file_exists():
     return os.path.exists(path) and os.path.isfile(path)
 
 
-def config_file_is_valid(debug=False):
+def config_file_is_valid(section='main'):
     if not config_file_exists():
         return False
     config = ConfigParser()
     config.read(config_file_path())
-    section = 'debug' if debug else 'main'
     return config[section].get('api_key')
 
 
-def config_file_save_api_key(api_key, username, debug=False):
+def config_file_save_api_key(api_key, username, section='main'):
     config = ConfigParser()
     config.read(config_file_path())
-    section = 'debug' if debug else 'main'
     if section not in config.keys():
         config.add_section(section)
     config.set(section, 'username', username)
@@ -32,10 +30,9 @@ def config_file_save_api_key(api_key, username, debug=False):
         config.write(f)
 
 
-def config_file_save_organisation_membership(subdomain, role, debug=False):
+def config_file_save_organisation_membership(subdomain, role, section='main'):
     config = ConfigParser()
     config.read(config_file_path())
-    section = 'debug' if debug else 'main'
     section += ':organisations'
     if section not in config.keys():
         config.add_section(section)
@@ -44,39 +41,37 @@ def config_file_save_organisation_membership(subdomain, role, debug=False):
         config.write(f)
 
 
-def config_file_read_organisation_memberships(debug=False):
+def config_file_read_organisation_memberships(section='main'):
     config = ConfigParser()
     config.read(config_file_path())
-    section = 'debug' if debug else 'main'
     section += ':organisations'
     if section not in config.sections():
         return {}
     return config[section]
 
 
-def config_file_read_key(key, debug=False):
+def config_file_read_key(key, section='main'):
     config = ConfigParser()
     config.read(config_file_path())
-    section = 'debug' if debug else 'main'
     if section not in config.sections():
         return None
     return config[section].get(key, None)
 
 
-def config_file_read_api_key(debug=False):
-    return config_file_read_key('api_key', debug=debug)
+def config_file_read_api_key(section='main'):
+    return config_file_read_key('api_key', section=section)
 
 
-def config_file_read_username(debug=False):
-    return config_file_read_key('username', debug=debug)
+def config_file_read_username(section='main'):
+    return config_file_read_key('username', section=section)
 
 
-def config_file_clear_debug_session():
+def config_file_clear_section(section):
     config = ConfigParser()
     config.read(config_file_path())
-    if 'debug' in config.sections():
+    if section in config.sections():
         del config['debug']
-    if 'debug:organisations' in config.sections():
-        del config['debug:organisations']
+    if section + ':organisations' in config.sections():
+        del config[section + ':organisations']
     with open(config_file_path(), 'w') as f:
         config.write(f)
