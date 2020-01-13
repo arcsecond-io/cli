@@ -147,7 +147,7 @@ class APIEndPoint(object):
 
         return url, method_name, method, payload, headers
 
-    def _perform_request(self, url, method, payload, callback, **headers):
+    def _perform_request(self, url, method, payload, callback=None, **headers):
         if self.state.verbose:
             click.echo('Preparing request...')
 
