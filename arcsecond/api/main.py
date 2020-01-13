@@ -69,7 +69,7 @@ def get_api_state(state=None, **kwargs):
 
 
 def set_api_factory(cls):
-    def factory(endpoint_class, state, **kwargs):
+    def factory(endpoint_class, state=None, **kwargs):
         return ArcsecondAPI(endpoint_class, state, **kwargs)
 
     for endpoint_class in ENDPOINTS:
