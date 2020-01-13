@@ -149,7 +149,7 @@ def activities(state, method, pk, **kwargs):
     api = Arcsecond.create_activities_api(state)
     if method == 'create':
         kwargs.update(coordinates=make_coords_dict(kwargs))
-        api.create(kwargs)
+        api.create(kwargs)  # the kwargs dict is the payload!
     elif method == 'read':
         api.read(pk)  # will handle list if pk is None
     elif method == 'update':
@@ -169,7 +169,7 @@ def activities(state, method, pk, **kwargs):
 def datasets(state, method, uuid, **kwargs):
     api = Arcsecond.create_datasets_api(state)
     if method == 'create':
-        api.create(kwargs)
+        api.create(kwargs)  # the kwargs dict is the payload!
     elif method == 'read':
         api.read(uuid)  # will handle list if pk is None
     elif method == 'update':
@@ -184,7 +184,8 @@ def datasets(state, method, uuid, **kwargs):
 @click.argument('dataset', required=True, nargs=1)
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
-@click.option('--file', required=False, nargs=1, help="The path to the data file to upload. Can be zipped with gzip or bzip2.")
+@click.option('--file', required=False, nargs=1,
+              help="The path to the data file to upload. Can be zipped with gzip or bzip2.")
 @click.option('--instrument', required=False, nargs=1, help="The UUID of the instrument.")
 @organisation_options
 @pass_state
@@ -200,7 +201,7 @@ def datafiles(state, dataset, method, pk, **kwargs):
         kwargs.pop('organisation')
     api = Arcsecond.create_datafiles_api(state=state, dataset=dataset)
     if method == 'create':
-        api.create(kwargs)
+        api.create(kwargs)  # the kwargs dict is the payload!
     elif method == 'read':
         api.read(pk)  # will handle list if pk is None
     elif method == 'update':

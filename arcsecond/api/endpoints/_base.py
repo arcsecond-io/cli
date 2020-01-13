@@ -3,7 +3,10 @@ import uuid
 
 import click
 import requests
+from requests_toolbelt.multipart import encoder
+
 from progress.spinner import Spinner
+from progress.bar import Bar
 
 from arcsecond.api.constants import (
     ARCSECOND_API_URL_DEV,
@@ -14,11 +17,17 @@ from arcsecond.api.constants import (
     API_AUTH_PATH_REGISTER)
 
 from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
+from arcsecond.api.helpers import transform_payload_for_multipart_encoder_fields
 from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
 from arcsecond.options import State
 
 SAFE_METHODS = ['GET', 'OPTIONS']
 WRITABLE_MEMBERSHIPS = ['superadmin', 'admin', 'member']
+
+EVENT_METHOD_WILL_START = 'EVENT_METHOD_WILL_START'
+EVENT_METHOD_DID_FINISH = 'EVENT_METHOD_DID_FINISH'
+EVENT_METHOD_DID_FAIL = 'EVENT_METHOD_DID_FAIL'
+EVENT_METHOD_PROGRESS_PERCENT = 'EVENT_METHOD_PROGRESS_PERCENT'
 
 
 class APIEndPoint(object):
@@ -84,14 +93,15 @@ class APIEndPoint(object):
         memberships = config_file_read_organisation_memberships(self.state.config_section())
         if self.state.organisation not in memberships.keys():
             raise ArcsecondError('No membership found for organisation {}'.format(organisation))
+
         membership = memberships[self.state.organisation]
         if method_name not in SAFE_METHODS and membership not in WRITABLE_MEMBERSHIPS:
             raise ArcsecondError('Membership for organisation {} has no write permission'.format(organisation))
 
-    def _async_perform_request(self, url, method, payload=None, files=None, **headers):
-        def _async_perform_request_store_response(storage, method, url, payload, files, headers):
+    def _async_perform_request(self, url, method, payload=None, **headers):
+        def _async_perform_request_store_response(storage, method, url, payload, headers):
             try:
-                storage['response'] = method(url, json=payload, files=files, headers=headers)
+                storage['response'] = method(url, json=payload, headers=headers)
             except requests.exceptions.ConnectionError:
                 storage['error'] = ArcsecondConnectionError(self._get_base_url())
             except Exception as e:
@@ -99,7 +109,7 @@ class APIEndPoint(object):
 
         storage = {}
         thread = threading.Thread(target=_async_perform_request_store_response,
-                                  args=(storage, method, url, payload, files, headers))
+                                  args=(storage, method, url, payload, headers))
         thread.start()
 
         spinner = Spinner()
@@ -115,31 +125,59 @@ class APIEndPoint(object):
 
         return storage.get('response', None)
 
-    def _perform_request(self, url, method, payload, **headers):
+    def _prepare_request(self, url, method, payload, **headers):
         assert (url and method)
 
         if not isinstance(method, str) or callable(method):
             raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
 
-        # Check API key, hence login state. Must do before check for org.
-        headers = self._check_and_set_api_key(headers, url)
-
         # Put method name aside in its own var.
         method_name = method.upper() if isinstance(method, str) else ''
-        method = getattr(requests, method.lower()) if isinstance(method, str) else method
-        files = payload.pop('files', None) if payload else None
 
         if self.state and self.state.organisation:
             self._check_organisation_membership_and_permission(method_name, self.state.organisation)
 
+        # Check API key, hence login state. Must do before check for org.
+        headers = self._check_and_set_api_key(headers, url)
+        method = getattr(requests, method.lower()) if isinstance(method, str) else method
+
         if payload:
+            # Filtering None values out of payload.
             payload = {k: v for k, v in payload.items() if v is not None}
+
+        return url, method_name, method, payload, headers
+
+    def _perform_request(self, url, method, payload, callback=None, **headers):
+        if self.state.verbose:
+            click.echo('Preparing request...')
+
+        url, method_name, method, payload, headers = self._prepare_request(url, method, payload, **headers)
 
         if self.state.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
-            click.echo('Payload: {}'.format(payload))
 
-        response = self._async_perform_request(url, method, payload, files, **headers)
+        payload, fields = transform_payload_for_multipart_encoder_fields(payload)
+        if fields:
+            encoded_data = encoder.MultipartEncoder(fields=fields)
+            bar, upload_callback = None, None
+
+            if self.state.is_using_cli is False and callback:
+                upload_callback = lambda m: callback(EVENT_METHOD_PROGRESS_PERCENT, m.bytes_read / m.len * 100)
+            elif self.state.verbose:
+                bar = Bar('Uploading ' + fields['file'][0], suffix='%(percent)d%%')
+                upload_callback = lambda m: bar.goto(m.bytes_read / m.len * 100)
+
+            upload_monitor = encoder.MultipartEncoderMonitor(encoded_data, upload_callback)
+            headers.update(**{'Content-Type': upload_monitor.content_type})
+            response = method(url, data=upload_monitor, headers=headers)
+
+            if self.state.verbose:
+                bar.finish()
+        else:
+            if self.state.verbose:
+                click.echo('Payload: {}'.format(payload))
+
+            response = self._async_perform_request(url, method, payload, **headers)
 
         if response is None:
             raise ArcsecondConnectionError(url)
@@ -153,16 +191,16 @@ class APIEndPoint(object):
             return None, response.text
 
     def list(self, name='', **headers):
-        return self._perform_request(self._list_url(name), 'get', None, **headers)
+        return self._perform_request(self._list_url(name), 'get', None, None, **headers)
 
-    def create(self, payload, **headers):
-        return self._perform_request(self._list_url(), 'post', payload, **headers)
+    def create(self, payload, callback=None, **headers):
+        return self._perform_request(self._list_url(), 'post', payload, callback, **headers)
 
     def read(self, id_name_uuid, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'get', None, **headers)
+        return self._perform_request(self._detail_url(id_name_uuid), 'get', None, None, **headers)
 
     def update(self, id_name_uuid, payload, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'put', payload, **headers)
+        return self._perform_request(self._detail_url(id_name_uuid), 'put', payload, None, **headers)
 
     def delete(self, id_name_uuid, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, **headers)
+        return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, None, **headers)
