@@ -123,7 +123,7 @@ class APIEndPoint(object):
     def delete(self, id_name_uuid, **headers):
         return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, None, **headers)
 
-    def _perform_request(self, url, method, payload, callback=None, **headers) -> (Tuple, AsyncRequestPerformer):
+    def _perform_request(self, url, method, payload, callback=None, **headers):
         method_name, method, payload, headers = self._prepare_request(url, method, payload, **headers)
 
         payload, fields = extract_multipart_encoder_file_fields(payload)
