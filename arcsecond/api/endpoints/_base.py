@@ -73,7 +73,10 @@ class AsyncFileUploader(object):
 
     def get_results(self):
         response = self._storage.get('response')
-        if response is not None:
+        if isinstance(response, dict):
+            # Responses of standard JSON payload requests are dict
+            return response
+        elif response is not None:
             if 200 <= response.status_code < 300:
                 return response.json() if response.text else {}, None
             else:
@@ -215,19 +218,11 @@ class APIEndPoint(object):
 
         response, error = performer.finish()
 
-        if error:
-            raise error
-        elif response is None:
-            raise ArcsecondConnectionError(url)
-
         if self.state.verbose:
             click.echo()
             click.echo('Request status code ' + str(response.status_code))
 
-        if 200 <= response.status_code < 300:
-            return response.json() if response.text else {}, None
-        else:
-            return None, response.text
+        return response, error
 
     def _check_and_set_api_key(self, headers, url):
         if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():
