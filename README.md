@@ -127,7 +127,7 @@ To delete a data file, one use its "id/pk" (pk = Primary Key == ID):
 As a Python module:
 
     >>> from arcsecond import ArcsecondAPI
-    >>> api = Arcsecond.create_datafiles_api(dataset='<dataset_uuid>')
+    >>> api = Arcsecond.build_datafiles_api(dataset='<dataset_uuid>')
     >>> api.create(file='<file path>')    
 
 More documentation is coming.

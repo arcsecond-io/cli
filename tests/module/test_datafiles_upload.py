@@ -27,7 +27,7 @@ def test_datafiles_upload_file_threaded_no_callback():
     )
 
     # Go for Python module tests
-    datafiles_api = Arcsecond.create_datafiles_api(debug=True, dataset=str(dataset_uuid))
+    datafiles_api = Arcsecond.build_datafiles_api(debug=True, dataset=str(dataset_uuid))
     uploader = datafiles_api.create({'file': os.path.abspath(__file__)})
     uploader.start()
     time.sleep(0.1)
@@ -56,7 +56,7 @@ def test_datafiles_upload_file_threaded_with_callback():
         has_callback_been_called = True
 
     # Go for Python module tests
-    datafiles_api = Arcsecond.create_datafiles_api(debug=True, dataset=str(dataset_uuid))
+    datafiles_api = Arcsecond.build_datafiles_api(debug=True, dataset=str(dataset_uuid))
     uploader = datafiles_api.create({'file': os.path.abspath(__file__)}, callback=upload_callback)
     uploader.start()
     time.sleep(0.1)
