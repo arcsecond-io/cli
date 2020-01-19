@@ -17,7 +17,7 @@ from arcsecond.api.constants import (
     API_AUTH_PATH_REGISTER)
 
 from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
-from arcsecond.api.helpers import transform_payload_for_multipart_encoder_fields
+from arcsecond.api.helpers import extract_multipart_encoder_file_fields
 from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
 from arcsecond.options import State
 
