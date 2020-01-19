@@ -6,10 +6,10 @@ from arcsecond import cli
 from arcsecond.api.error import ArcsecondError
 from arcsecond.config import config_file_clear_section
 
-from .utils import (register_successful_personal_login,
-                    register_successful_organisation_login,
-                    mock_http_get,
-                    mock_http_post)
+from tests.utils import (register_successful_personal_login,
+                         register_successful_organisation_login,
+                         mock_http_get,
+                         mock_http_post)
 
 
 class DatasetsInOrganisationsTestCase(TestCase):

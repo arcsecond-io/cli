@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from arcsecond import cli
 from arcsecond.api.constants import ARCSECOND_API_URL_DEV
-from .utils import register_successful_personal_login
+from tests.utils import register_successful_personal_login
 
 
 @httpretty.activate
