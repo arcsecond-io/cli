@@ -174,8 +174,8 @@ class ArcsecondAPI(object):
     def list(self, name=None, **headers):
         return self._echo_response(self.endpoint.list(name, **headers))
 
-    def create(self, payload, **headers):
-        return self._echo_response(self.endpoint.create(payload, **headers))
+    def create(self, payload, callback=None, **headers):
+        return self._echo_response(self.endpoint.create(payload, callback=callback, **headers))
 
     def read(self, id_name_uuid, **headers):
         if not id_name_uuid:
