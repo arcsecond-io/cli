@@ -188,17 +188,17 @@ class APIEndPoint(object):
         return method_name, method, payload, headers
 
     def _build_dynamic_upload_data(self, fields, callback=None):
+        # The monitor is the data!
         encoded_data = encoder.MultipartEncoder(fields=fields)
-        upload_callback = None
 
         if self.state.is_using_cli is True and self.state.verbose:
             bar = Bar('Uploading ' + fields['file'][0], suffix='%(percent)d%%')
-            upload_callback = lambda m: bar.goto(m.bytes_read / m.len * 100)
+            return encoder.MultipartEncoderMonitor(encoded_data, lambda m: bar.goto(m.bytes_read / m.len * 100))
         elif self.state.is_using_cli is False and callback:
-            upload_callback = lambda m: callback(EVENT_METHOD_PROGRESS_PERCENT, m.bytes_read / m.len * 100)
-
-        # The monitor is the data!
-        return encoder.MultipartEncoderMonitor(encoded_data, upload_callback)
+            return encoder.MultipartEncoderMonitor(encoded_data, lambda m: callback(EVENT_METHOD_PROGRESS_PERCENT,
+                                                                                    m.bytes_read / m.len * 100))
+        else:
+            return encoder.MultipartEncoderMonitor(encoded_data, None)
 
     def _perform_spinner_request(self, url, method, method_name, data=None, payload=None, **headers):
         if self.state.verbose:
