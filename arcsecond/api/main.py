@@ -75,7 +75,7 @@ def set_api_factory(cls):
         return ArcsecondAPI(endpoint_class, state, **kwargs)
 
     for endpoint_class in ENDPOINTS:
-        func_name = 'create_' + endpoint_class.name + '_api'
+        func_name = 'build_' + endpoint_class.name + '_api'
         setattr(cls, func_name, staticmethod(types.MethodType(factory, endpoint_class)))
 
     return cls
