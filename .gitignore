@@ -11,4 +11,4 @@ build/
 
 venv
 /env
-/.DS_Store
+.DS_Store
