@@ -75,7 +75,7 @@ def set_api_factory(cls):
         return ArcsecondAPI(endpoint_class, state, **kwargs)
 
     for endpoint_class in ENDPOINTS:
-        func_name = 'create_' + endpoint_class.name + '_api'
+        func_name = 'build_' + endpoint_class.name + '_api'
         setattr(cls, func_name, staticmethod(types.MethodType(factory, endpoint_class)))
 
     return cls
@@ -174,8 +174,8 @@ class ArcsecondAPI(object):
     def list(self, name=None, **headers):
         return self._echo_response(self.endpoint.list(name, **headers))
 
-    def create(self, payload, **headers):
-        return self._echo_response(self.endpoint.create(payload, **headers))
+    def create(self, payload, callback=None, **headers):
+        return self._echo_response(self.endpoint.create(payload, callback=callback, **headers))
 
     def read(self, id_name_uuid, **headers):
         if not id_name_uuid:
@@ -193,7 +193,6 @@ class ArcsecondAPI(object):
             return self._echo_response(self.endpoint.read(id_name_uuid, **headers))
 
     def update(self, id_name_uuid, payload, **headers):
-        payload = self._check_for_file_in_payload(payload)
         return self._echo_response(self.endpoint.update(id_name_uuid, payload, **headers))
 
     def delete(self, id_name_uuid, **headers):
