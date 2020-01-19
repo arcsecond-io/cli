@@ -149,6 +149,10 @@ class APIEndPoint(object):
             # Standard JSON sync request
             return self._perform_spinner_request(url, method, method_name, None, payload, **headers)
         else:
+            # Process payload synchronously nonetheless
+            if payload:
+                self._perform_spinner_request(url, method, method_name, None, payload, **headers)
+
             # File upload
             upload_monitor = self._build_dynamic_upload_data(fields, callback)
             headers.update(**{'Content-Type': upload_monitor.content_type})
