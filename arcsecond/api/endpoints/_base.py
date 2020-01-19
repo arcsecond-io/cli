@@ -31,6 +31,13 @@ EVENT_METHOD_PROGRESS_PERCENT = 'EVENT_METHOD_PROGRESS_PERCENT'
 
 
 class AsyncFileUploader(object):
+    """AsyncFileUploader is a helper class used when uploading files to the cloud.
+
+    Technically speaking, it can handle any http request in a background thread.
+    It is however named like this because it is returned in place of a standard
+    response payload when a file is to be uploaded.
+    """
+
     def __init__(self, url, method, data=None, payload=None, **headers):
         self.url = url
         self.method = method
@@ -121,6 +128,8 @@ class APIEndPoint(object):
         return self._perform_request(self._list_url(name), 'get', None, None, **headers)
 
     def create(self, payload, callback=None, **headers):
+        # If a file is provided as part of the payload, a instance of AsyncFileUploader is returned
+        # in place of a standard JSON body response.
         return self._perform_request(self._list_url(), 'post', payload, callback, **headers)
 
     def read(self, id_name_uuid, **headers):
