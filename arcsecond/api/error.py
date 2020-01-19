@@ -23,7 +23,7 @@ class ArcsecondInvalidEndpointError(ArcsecondError):
 class ArcsecondConnectionError(ArcsecondError):
     def __init__(self, url):
         msg = "Unable to connect to API server {}.\n".format(url)
-        msg += "Suggestion: Test whether it's reachable, by typing for instance: 'ping {}'".format(url)
+        msg += "Suggestion: Test whether it's reachable, by typing for instance: 'curl -Is {} | head -n 1'".format(url)
         super(ArcsecondConnectionError, self).__init__(msg)
 
 
