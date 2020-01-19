@@ -2,7 +2,7 @@ import sys
 import httpretty
 from click.testing import CliRunner
 from arcsecond import cli
-from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV, API_AUTH_PATH_REGISTER
+from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
 
 python_version = sys.version_info.major
 

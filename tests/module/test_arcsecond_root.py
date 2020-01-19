@@ -1,5 +1,5 @@
 from arcsecond import Arcsecond
-from .utils import save_test_credentials, clear_test_credentials
+from tests.utils import save_test_credentials, clear_test_credentials
 
 
 def test_default_empty_state():

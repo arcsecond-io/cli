@@ -27,11 +27,13 @@ from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAP
                         PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint,
                         StandardStarsAPIEndPoint, TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
 
+from .endpoints._base import AsyncFileUploader
+
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
 ECHO_ERROR_PREFIX = u' • [error] '
 
-__all__ = ["ArcsecondAPI"]
+__all__ = ["ArcsecondAPI", "AsyncFileUploader"]
 
 ENDPOINTS = [ActivitiesAPIEndPoint,
              CataloguesAPIEndPoint,
@@ -156,6 +158,8 @@ class ArcsecondAPI(object):
                 click.echo(ECHO_PREFIX + str(error))
 
     def _echo_response(self, response):
+        if isinstance(response, AsyncFileUploader):
+            return response
         result, error = response
         if result is not None:  # check against None, to avoid skipping empty lists.
             return ArcsecondAPI._echo_result(self.state, result)

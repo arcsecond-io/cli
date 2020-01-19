@@ -7,7 +7,7 @@ def make_file_upload_multipart_dict(filepath):
     return {'fields': {'file': (os.path.basename(filepath), open(os.path.abspath(filepath), 'rb'))}}
 
 
-def transform_payload_for_multipart_encoder_fields(payload):
+def extract_multipart_encoder_file_fields(payload):
     if isinstance(payload, str) and os.path.exists(payload) and os.path.isfile(payload):
         payload = make_file_upload_multipart_dict(payload)  # transform a str into a dict
 
