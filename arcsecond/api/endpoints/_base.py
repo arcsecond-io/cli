@@ -1,6 +1,5 @@
 import threading
 import uuid
-from typing import Tuple
 
 import click
 import requests
@@ -31,14 +30,13 @@ EVENT_METHOD_DID_FAIL = 'EVENT_METHOD_DID_FAIL'
 EVENT_METHOD_PROGRESS_PERCENT = 'EVENT_METHOD_PROGRESS_PERCENT'
 
 
-class AsyncRequestPerformer(object):
+class AsyncFileUploader(object):
     def __init__(self, url, method, data=None, payload=None, **headers):
         self.url = url
         self.method = method
         self.payload = payload
         self.data = data
         self.headers = headers
-
         self._storage = {}
         self._thread = None
 
@@ -56,6 +54,10 @@ class AsyncRequestPerformer(object):
         except Exception as e:
             self._storage['error'] = ArcsecondError(str(e))
 
+    def finish(self):
+        self.join()
+        return self.get_results()
+
     def join(self):
         self._thread.join()
 
@@ -63,7 +65,14 @@ class AsyncRequestPerformer(object):
         return self._thread.is_alive()
 
     def get_results(self):
-        return self._storage.get('response'), self._storage.get('error')
+        response = self._storage.get('response')
+        if response is not None:
+            if 200 <= response.status_code < 300:
+                return response.json() if response.text else {}, None
+            else:
+                return None, response.text
+        else:
+            return None, self._storage.get('error')
 
 
 class APIEndPoint(object):
@@ -138,7 +147,7 @@ class APIEndPoint(object):
             if self.state.is_using_cli:
                 return self._perform_spinner_request(url, method, method_name, upload_monitor, None, **headers)
             else:
-                return AsyncRequestPerformer(url, method, data=upload_monitor, payload=None, **headers)
+                return AsyncFileUploader(url, method, data=upload_monitor, payload=None, **headers)
 
     def _prepare_request(self, url, method, payload, **headers):
         assert (url and method)
@@ -172,7 +181,7 @@ class APIEndPoint(object):
         if self.state.is_using_cli is True and self.state.verbose:
             bar = Bar('Uploading ' + fields['file'][0], suffix='%(percent)d%%')
             upload_callback = lambda m: bar.goto(m.bytes_read / m.len * 100)
-        elif self.state.is_using_cli is False:
+        elif self.state.is_using_cli is False and callback:
             upload_callback = lambda m: callback(EVENT_METHOD_PROGRESS_PERCENT, m.bytes_read / m.len * 100)
 
         # The monitor is the data!
@@ -183,7 +192,7 @@ class APIEndPoint(object):
             click.echo('Sending {} request to {}'.format(method_name, url))
             click.echo('Payload: {}'.format(payload))
 
-        performer = AsyncRequestPerformer(url, method, data=data, payload=payload, **headers)
+        performer = AsyncFileUploader(url, method, data=data, payload=payload, **headers)
         performer.start()
 
         spinner = Spinner()
@@ -191,8 +200,7 @@ class APIEndPoint(object):
             if self.state.verbose:
                 spinner.next()
 
-        performer.join()
-        response, error = performer.get_results()
+        response, error = performer.finish()
 
         if error:
             raise error
