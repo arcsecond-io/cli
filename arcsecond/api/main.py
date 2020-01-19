@@ -193,7 +193,6 @@ class ArcsecondAPI(object):
             return self._echo_response(self.endpoint.read(id_name_uuid, **headers))
 
     def update(self, id_name_uuid, payload, **headers):
-        payload = self._check_for_file_in_payload(payload)
         return self._echo_response(self.endpoint.update(id_name_uuid, payload, **headers))
 
     def delete(self, id_name_uuid, **headers):
