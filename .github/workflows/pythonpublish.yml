@@ -1,8 +1,7 @@
-name: Upload Python Package
+name: Upload Python Package to Pypi
 
 on:
-  release:
-    types: [created]
+  create
 
 jobs:
   deploy:

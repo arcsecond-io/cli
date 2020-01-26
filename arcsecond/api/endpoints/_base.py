@@ -51,7 +51,8 @@ class AsyncFileUploader(object):
         if self._thread is None:
             args = (self.url, self.method, self.data, self.payload, self.headers)
             self._thread = threading.Thread(target=self._target, args=args)
-        self._thread.start()
+        if self._thread.is_alive() is False:
+            self._thread.start()
 
     def _target(self, url, method, data, payload, headers):
         try:
