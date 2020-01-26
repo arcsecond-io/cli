@@ -1,4 +1,4 @@
-name: Python package
+name: Run Tests and Linting
 
 on: [push]
 
