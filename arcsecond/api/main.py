@@ -132,21 +132,22 @@ class ArcsecondAPI(object):
             return error
 
         if state and state.debug:
-            click.echo(error)
+            click.echo(click.style(error, fg='red'))
         else:
             json_obj = json.loads(error)
+            message = ''
             if 'detail' in json_obj.keys():
-                detail_msg = ', '.join(json_obj['detail']) if isinstance(json_obj['detail'], list) else json_obj['detail']
-                click.echo(ECHO_ERROR_PREFIX + detail_msg)
+                detail = json_obj['detail']
+                message = ', '.join(detail) if isinstance(detail, list) else detail
             elif 'error' in json_obj.keys():
-                error_msg = ', '.join(json_obj['error']) if isinstance(json_obj['error'], list) else json_obj['error']
-                click.echo(ECHO_ERROR_PREFIX + error_msg)
+                error = json_obj['error']
+                message = ', '.join(error) if isinstance(error, list) else error
             elif 'non_field_errors' in json_obj.keys():
                 errors = json_obj['non_field_errors']
-                message = ', '.join(errors) if isinstance(error, list) else str(errors)
-                click.echo(ECHO_ERROR_PREFIX + message)
+                message = ', '.join(errors) if isinstance(errors, list) else str(errors)
             else:
-                click.echo(ECHO_PREFIX + str(error))
+                message = str(error)
+            click.echo(click.style(ECHO_PREFIX + message, fg='red'))
 
     def _echo_response(self, response):
         if isinstance(response, AsyncFileUploader):
