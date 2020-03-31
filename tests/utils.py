@@ -95,7 +95,11 @@ def clear_test_credentials():
 
 def mock_url_path(method, path, body='', query='', status=200):
     path = path + '/' if path[-1] != '/' else path
-    httpretty.register_uri(method, ARCSECOND_API_URL_DEV + path + query, status=status, body=body)
+    httpretty.register_uri(method,
+                           ARCSECOND_API_URL_DEV + path + query,
+                           status=status,
+                           body=body,
+                           match_querystring=True)
 
 
 def mock_http_get(path, body='{}', status=200):
