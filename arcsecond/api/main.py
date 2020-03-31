@@ -111,16 +111,7 @@ class ArcsecondAPI(object):
         if not self.__class__.is_logged_in(self.state):
             raise ArcsecondNotLoggedInError()
 
-        prefix = kwargs.get('prefix', '')
-        possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
-        if len(possible_prefixes) > 1:
-            raise ArcsecondTooManyPrefixesError(possible_prefixes)
-        elif len(possible_prefixes) == 1 and prefix:
-            raise ArcsecondTooManyPrefixesError([possible_prefixes.pop(), prefix])
-        elif len(possible_prefixes) == 1 and not prefix:
-            prefix_key = possible_prefixes.pop()
-            prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
-
+        prefix = self._check_prefix(kwargs)
         endpoint_class = self._check_endpoint_class(endpoint_class)
         self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
 
@@ -170,6 +161,18 @@ class ArcsecondAPI(object):
         if endpoint is not None and endpoint not in ENDPOINTS:
             raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
         return endpoint
+
+    def _check_prefix(self, kwargs):
+        prefix = kwargs.get('prefix') or ''
+        possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
+        if len(possible_prefixes) > 1:
+            raise ArcsecondTooManyPrefixesError(possible_prefixes)
+        elif len(possible_prefixes) == 1 and prefix:
+            raise ArcsecondTooManyPrefixesError([possible_prefixes.pop(), prefix])
+        elif len(possible_prefixes) == 1 and not prefix:
+            prefix_key = possible_prefixes.pop()
+            prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
+        return prefix
 
     def list(self, filters=None):
         return self._echo_response(self.endpoint.list(filters))
