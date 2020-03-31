@@ -14,8 +14,8 @@ class ObjectsAPIEndPoint(APIEndPoint):
 class ExoplanetsAPIEndPoint(APIEndPoint):
     name = 'exoplanets'
 
-    def _list_url(self, name=''):
-        return self._build_url('exoplanets')
+    def _list_url(self, filters=None):
+        return self._build_url('exoplanets', filters)
 
     def _detail_url(self, name):
         return self._build_url('exoplanets', name)
