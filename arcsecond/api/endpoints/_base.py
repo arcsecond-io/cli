@@ -96,11 +96,11 @@ class AsyncFileUploader(object):
 class APIEndPoint(object):
     name = None
 
-    def __init__(self, state=None, prefix='', **headers):
+    def __init__(self, state=None, prefix=''):
         self.state = state or State()
         self.prefix = prefix
         self.organisation = state.organisation or ''
-        self.headers = headers
+        self.headers = {}
 
     def _get_base_url(self):
         return ARCSECOND_API_URL_DEV if self.state.debug else ARCSECOND_API_URL_PROD
@@ -137,6 +137,9 @@ class APIEndPoint(object):
             uuid.UUID(uuid_str)
         except ValueError:
             raise ArcsecondError('Invalid UUID {}.'.format(uuid_str))
+
+    def use_headers(self, headers):
+        self.headers = headers
 
     def list(self, **filters):
         return self._perform_request(self._list_url(filters), 'get', None, None)

@@ -171,15 +171,15 @@ class ArcsecondAPI(object):
             raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
         return endpoint
 
-    def list(self, name=None, **headers):
-        return self._echo_response(self.endpoint.list(name, **headers))
+    def list(self, filters=None):
+        return self._echo_response(self.endpoint.list(filters))
 
-    def create(self, payload, callback=None, **headers):
-        return self._echo_response(self.endpoint.create(payload, callback=callback, **headers))
+    def create(self, payload, callback=None):
+        return self._echo_response(self.endpoint.create(payload, callback=callback))
 
-    def read(self, id_name_uuid, **headers):
+    def read(self, id_name_uuid):
         if not id_name_uuid:
-            return self.list(name=None, **headers)
+            return self.list(filters=None)
 
         if type(id_name_uuid) is tuple:
             id_name_uuid = " ".join(id_name_uuid)
@@ -190,13 +190,13 @@ class ArcsecondAPI(object):
                 click.echo('Opening URL in browser : ' + url)
             webbrowser.open(url)
         else:
-            return self._echo_response(self.endpoint.read(id_name_uuid, **headers))
+            return self._echo_response(self.endpoint.read(id_name_uuid))
 
-    def update(self, id_name_uuid, payload, **headers):
-        return self._echo_response(self.endpoint.update(id_name_uuid, payload, **headers))
+    def update(self, id_name_uuid, payload):
+        return self._echo_response(self.endpoint.update(id_name_uuid, payload))
 
-    def delete(self, id_name_uuid, **headers):
-        return self._echo_response(self.endpoint.delete(id_name_uuid, **headers))
+    def delete(self, id_name_uuid):
+        return self._echo_response(self.endpoint.delete(id_name_uuid))
 
     @classmethod
     def _check_organisation_membership(cls, state, username, subdomain):
@@ -218,9 +218,10 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _get_and_save_api_key(cls, state, username, auth_token):
-        headers = {'Authorization': 'Token ' + auth_token}
-        silent_state = state.make_new_silent()
-        result, error = ProfileAPIKeyAPIEndPoint(silent_state).read(username, **headers)
+        # To get API key one must fetch it with Auth token obtained via login.
+        endpoint = ProfileAPIKeyAPIEndPoint(state.make_new_silent())
+        endpoint.use_headers({'Authorization': 'Token ' + auth_token})
+        result, error = endpoint.read(username)
         if error:
             return ArcsecondAPI._echo_error(state, error)
         if result:
