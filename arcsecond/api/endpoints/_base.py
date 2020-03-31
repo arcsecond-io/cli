@@ -8,6 +8,13 @@ from requests_toolbelt.multipart import encoder
 from progress.spinner import Spinner
 from progress.bar import Bar
 
+try:
+    # Python3
+    from urllib.parse import urlencode
+except ImportError:
+    # Python2
+    from urllib import urlencode
+
 from arcsecond.api.constants import (
     ARCSECOND_API_URL_DEV,
     ARCSECOND_API_URL_PROD,
@@ -104,9 +111,11 @@ class APIEndPoint(object):
             prefix = '/' + prefix
         return self._get_base_url() + prefix
 
-    def _build_url(self, *args):
+    def _build_url(self, *args, **filters):
         fragments = [f for f in [self.organisation, self.prefix] + list(args) if f]
-        return self._get_base_url() + '/' + '/'.join(fragments) + '/'
+        url = self._get_base_url() + '/' + '/'.join(fragments) + '/'
+        query = '?' + urlencode(filters) if len(filters) > 0 else ''
+        return url + query
 
     def _root_open_url(self):
         if hasattr(self.state, 'open'):
