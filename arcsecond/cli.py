@@ -122,10 +122,23 @@ def runs(state):
 
 
 @main.command(help='Request your own list of night logs (in the /nightlogs/ API endpoint)')
-@open_options
+@click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
+@click.argument('uuid', required=False, nargs=1)
+@click.option('--name', required=False, nargs=1, help="The dataset name.")
+@organisation_options
 @pass_state
-def logs(state):
-    Arcsecond.build_nightlogs_api(state).list()
+def logs(state, method, uuid, **kwargs):
+    api = Arcsecond.build_nightlogs_api(state)
+    if method == 'create':
+        api.create(kwargs)  # the kwargs dict is the payload!
+    elif method == 'read':
+        api.read(uuid)  # will handle list if uuid is None
+    elif method == 'update':
+        api.update(uuid, kwargs)
+    elif method == 'delete':
+        api.delete(uuid)
+    else:
+        api.list()
 
 
 @main.command(help='Access and modify the observing activities (in the /activities/ API endpoint)')
