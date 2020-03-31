@@ -90,7 +90,7 @@ def exoplanets(state, name):
 @open_options
 @pass_state
 def findingcharts(state, name):
-    Arcsecond.build_findingcharts_api(state).list(name)
+    Arcsecond.build_findingcharts_api(state).list(name=name)
 
 
 @main.command(help='Request the list of observing sites (in the /observingsites/ API endpoint)')
