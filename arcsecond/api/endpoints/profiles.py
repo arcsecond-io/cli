@@ -4,7 +4,7 @@ from ._base import APIEndPoint
 class ProfileAPIEndPoint(APIEndPoint):
     name = 'profiles'
 
-    def _list_url(self, filters=None):
+    def _list_url(self, **filters):
         return self._build_url('profiles', filters)
 
     def _detail_url(self, username):

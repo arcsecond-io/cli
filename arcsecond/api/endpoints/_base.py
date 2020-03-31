@@ -121,7 +121,7 @@ class APIEndPoint(object):
         if hasattr(self.state, 'open'):
             return ARCSECOND_WWW_URL_DEV if self.state.debug is True else ARCSECOND_WWW_URL_PROD
 
-    def _list_url(self, filters=None):
+    def _list_url(self, **filters):
         raise Exception('You must override this method.')
 
     def _detail_url(self, name_or_id):
@@ -142,7 +142,7 @@ class APIEndPoint(object):
         self.headers = headers
 
     def list(self, **filters):
-        return self._perform_request(self._list_url(filters), 'get', None, None)
+        return self._perform_request(self._list_url(**filters), 'get', None, None)
 
     def create(self, payload, callback=None):
         # If a file is provided as part of the payload, a instance of AsyncFileUploader is returned

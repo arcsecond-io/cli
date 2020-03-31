@@ -175,15 +175,15 @@ class ArcsecondAPI(object):
             prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
         return prefix
 
-    def list(self, filters=None):
-        return self._echo_response(self.endpoint.list(filters))
+    def list(self, **filters):
+        return self._echo_response(self.endpoint.list(**filters))
 
     def create(self, payload, callback=None):
         return self._echo_response(self.endpoint.create(payload, callback=callback))
 
     def read(self, id_name_uuid):
         if not id_name_uuid:
-            return self.list(filters=None)
+            return self.list()
 
         if type(id_name_uuid) is tuple:
             id_name_uuid = " ".join(id_name_uuid)

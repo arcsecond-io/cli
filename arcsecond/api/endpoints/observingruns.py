@@ -4,7 +4,7 @@ from ._base import APIEndPoint
 class ObservingRunsAPIEndPoint(APIEndPoint):
     name = 'observingruns'
 
-    def _list_url(self, filters=None):
+    def _list_url(self, **filters):
         return self._build_url('observingruns', filters)
 
     def _detail_url(self, uuid_str):
@@ -15,7 +15,7 @@ class ObservingRunsAPIEndPoint(APIEndPoint):
 class NightLogAPIEndPoint(APIEndPoint):
     name = 'nightlogs'
 
-    def _list_url(self, filters=None):
+    def _list_url(self, **filters):
         return self._build_url('nightlogs', filters)
 
     def _detail_url(self, uuid_str):
