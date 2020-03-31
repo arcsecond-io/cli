@@ -53,7 +53,8 @@ def register_successful_personal_login(runner):
         status=200,
         body='{ "api_key": "' + TEST_API_KEY + '" }'
     )
-    runner.invoke(cli.login, ['-d'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    result = runner.invoke(cli.login, ['-d'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    assert result.exit_code == 0
 
 
 def register_successful_organisation_login(runner, subdomain, role):
@@ -75,8 +76,9 @@ def register_successful_organisation_login(runner, subdomain, role):
         status=200,
         body=make_profile_json(subdomain, role)
     )
-    runner.invoke(cli.login, ['--organisation', subdomain, '-d'],
-                  input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    result = runner.invoke(cli.login, ['--organisation', subdomain, '-d'],
+                           input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    assert result.exit_code == 0
 
 
 def save_test_credentials(username, memberships=None):
