@@ -171,7 +171,7 @@ def datasets(state, method, uuid, **kwargs):
     if method == 'create':
         api.create(kwargs)  # the kwargs dict is the payload!
     elif method == 'read':
-        api.read(uuid)  # will handle list if pk is None
+        api.read(uuid)  # will handle list if uuid is None
     elif method == 'update':
         api.update(uuid, kwargs)
     elif method == 'delete':
