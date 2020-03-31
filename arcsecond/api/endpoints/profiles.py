@@ -5,7 +5,7 @@ class ProfileAPIEndPoint(APIEndPoint):
     name = 'profiles'
 
     def _list_url(self, **filters):
-        return self._build_url('profiles', filters)
+        return self._build_url('profiles', **filters)
 
     def _detail_url(self, username):
         return self._build_url('profiles', username)

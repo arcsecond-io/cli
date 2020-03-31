@@ -5,7 +5,7 @@ class ActivitiesAPIEndPoint(APIEndPoint):
     name = 'activities'
 
     def _list_url(self, **filters):
-        return self._build_url('activities', filters)
+        return self._build_url('activities', **filters)
 
     def _detail_url(self, pk):
         return self._build_url('activities', str(pk))
