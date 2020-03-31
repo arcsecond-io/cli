@@ -53,7 +53,8 @@ def register_successful_personal_login(runner):
         status=200,
         body='{ "api_key": "' + TEST_API_KEY + '" }'
     )
-    runner.invoke(cli.login, ['-d'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    result = runner.invoke(cli.login, ['-d'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    assert result.exit_code == 0
 
 
 def register_successful_organisation_login(runner, subdomain, role):
@@ -75,8 +76,9 @@ def register_successful_organisation_login(runner, subdomain, role):
         status=200,
         body=make_profile_json(subdomain, role)
     )
-    runner.invoke(cli.login, ['--organisation', subdomain, '-d'],
-                  input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    result = runner.invoke(cli.login, ['--organisation', subdomain, '-d'],
+                           input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    assert result.exit_code == 0
 
 
 def save_test_credentials(username, memberships=None):
@@ -93,7 +95,11 @@ def clear_test_credentials():
 
 def mock_url_path(method, path, body='', query='', status=200):
     path = path + '/' if path[-1] != '/' else path
-    httpretty.register_uri(method, ARCSECOND_API_URL_DEV + path + query, status=status, body=body)
+    httpretty.register_uri(method,
+                           ARCSECOND_API_URL_DEV + path + query,
+                           status=status,
+                           body=body,
+                           match_querystring=True)
 
 
 def mock_http_get(path, body='{}', status=200):

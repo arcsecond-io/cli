@@ -2,20 +2,26 @@ import click
 
 
 class State(object):
-    def __init__(self, verbose=0, debug=False, open=None, organisation=None, is_using_cli=True):
+    def __init__(self, verbose=0, debug=False, test=False, open=None, organisation=None, is_using_cli=True):
         self.verbose = verbose
         self.debug = debug
+        self.test = test
         self.open = open
         self.organisation = organisation
         self.is_using_cli = is_using_cli
 
     def config_section(self):
-        return 'debug' if self.debug else 'main'
+        if self.test:
+            return 'test'
+        elif self.debug:
+            return 'debug'
+        return 'main'
 
     def make_new_silent(self):
         return State(verbose=0,
                      debug=self.debug,
                      open=self.open,
+                     test=self.test,
                      organisation=self.organisation,
                      is_using_cli=self.is_using_cli)
 

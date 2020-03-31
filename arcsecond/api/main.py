@@ -62,6 +62,8 @@ def get_api_state(state=None, **kwargs):
 
     if 'debug' in kwargs.keys():
         state.debug = kwargs.get('debug')
+    if 'test' in kwargs.keys():
+        state.test = kwargs.get('test')
     if 'verbose' in kwargs.keys():
         state.verbose = kwargs.get('verbose')
     if 'organisation' in kwargs.keys():
@@ -111,16 +113,7 @@ class ArcsecondAPI(object):
         if not self.__class__.is_logged_in(self.state):
             raise ArcsecondNotLoggedInError()
 
-        prefix = kwargs.get('prefix', '')
-        possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
-        if len(possible_prefixes) > 1:
-            raise ArcsecondTooManyPrefixesError(possible_prefixes)
-        elif len(possible_prefixes) == 1 and prefix:
-            raise ArcsecondTooManyPrefixesError([possible_prefixes.pop(), prefix])
-        elif len(possible_prefixes) == 1 and not prefix:
-            prefix_key = possible_prefixes.pop()
-            prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
-
+        prefix = self._check_prefix(kwargs)
         endpoint_class = self._check_endpoint_class(endpoint_class)
         self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
 
@@ -141,21 +134,22 @@ class ArcsecondAPI(object):
             return error
 
         if state and state.debug:
-            click.echo(error)
+            click.echo(click.style(error, fg='red'))
         else:
             json_obj = json.loads(error)
+            message = ''
             if 'detail' in json_obj.keys():
-                detail_msg = ', '.join(json_obj['detail']) if isinstance(json_obj['detail'], list) else json_obj['detail']
-                click.echo(ECHO_ERROR_PREFIX + detail_msg)
+                detail = json_obj['detail']
+                message = ', '.join(detail) if isinstance(detail, list) else detail
             elif 'error' in json_obj.keys():
-                error_msg = ', '.join(json_obj['error']) if isinstance(json_obj['error'], list) else json_obj['error']
-                click.echo(ECHO_ERROR_PREFIX + error_msg)
+                error = json_obj['error']
+                message = ', '.join(error) if isinstance(error, list) else error
             elif 'non_field_errors' in json_obj.keys():
                 errors = json_obj['non_field_errors']
-                message = ', '.join(errors) if isinstance(error, list) else str(errors)
-                click.echo(ECHO_ERROR_PREFIX + message)
+                message = ', '.join(errors) if isinstance(errors, list) else str(errors)
             else:
-                click.echo(ECHO_PREFIX + str(error))
+                message = str(error)
+            click.echo(click.style(ECHO_PREFIX + message, fg='red'))
 
     def _echo_response(self, response):
         if isinstance(response, AsyncFileUploader):
@@ -171,15 +165,27 @@ class ArcsecondAPI(object):
             raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
         return endpoint
 
-    def list(self, name=None, **headers):
-        return self._echo_response(self.endpoint.list(name, **headers))
+    def _check_prefix(self, kwargs):
+        prefix = kwargs.get('prefix') or ''
+        possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
+        if len(possible_prefixes) > 1:
+            raise ArcsecondTooManyPrefixesError(possible_prefixes)
+        elif len(possible_prefixes) == 1 and prefix:
+            raise ArcsecondTooManyPrefixesError([possible_prefixes.pop(), prefix])
+        elif len(possible_prefixes) == 1 and not prefix:
+            prefix_key = possible_prefixes.pop()
+            prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
+        return prefix
 
-    def create(self, payload, callback=None, **headers):
-        return self._echo_response(self.endpoint.create(payload, callback=callback, **headers))
+    def list(self, **filters):
+        return self._echo_response(self.endpoint.list(**filters))
 
-    def read(self, id_name_uuid, **headers):
+    def create(self, payload, callback=None):
+        return self._echo_response(self.endpoint.create(payload, callback=callback))
+
+    def read(self, id_name_uuid):
         if not id_name_uuid:
-            return self.list(name=None, **headers)
+            return self.list()
 
         if type(id_name_uuid) is tuple:
             id_name_uuid = " ".join(id_name_uuid)
@@ -190,13 +196,13 @@ class ArcsecondAPI(object):
                 click.echo('Opening URL in browser : ' + url)
             webbrowser.open(url)
         else:
-            return self._echo_response(self.endpoint.read(id_name_uuid, **headers))
+            return self._echo_response(self.endpoint.read(id_name_uuid))
 
-    def update(self, id_name_uuid, payload, **headers):
-        return self._echo_response(self.endpoint.update(id_name_uuid, payload, **headers))
+    def update(self, id_name_uuid, payload):
+        return self._echo_response(self.endpoint.update(id_name_uuid, payload))
 
-    def delete(self, id_name_uuid, **headers):
-        return self._echo_response(self.endpoint.delete(id_name_uuid, **headers))
+    def delete(self, id_name_uuid):
+        return self._echo_response(self.endpoint.delete(id_name_uuid))
 
     @classmethod
     def _check_organisation_membership(cls, state, username, subdomain):
@@ -218,9 +224,10 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _get_and_save_api_key(cls, state, username, auth_token):
-        headers = {'Authorization': 'Token ' + auth_token}
-        silent_state = state.make_new_silent()
-        result, error = ProfileAPIKeyAPIEndPoint(silent_state).read(username, **headers)
+        # To get API key one must fetch it with Auth token obtained via login.
+        endpoint = ProfileAPIKeyAPIEndPoint(state.make_new_silent())
+        endpoint.use_headers({'Authorization': 'Token ' + auth_token})
+        result, error = endpoint.read(username)
         if error:
             return ArcsecondAPI._echo_error(state, error)
         if result:

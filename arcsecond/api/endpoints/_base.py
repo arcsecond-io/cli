@@ -8,6 +8,13 @@ from requests_toolbelt.multipart import encoder
 from progress.spinner import Spinner
 from progress.bar import Bar
 
+try:
+    # Python3
+    from urllib.parse import urlencode
+except ImportError:
+    # Python2
+    from urllib import urlencode
+
 from arcsecond.api.constants import (
     ARCSECOND_API_URL_DEV,
     ARCSECOND_API_URL_PROD,
@@ -93,6 +100,7 @@ class APIEndPoint(object):
         self.state = state or State()
         self.prefix = prefix
         self.organisation = state.organisation or ''
+        self.headers = {}
 
     def _get_base_url(self):
         return ARCSECOND_API_URL_DEV if self.state.debug else ARCSECOND_API_URL_PROD
@@ -103,15 +111,17 @@ class APIEndPoint(object):
             prefix = '/' + prefix
         return self._get_base_url() + prefix
 
-    def _build_url(self, *args):
+    def _build_url(self, *args, **filters):
         fragments = [f for f in [self.organisation, self.prefix] + list(args) if f]
-        return self._get_base_url() + '/' + '/'.join(fragments) + '/'
+        url = self._get_base_url() + '/' + '/'.join(fragments) + '/'
+        query = '?' + urlencode(filters) if len(filters) > 0 else ''
+        return url + query
 
     def _root_open_url(self):
         if hasattr(self.state, 'open'):
             return ARCSECOND_WWW_URL_DEV if self.state.debug is True else ARCSECOND_WWW_URL_PROD
 
-    def _list_url(self, name=''):
+    def _list_url(self, **filters):
         raise Exception('You must override this method.')
 
     def _detail_url(self, name_or_id):
@@ -128,25 +138,28 @@ class APIEndPoint(object):
         except ValueError:
             raise ArcsecondError('Invalid UUID {}.'.format(uuid_str))
 
-    def list(self, name='', **headers):
-        return self._perform_request(self._list_url(name), 'get', None, None, **headers)
+    def use_headers(self, headers):
+        self.headers = headers
 
-    def create(self, payload, callback=None, **headers):
+    def list(self, **filters):
+        return self._perform_request(self._list_url(**filters), 'get', None, None)
+
+    def create(self, payload, callback=None):
         # If a file is provided as part of the payload, a instance of AsyncFileUploader is returned
         # in place of a standard JSON body response.
-        return self._perform_request(self._list_url(), 'post', payload, callback, **headers)
+        return self._perform_request(self._list_url(), 'post', payload, callback)
 
-    def read(self, id_name_uuid, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'get', None, None, **headers)
+    def read(self, id_name_uuid):
+        return self._perform_request(self._detail_url(id_name_uuid), 'get', None, None)
 
-    def update(self, id_name_uuid, payload, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'put', payload, None, **headers)
+    def update(self, id_name_uuid, payload):
+        return self._perform_request(self._detail_url(id_name_uuid), 'patch', payload, None)
 
-    def delete(self, id_name_uuid, **headers):
-        return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, None, **headers)
+    def delete(self, id_name_uuid):
+        return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, None)
 
-    def _perform_request(self, url, method, payload, callback=None, **headers):
-        method_name, method, payload, headers = self._prepare_request(url, method, payload, **headers)
+    def _perform_request(self, url, method, payload, callback=None):
+        method_name, method, payload, headers = self._prepare_request(url, method, payload)
 
         payload, fields = extract_multipart_encoder_file_fields(payload)
         if fields is None:
@@ -166,7 +179,7 @@ class APIEndPoint(object):
             else:
                 return AsyncFileUploader(url, method, data=upload_monitor, payload=None, **headers)
 
-    def _prepare_request(self, url, method, payload, **headers):
+    def _prepare_request(self, url, method, payload):
         assert (url and method)
 
         if self.state.verbose:
@@ -182,7 +195,7 @@ class APIEndPoint(object):
             self._check_organisation_membership_and_permission(method_name, self.state.organisation)
 
         # Check API key, hence login state. Must do before check for org.
-        headers = self._check_and_set_api_key(headers, url)
+        headers = self._check_and_set_api_key(self.headers or {}, url)
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
 
         if payload:
