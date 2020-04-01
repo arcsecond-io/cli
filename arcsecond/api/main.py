@@ -209,14 +209,15 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _check_organisation_membership(cls, state, username, subdomain):
-        ArcsecondAPI._echo_message(state, f'Checking Membership of Organisation "{subdomain}"...')
+        ArcsecondAPI._echo_message(state, 'Checking Membership of Organisation "{}"...'.format(subdomain))
         profile, error = PersonalProfileAPIEndPoint(state.make_new_silent()).read(username)
         if error:
             ArcsecondAPI._echo_error(state, error)
         else:
             memberships = {m['organisation']['subdomain']: m['role'] for m in profile['memberships']}
             if subdomain in memberships.keys():
-                msg = f'Membership confirmed. Role is "{memberships[subdomain]}", stored in {config_file_path()}.'
+                msg = 'Membership confirmed. Role is "{}", stored in {}.' \
+                    .format(memberships[subdomain], config_file_path())
                 ArcsecondAPI._echo_message(state, msg)
                 config_file_save_organisation_membership(subdomain, memberships[subdomain], state.config_section())
             else:
@@ -232,7 +233,7 @@ class ArcsecondAPI(object):
             ArcsecondAPI._echo_error(state, error)
         if result:
             config_file_save_api_key(result['api_key'], username, state.config_section())
-            msg = f'Successful API key retrieval and storage in {config_file_path()}. Enjoy.'
+            msg = 'Successful API key retrieval and storage in {}. Enjoy.'.format(config_file_path())
             ArcsecondAPI._echo_message(state, msg)
         return result, error
 
