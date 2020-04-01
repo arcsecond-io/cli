@@ -92,5 +92,6 @@ class NightLogsInOrganisationsModuleTestCase(TestCase):
         api = Arcsecond.build_nightlogs_api(debug=True, test=True, organisation='saao')
         mock_url_path(httpretty.GET, '/saao/nightlogs/', query='', body='[{uuid: "112233", name:"dummy"}]', status=200)
         mock_url_path(httpretty.GET, '/saao/nightlogs/', query='?date=2020-03-28', body='[]', status=200)
-        logs = api.list(date='2020-03-28')
+        logs, error = api.list(date='2020-03-28')
         assert logs == []
+        assert error is None

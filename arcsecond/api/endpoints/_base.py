@@ -1,4 +1,3 @@
-import threading
 import uuid
 
 import click
@@ -23,10 +22,12 @@ from arcsecond.api.constants import (
     API_AUTH_PATH_LOGIN,
     API_AUTH_PATH_REGISTER)
 
-from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
+from arcsecond.api.error import ArcsecondError
 from arcsecond.api.helpers import extract_multipart_encoder_file_fields
 from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
 from arcsecond.options import State
+
+from ._fileuploader import AsyncFileUploader
 
 SAFE_METHODS = ['GET', 'OPTIONS']
 WRITABLE_MEMBERSHIPS = ['superadmin', 'admin', 'member']
@@ -35,62 +36,6 @@ EVENT_METHOD_WILL_START = 'EVENT_METHOD_WILL_START'
 EVENT_METHOD_DID_FINISH = 'EVENT_METHOD_DID_FINISH'
 EVENT_METHOD_DID_FAIL = 'EVENT_METHOD_DID_FAIL'
 EVENT_METHOD_PROGRESS_PERCENT = 'EVENT_METHOD_PROGRESS_PERCENT'
-
-
-class AsyncFileUploader(object):
-    """AsyncFileUploader is a helper class used when uploading files to the cloud.
-
-    Technically speaking, it can handle any http request in a background thread.
-    It is however named like this because it is returned in place of a standard
-    response payload when a file is to be uploaded.
-    """
-
-    def __init__(self, url, method, data=None, payload=None, **headers):
-        self.url = url
-        self.method = method
-        self.payload = payload
-        self.data = data
-        self.headers = headers
-        self._storage = {}
-        self._thread = None
-
-    def start(self):
-        if self._thread is None:
-            args = (self.url, self.method, self.data, self.payload, self.headers)
-            self._thread = threading.Thread(target=self._target, args=args)
-        if self._thread.is_alive() is False:
-            self._thread.start()
-
-    def _target(self, url, method, data, payload, headers):
-        try:
-            self._storage['response'] = method(url, data=data, json=payload, headers=headers)
-        except requests.exceptions.ConnectionError:
-            self._storage['error'] = ArcsecondConnectionError(url)
-        except Exception as e:
-            self._storage['error'] = ArcsecondError(str(e))
-
-    def finish(self):
-        self.join()
-        return self.get_results()
-
-    def join(self):
-        self._thread.join()
-
-    def is_alive(self):
-        return self._thread.is_alive()
-
-    def get_results(self):
-        response = self._storage.get('response')
-        if isinstance(response, dict):
-            # Responses of standard JSON payload requests are dict
-            return response
-        elif response is not None:
-            if 200 <= response.status_code < 300:
-                return response.json() if response.text else {}, None
-            else:
-                return None, response.text
-        else:
-            return None, self._storage.get('error')
 
 
 class APIEndPoint(object):
@@ -177,7 +122,7 @@ class APIEndPoint(object):
             if self.state.is_using_cli:
                 return self._perform_spinner_request(url, method, method_name, upload_monitor, None, **headers)
             else:
-                return AsyncFileUploader(url, method, data=upload_monitor, payload=None, **headers)
+                return AsyncFileUploader(url, method, data=upload_monitor, payload=None, **headers), None
 
     def _prepare_request(self, url, method, payload):
         assert (url and method)

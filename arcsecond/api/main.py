@@ -25,9 +25,8 @@ from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAP
                         DataFilesAPIEndPoint, FindingChartsAPIEndPoint, InstrumentsAPIEndPoint, NightLogAPIEndPoint,
                         ObjectsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
                         PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint,
-                        StandardStarsAPIEndPoint, TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
-
-from .endpoints._base import AsyncFileUploader
+                        StandardStarsAPIEndPoint, TelegramsATelAPIEndPoint, TelescopesAPIEndPoint,
+                        AsyncFileUploader)
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
@@ -117,21 +116,78 @@ class ArcsecondAPI(object):
         endpoint_class = self._check_endpoint_class(endpoint_class)
         self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
 
+    def _check_prefix(self, kwargs):
+        prefix = kwargs.get('prefix') or ''
+        possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
+        if len(possible_prefixes) > 1:
+            raise ArcsecondTooManyPrefixesError(possible_prefixes)
+        elif len(possible_prefixes) == 1 and prefix:
+            raise ArcsecondTooManyPrefixesError([possible_prefixes.pop(), prefix])
+        elif len(possible_prefixes) == 1 and not prefix:
+            prefix_key = possible_prefixes.pop()
+            prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
+        return prefix
+
+    def _check_endpoint_class(self, endpoint):
+        if endpoint is not None and endpoint not in ENDPOINTS:
+            raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
+        return endpoint
+
+    def list(self, **filters):
+        return self._handle_endpoint_response(self.endpoint.list(**filters))
+
+    def create(self, payload, callback=None):
+        return self._handle_endpoint_response(self.endpoint.create(payload, callback=callback))
+
+    def read(self, id_name_uuid):
+        if not id_name_uuid:
+            return self.list()
+
+        if type(id_name_uuid) is tuple:
+            id_name_uuid = " ".join(id_name_uuid)
+
+        if self.state.open:
+            url = self.endpoint._open_url(id_name_uuid)
+            if self.state.verbose:
+                click.echo('Opening URL in browser : ' + url)
+            webbrowser.open(url)
+        else:
+            return self._handle_endpoint_response(self.endpoint.read(id_name_uuid))
+
+    def update(self, id_name_uuid, payload):
+        return self._handle_endpoint_response(self.endpoint.update(id_name_uuid, payload))
+
+    def delete(self, id_name_uuid):
+        return self._handle_endpoint_response(self.endpoint.delete(id_name_uuid))
+
+    def _handle_endpoint_response(self, response):
+        result, error = response
+        if result is not None:  # check against None, to avoid skipping empty lists.
+            ArcsecondAPI._echo_result(self.state, result)
+        if error is not None:
+            ArcsecondAPI._echo_error(self.state, error)
+        return result, error
+
     @classmethod
-    def pretty_print_dict(cls, d):
-        json_str = json.dumps(d, indent=4, sort_keys=True, ensure_ascii=False)
-        click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
+    def _echo_message(cls, state, message):
+        if state.verbose:
+            click.echo(message)
 
     @classmethod
     def _echo_result(cls, state, result):
         if not state.is_using_cli:
-            return result  # Making sure to return json as it is for module usage.
-        ArcsecondAPI.pretty_print_dict(result)
+            return
+        # A create or update method with a file to upload will return a tuple made of
+        # a FileUploader and None. Hence, nothing to print outside.
+        if isinstance(result, dict) or isinstance(result, list):
+            json_str = json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False)
+            click.echo(
+                highlight(json_str, JsonLexer(), TerminalFormatter()).strip())  # .strip() avoids the empty newline
 
     @classmethod
     def _echo_error(cls, state, error):
         if not state.is_using_cli:
-            return error
+            return
 
         if state and state.debug:
             click.echo(click.style(error, fg='red'))
@@ -151,76 +207,20 @@ class ArcsecondAPI(object):
                 message = str(error)
             click.echo(click.style(ECHO_PREFIX + message, fg='red'))
 
-    def _echo_response(self, response):
-        if isinstance(response, AsyncFileUploader):
-            return response
-        result, error = response
-        if result is not None:  # check against None, to avoid skipping empty lists.
-            return ArcsecondAPI._echo_result(self.state, result)
-        if error is not None:
-            return ArcsecondAPI._echo_error(self.state, error)
-
-    def _check_endpoint_class(self, endpoint):
-        if endpoint is not None and endpoint not in ENDPOINTS:
-            raise ArcsecondInvalidEndpointError(endpoint, ENDPOINTS)
-        return endpoint
-
-    def _check_prefix(self, kwargs):
-        prefix = kwargs.get('prefix') or ''
-        possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
-        if len(possible_prefixes) > 1:
-            raise ArcsecondTooManyPrefixesError(possible_prefixes)
-        elif len(possible_prefixes) == 1 and prefix:
-            raise ArcsecondTooManyPrefixesError([possible_prefixes.pop(), prefix])
-        elif len(possible_prefixes) == 1 and not prefix:
-            prefix_key = possible_prefixes.pop()
-            prefix = VALID_PREFIXES[prefix_key] + kwargs[prefix_key]
-        return prefix
-
-    def list(self, **filters):
-        return self._echo_response(self.endpoint.list(**filters))
-
-    def create(self, payload, callback=None):
-        return self._echo_response(self.endpoint.create(payload, callback=callback))
-
-    def read(self, id_name_uuid):
-        if not id_name_uuid:
-            return self.list()
-
-        if type(id_name_uuid) is tuple:
-            id_name_uuid = " ".join(id_name_uuid)
-
-        if self.state.open:
-            url = self.endpoint._open_url(id_name_uuid)
-            if self.state.verbose:
-                click.echo('Opening URL in browser : ' + url)
-            webbrowser.open(url)
-        else:
-            return self._echo_response(self.endpoint.read(id_name_uuid))
-
-    def update(self, id_name_uuid, payload):
-        return self._echo_response(self.endpoint.update(id_name_uuid, payload))
-
-    def delete(self, id_name_uuid):
-        return self._echo_response(self.endpoint.delete(id_name_uuid))
-
     @classmethod
     def _check_organisation_membership(cls, state, username, subdomain):
-        if state.verbose:
-            click.echo('Checking Membership of Organisation with subdomain "{}"...'.format(subdomain))
+        ArcsecondAPI._echo_message(state, f'Checking Membership of Organisation "{subdomain}"...')
         profile, error = PersonalProfileAPIEndPoint(state.make_new_silent()).read(username)
         if error:
             ArcsecondAPI._echo_error(state, error)
         else:
             memberships = {m['organisation']['subdomain']: m['role'] for m in profile['memberships']}
             if subdomain in memberships.keys():
-                if state.verbose:
-                    click.echo('Membership confirmed. Role is "{}", stored in {}.'
-                               .format(memberships[subdomain], config_file_path()))
+                msg = f'Membership confirmed. Role is "{memberships[subdomain]}", stored in {config_file_path()}.'
+                ArcsecondAPI._echo_message(state, msg)
                 config_file_save_organisation_membership(subdomain, memberships[subdomain], state.config_section())
             else:
-                if state.verbose:
-                    click.echo('Membership denied.')
+                ArcsecondAPI._echo_message(state, 'Membership denied.')
 
     @classmethod
     def _get_and_save_api_key(cls, state, username, auth_token):
@@ -229,13 +229,12 @@ class ArcsecondAPI(object):
         endpoint.use_headers({'Authorization': 'Token ' + auth_token})
         result, error = endpoint.read(username)
         if error:
-            return ArcsecondAPI._echo_error(state, error)
+            ArcsecondAPI._echo_error(state, error)
         if result:
-            api_key = result['api_key']
-            config_file_save_api_key(api_key, username, state.config_section())
-            if state.verbose:
-                click.echo('Successful API key retrieval and storage in {}. Enjoy.'.format(config_file_path()))
-            return result
+            config_file_save_api_key(result['api_key'], username, state.config_section())
+            msg = f'Successful API key retrieval and storage in {config_file_path()}. Enjoy.'
+            ArcsecondAPI._echo_message(state, msg)
+        return result, error
 
     @classmethod
     def is_logged_in(cls, state=None, **kwargs):
@@ -257,18 +256,23 @@ class ArcsecondAPI(object):
         state = get_api_state(state)
         result, error = AuthAPIEndPoint(state).login(username, password)
         if error:
-            return ArcsecondAPI._echo_error(state, error)
+            ArcsecondAPI._echo_error(state, error)
+            return result, error
         elif result:
-            result = ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
+            # We replace result and error of login with that of api key
+            result, error = ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
             if subdomain:
                 ArcsecondAPI._check_organisation_membership(state, username, subdomain)
-            return result
+            return result, error
 
     @classmethod
     def register(cls, username, email, password1, password2, state=None):
         state = get_api_state(state)
         result, error = AuthAPIEndPoint(state).register(username, email, password1, password2)
         if error:
-            return ArcsecondAPI._echo_error(state, error)
+            ArcsecondAPI._echo_error(state, error)
+            return result, error
         elif result:
-            return ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
+            # We replace result and error of register with that of api key
+            result, error = ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
+            return result, error
