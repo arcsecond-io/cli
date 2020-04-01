@@ -9,6 +9,7 @@ from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPI
 from .satellites import SatellitesAPIEndPoint
 from .standardstars import StandardStarsAPIEndPoint, CataloguesAPIEndPoint
 from .telegrams import TelegramsATelAPIEndPoint
+from ._fileuploader import AsyncFileUploader
 
 __all__ = ["ActivitiesAPIEndPoint",
            "CataloguesAPIEndPoint",
@@ -28,4 +29,5 @@ __all__ = ["ActivitiesAPIEndPoint",
            "SatellitesAPIEndPoint",
            "StandardStarsAPIEndPoint",
            "CataloguesAPIEndPoint",
-           "TelegramsATelAPIEndPoint"]
+           "TelegramsATelAPIEndPoint",
+           "AsyncFileUploader"]
