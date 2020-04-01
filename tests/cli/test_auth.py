@@ -38,7 +38,7 @@ def test_login_invalid_parameters():
 
 def test_register_refuse_agreement(monkeypatch):
     runner = CliRunner()
-    monkeypatch.setattr('six.moves.input', lambda x: "")
+    monkeypatch.setattr('builtins.input', lambda x: "")
     result = runner.invoke(cli.register, ['-d'], input='test\ntest@test.com\ntest1\ntest1')
     assert result.exit_code != 0 and result.exception
 
@@ -53,6 +53,6 @@ def test_register_refuse_agreement(monkeypatch):
 #         status=201,
 #         body='{"key": "dummy_api_key."}'
 #     )
-#     monkeypatch.setattr('six.moves.input', lambda x: "y")
+#     monkeypatch.setattr('builtins.input', lambda x: "y")
 #     result = runner.invoke(cli.register, ['-d'], input='test16\ntest@test.com\ntest1\ntest1')
 #     assert result.exit_code == 0 and not result.exception
