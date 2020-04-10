@@ -3,7 +3,12 @@ from .catalogues import CataloguesAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .datasets import DatasetsAPIEndPoint, DataFilesAPIEndPoint
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
-from .observingruns import NightLogAPIEndPoint, ObservingRunsAPIEndPoint
+from .observingruns import (
+    NightLogsAPIEndPoint,
+    ObservingRunsAPIEndPoint,
+    ObservationsAPIEndPoint,
+    CalibrationsAPIEndPoint
+)
 from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint, TelescopesAPIEndPoint
 from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
 from .satellites import SatellitesAPIEndPoint
@@ -18,8 +23,10 @@ __all__ = ["ActivitiesAPIEndPoint",
            "DataFilesAPIEndPoint",
            "ExoplanetsAPIEndPoint",
            "ObjectsAPIEndPoint",
-           "NightLogAPIEndPoint",
+           "NightLogsAPIEndPoint",
            "ObservingRunsAPIEndPoint",
+           "ObservationsAPIEndPoint",
+           "CalibrationsAPIEndPoint",
            "InstrumentsAPIEndPoint",
            "ObservingSitesAPIEndPoint",
            "TelescopesAPIEndPoint",

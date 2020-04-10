@@ -154,6 +154,44 @@ def logs(state, method, uuid, **kwargs):
         api.list()
 
 
+@main.command(help='Request your own list of observations (in the /observations/ API endpoint)')
+@click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
+@click.argument('uuid', required=False, nargs=1)
+@organisation_options
+@pass_state
+def observations(state, method, uuid, **kwargs):
+    api = Arcsecond.build_observations_api(state)
+    if method == 'create':
+        api.create(kwargs)  # the kwargs dict is the payload!
+    elif method == 'read':
+        api.read(uuid)  # will handle list if uuid is None
+    elif method == 'update':
+        api.update(uuid, kwargs)
+    elif method == 'delete':
+        api.delete(uuid)
+    else:
+        api.list()
+
+
+@main.command(help='Request your own list of calibrations (in the /calibrations/ API endpoint)')
+@click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
+@click.argument('uuid', required=False, nargs=1)
+@organisation_options
+@pass_state
+def calibrations(state, method, uuid, **kwargs):
+    api = Arcsecond.build_calibrations_api(state)
+    if method == 'create':
+        api.create(kwargs)  # the kwargs dict is the payload!
+    elif method == 'read':
+        api.read(uuid)  # will handle list if uuid is None
+    elif method == 'update':
+        api.update(uuid, kwargs)
+    elif method == 'delete':
+        api.delete(uuid)
+    else:
+        api.list()
+
+
 @main.command(help='Access and modify the observing activities (in the /activities/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
