@@ -137,7 +137,7 @@ def runs(state, method, uuid, **kwargs):
 @main.command(help='Request your own list of night logs (in the /nightlogs/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('uuid', required=False, nargs=1)
-@click.option('--name', required=False, nargs=1, help="The dataset name.")
+@click.option('--name', required=False, nargs=1, help="The log name.")
 @organisation_options
 @pass_state
 def logs(state, method, uuid, **kwargs):
