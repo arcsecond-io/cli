@@ -115,10 +115,23 @@ def instruments(state, name):
 
 
 @main.command(help='Request your own list of observing runs (in the /observingruns/ API endpoint)')
-@open_options
+@click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
+@click.argument('uuid', required=False, nargs=1)
+@click.option('--name', required=False, nargs=1, help="The observing run name.")
+@organisation_options
 @pass_state
-def runs(state):
-    Arcsecond.build_observingruns_api(state).list()
+def runs(state, method, uuid, **kwargs):
+    api = Arcsecond.build_observingruns_api(state)
+    if method == 'create':
+        api.create(kwargs)  # the kwargs dict is the payload!
+    elif method == 'read':
+        api.read(uuid)  # will handle list if uuid is None
+    elif method == 'update':
+        api.update(uuid, kwargs)
+    elif method == 'delete':
+        api.delete(uuid)
+    else:
+        api.list()
 
 
 @main.command(help='Request your own list of night logs (in the /nightlogs/ API endpoint)')
