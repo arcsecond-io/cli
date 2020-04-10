@@ -22,8 +22,9 @@ from .auth import AuthAPIEndPoint
 from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
 
 from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAPIEndPoint, ExoplanetsAPIEndPoint,
-                        DataFilesAPIEndPoint, FindingChartsAPIEndPoint, InstrumentsAPIEndPoint, NightLogAPIEndPoint,
+                        DataFilesAPIEndPoint, FindingChartsAPIEndPoint, InstrumentsAPIEndPoint, NightLogsAPIEndPoint,
                         ObjectsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
+                        ObservationsAPIEndPoint, CalibrationsAPIEndPoint,
                         PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint,
                         StandardStarsAPIEndPoint, TelegramsATelAPIEndPoint, TelescopesAPIEndPoint,
                         AsyncFileUploader)
@@ -41,9 +42,11 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              DataFilesAPIEndPoint,
              FindingChartsAPIEndPoint,
              InstrumentsAPIEndPoint,
-             NightLogAPIEndPoint,
+             NightLogsAPIEndPoint,
              ObjectsAPIEndPoint,
              ObservingRunsAPIEndPoint,
+             ObservationsAPIEndPoint,
+             CalibrationsAPIEndPoint,
              ObservingSitesAPIEndPoint,
              PersonalProfileAPIEndPoint,
              ProfileAPIEndPoint,  # And not ProfileAPIKeyAPIEndPoint...
