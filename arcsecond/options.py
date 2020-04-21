@@ -2,13 +2,21 @@ import click
 
 
 class State(object):
-    def __init__(self, verbose=0, debug=False, test=False, open=None, organisation=None, is_using_cli=True):
+    def __init__(self, verbose=0,
+                 debug=False,
+                 test=False,
+                 open=None,
+                 organisation=None,
+                 is_using_cli=True,
+                 api_Key=None):
+
         self.verbose = verbose
         self.debug = debug
         self.test = test
         self.open = open
         self.organisation = organisation
         self.is_using_cli = is_using_cli
+        self.api_key = api_Key
 
     def config_section(self):
         if self.test:
@@ -23,7 +31,8 @@ class State(object):
                      open=self.open,
                      test=self.test,
                      organisation=self.organisation,
-                     is_using_cli=self.is_using_cli)
+                     is_using_cli=self.is_using_cli,
+                     api_Key=self.api_key)
 
 
 # class AliasedGroup(click.Group):
