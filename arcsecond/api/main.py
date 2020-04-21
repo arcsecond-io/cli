@@ -70,6 +70,8 @@ def get_api_state(state=None, **kwargs):
         state.verbose = kwargs.get('verbose')
     if 'organisation' in kwargs.keys():
         state.organisation = kwargs.get('organisation')
+    if 'api_key' in kwargs.keys():
+        state.api_key = kwargs.get('api_key')
 
     return state
 

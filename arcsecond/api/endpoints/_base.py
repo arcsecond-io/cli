@@ -195,17 +195,21 @@ class APIEndPoint(object):
         if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():
             return headers
 
-        if self.state.verbose:
-            click.echo('Checking local API key... ', nl=False)
+        if self.state.api_key:
+            headers['X-Arcsecond-API-Authorization'] = 'Key ' + self.state.api_key
 
-        api_key = config_file_read_api_key(self.state.config_section())
-        if not api_key:
-            raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
+        else:
+            if self.state.verbose:
+                click.echo('Checking local API key... ', nl=False)
 
-        headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
+            api_key = config_file_read_api_key(self.state.config_section())
+            if not api_key:
+                raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
 
-        if self.state.verbose:
-            click.echo('OK')
+            headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
+
+            if self.state.verbose:
+                click.echo('OK')
 
         return headers
 
