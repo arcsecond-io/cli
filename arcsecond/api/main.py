@@ -73,6 +73,9 @@ def get_api_state(state=None, **kwargs):
     if 'api_key' in kwargs.keys():
         state.api_key = kwargs.get('api_key')
 
+    if state.debug and state.is_using_cli:
+        print(f'{ECHO_PREFIX}debug mode{ECHO_PREFIX}')
+
     return state
 
 
@@ -120,6 +123,9 @@ class ArcsecondAPI(object):
         prefix = self._check_prefix(kwargs)
         endpoint_class = self._check_endpoint_class(endpoint_class)
         self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
+
+    def __str__(self):
+        return self.endpoint.name or '' if self.endpoint else ''
 
     def _check_prefix(self, kwargs):
         prefix = kwargs.get('prefix') or ''
