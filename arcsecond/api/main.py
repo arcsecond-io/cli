@@ -73,8 +73,8 @@ def get_api_state(state=None, **kwargs):
     if 'api_key' in kwargs.keys():
         state.api_key = kwargs.get('api_key')
 
-    if state.debug and state.is_using_cli:
-        print(f'{ECHO_PREFIX}debug mode{ECHO_PREFIX}')
+    if state.verbose and state.debug and state.is_using_cli:
+        click.echo(f'{ECHO_PREFIX}debug mode{ECHO_PREFIX}')
 
     return state
 
