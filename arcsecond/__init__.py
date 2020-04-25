@@ -7,4 +7,4 @@ __all__ = ["Arcsecond",
            "ArcsecondConnectionError",
            "ArcsecondInvalidEndpointError"]
 
-__version__ = '0.9.3'
+__version__ = '0.9.4'
