@@ -187,7 +187,10 @@ class APIEndPoint(object):
 
         if self.state.verbose:
             click.echo()
-            click.echo('Request status code ' + str(response.status_code))
+            if error:
+                click.echo('Request failed.')
+            elif response:
+                click.echo('Request successful.')
 
         return response, error
 
