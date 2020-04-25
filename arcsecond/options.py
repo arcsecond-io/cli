@@ -2,7 +2,8 @@ import click
 
 
 class State(object):
-    def __init__(self, verbose=0,
+    def __init__(self,
+                 verbose=0,
                  debug=False,
                  test=False,
                  open=None,
