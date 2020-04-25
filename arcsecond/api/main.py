@@ -121,6 +121,9 @@ class ArcsecondAPI(object):
         endpoint_class = self._check_endpoint_class(endpoint_class)
         self.endpoint = endpoint_class(self.state, prefix=prefix) if endpoint_class else None
 
+    def __str__(self):
+        return self.endpoint.name or '' if self.endpoint else ''
+
     def _check_prefix(self, kwargs):
         prefix = kwargs.get('prefix') or ''
         possible_prefixes = set(kwargs.keys()).intersection(VALID_PREFIXES.keys())
