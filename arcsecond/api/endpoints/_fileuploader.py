@@ -47,7 +47,8 @@ class AsyncFileUploader(object):
             self._storage['error'] = ArcsecondError(str(e))
 
     def finish(self):
-        # I haven't found yet why self._thread can be None when target is completed or close to have done so.
+        # I haven't found yet why self._thread can be None when target is
+        # completed or close to have done so.
         if self._thread is not None:
             self._thread.join()
         return self.get_results()
