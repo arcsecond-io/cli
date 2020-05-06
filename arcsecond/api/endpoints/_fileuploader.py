@@ -28,14 +28,12 @@ class AsyncFileUploader(object):
         self.headers = headers
         self._storage = {}
         self._thread = None
-        self._has_run = False
 
     def start(self):
         if self._thread is None:
             args = (self.url, self.method, self.data, self.payload, self.headers)
             self._thread = threading.Thread(target=self._target, args=args)
         if self._thread.is_alive() is False:
-            self._has_run = True
             self._thread.start()
 
     def _target(self, url, method, data, payload, headers):
@@ -57,8 +55,6 @@ class AsyncFileUploader(object):
         return self._thread.is_alive()
 
     def get_results(self):
-        if self._has_run is False:
-            raise ArcsecondError("Uploader hasn't started. Results can't be retrieved.")
         response = self._storage.get('response', None)
         if isinstance(response, dict):
             # Responses of standard JSON payload requests are dict
