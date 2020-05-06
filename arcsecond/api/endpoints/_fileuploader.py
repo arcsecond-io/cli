@@ -48,9 +48,6 @@ class AsyncFileUploader(object):
         self.join()
         return self.get_results()
 
-    def join(self):
-        self._thread.join()
-
     def is_alive(self):
         return self._thread.is_alive()
 
