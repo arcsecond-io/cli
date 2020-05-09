@@ -52,14 +52,19 @@ def test_datafiles_upload_file_threaded_with_callback():
     )
 
     def upload_callback(eventName, progress):
+        print(eventName, progress, flush=True)
         global has_callback_been_called
         has_callback_been_called = True
 
+    fixtures_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fixtures')
     # Go for Python module tests
     datafiles_api = Arcsecond.build_datafiles_api(debug=True, dataset=str(dataset_uuid))
-    uploader, _ = datafiles_api.create({'file': os.path.abspath(__file__)}, callback=upload_callback)
+    payload = {'file': os.path.join(fixtures_folder, 'file1.fits')}
+    uploader, _ = datafiles_api.create(payload, callback=upload_callback)
     uploader.start()
-    time.sleep(0.1)
+    while uploader.is_alive():
+        pass
+    print(f'is alive? {uploader.is_alive()}', flush=True)
     results, error = uploader.finish()
 
     assert results is not None

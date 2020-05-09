@@ -52,7 +52,7 @@ class AsyncFileUploader(object):
         return self.get_results()
 
     def is_alive(self):
-        return self._thread.is_alive()
+        return False if self._thread is None else self._thread.is_alive()
 
     def get_results(self):
         response = self._storage.get('response', None)
