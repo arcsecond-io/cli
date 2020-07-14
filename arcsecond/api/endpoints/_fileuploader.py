@@ -9,7 +9,11 @@ except ImportError:
     # Python2
     from urllib import urlencode
 
-from arcsecond.api.error import ArcsecondConnectionError, ArcsecondError
+from arcsecond.api.error import (
+    ArcsecondRequestTimeoutError,
+    ArcsecondConnectionError,
+    ArcsecondError
+)
 
 
 class AsyncFileUploader(object):
@@ -38,7 +42,9 @@ class AsyncFileUploader(object):
 
     def _target(self, url, method, data, payload, headers):
         try:
-            self._storage['response'] = method(url, data=data, json=payload, headers=headers)
+            self._storage['response'] = method(url, data=data, json=payload, headers=headers, timeout=60)
+        except requests.Timeout:
+            self._storage['error'] = ArcsecondRequestTimeoutError(url)
         except requests.exceptions.ConnectionError:
             self._storage['error'] = ArcsecondConnectionError(url)
         except Exception as e:
@@ -52,7 +58,7 @@ class AsyncFileUploader(object):
         return self.get_results()
 
     def is_alive(self):
-        return self._thread.is_alive()
+        return False if self._thread is None else self._thread.is_alive()
 
     def get_results(self):
         response = self._storage.get('response', None)
