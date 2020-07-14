@@ -105,12 +105,12 @@ class Arcsecond(object):
         return ArcsecondAPI.memberships(state, **kwargs)
 
     @classmethod
-    def login(cls, username, password, subdomain, state=None):
-        return ArcsecondAPI.login(username, password, subdomain, state)
+    def login(cls, username, password, subdomain, state=None, **kwargs):
+        return ArcsecondAPI.login(username, password, subdomain, state, **kwargs)
 
     @classmethod
-    def register(cls, username, email, password1, password2, state=None):
-        return ArcsecondAPI.register(username, email, password1, password2, state)
+    def register(cls, username, email, password1, password2, state=None, **kwargs):
+        return ArcsecondAPI.register(username, email, password1, password2, state, **kwargs)
 
 
 class ArcsecondAPI(object):
@@ -263,8 +263,8 @@ class ArcsecondAPI(object):
         return config_file_read_organisation_memberships(section=state.config_section())
 
     @classmethod
-    def login(cls, username, password, subdomain, state=None):
-        state = get_api_state(state)
+    def login(cls, username, password, subdomain, state=None, **kwargs):
+        state = get_api_state(state, **kwargs)
         result, error = AuthAPIEndPoint(state).login(username, password)
         if error:
             ArcsecondAPI._echo_error(state, error)
@@ -277,8 +277,8 @@ class ArcsecondAPI(object):
             return result, error
 
     @classmethod
-    def register(cls, username, email, password1, password2, state=None):
-        state = get_api_state(state)
+    def register(cls, username, email, password1, password2, state=None, **kwargs):
+        state = get_api_state(state, **kwargs)
         result, error = AuthAPIEndPoint(state).register(username, email, password1, password2)
         if error:
             ArcsecondAPI._echo_error(state, error)
