@@ -101,6 +101,10 @@ class Arcsecond(object):
         return ArcsecondAPI.username(state, **kwargs)
 
     @classmethod
+    def api_key(cls, state=None, **kwargs):
+        return ArcsecondAPI.api_key(state, **kwargs)
+
+    @classmethod
     def memberships(cls, state=None, **kwargs):
         return ArcsecondAPI.memberships(state, **kwargs)
 
@@ -256,6 +260,11 @@ class ArcsecondAPI(object):
     def username(cls, state=None, **kwargs):
         state = get_api_state(state, **kwargs)
         return config_file_read_username(section=state.config_section()) or ''
+
+    @classmethod
+    def api_key(cls, state=None, **kwargs):
+        state = get_api_state(state, **kwargs)
+        return config_file_read_api_key(section=state.config_section()) or ''
 
     @classmethod
     def memberships(cls, state=None, **kwargs):
