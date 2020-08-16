@@ -125,7 +125,7 @@ class MethodChoiceParamType(click.ParamType):
     name = 'method'
 
     def __init__(self, *args):
-        super(MethodChoiceParamType, self).__init__()
+        super().__init__()
         self.allowed_methods = args or ['list', 'create', 'read', 'update', 'delete']
 
     def convert(self, value, param, ctx):
