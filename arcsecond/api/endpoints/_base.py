@@ -44,7 +44,7 @@ class APIEndPoint(object):
     def __init__(self, state=None, prefix=''):
         self.state = state or State()
         self.prefix = prefix
-        self.organisation = state.organisation or ''
+        self.organisation = getattr(state, 'organisation', '')
         self.headers = {}
 
     def _get_base_url(self):
