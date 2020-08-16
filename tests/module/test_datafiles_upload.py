@@ -5,9 +5,9 @@ import uuid
 import httpretty
 from click.testing import CliRunner
 
-from arcsecond import Arcsecond
+from arcsecond import ArcsecondAPI
 from arcsecond.api.constants import ARCSECOND_API_URL_DEV
-from tests.utils import register_successful_personal_login
+from tests.utils import register_successful_login
 
 has_callback_been_called = False
 
@@ -16,7 +16,7 @@ has_callback_been_called = False
 def test_datafiles_upload_file_threaded_no_callback():
     # Using standard CLI runner to make sure we login successfuly as in other tests.
     runner = CliRunner()
-    register_successful_personal_login(runner)
+    register_successful_login(runner)
 
     dataset_uuid = uuid.uuid4()
     httpretty.register_uri(
@@ -27,7 +27,7 @@ def test_datafiles_upload_file_threaded_no_callback():
     )
 
     # Go for Python module tests
-    datafiles_api = Arcsecond.build_datafiles_api(debug=True, dataset=str(dataset_uuid))
+    datafiles_api = ArcsecondAPI.datafiles(debug=True, dataset=str(dataset_uuid))
     uploader, _ = datafiles_api.create({'file': os.path.abspath(__file__)})
     uploader.start()
     time.sleep(0.1)
@@ -41,7 +41,7 @@ def test_datafiles_upload_file_threaded_no_callback():
 def test_datafiles_upload_file_threaded_with_callback():
     # Using standard CLI runner to make sure we login successfuly as in other tests.
     runner = CliRunner()
-    register_successful_personal_login(runner)
+    register_successful_login(runner)
 
     dataset_uuid = uuid.uuid4()
     httpretty.register_uri(
@@ -58,7 +58,7 @@ def test_datafiles_upload_file_threaded_with_callback():
 
     fixtures_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fixtures')
     # Go for Python module tests
-    datafiles_api = Arcsecond.build_datafiles_api(debug=True, dataset=str(dataset_uuid))
+    datafiles_api = ArcsecondAPI.datafiles(debug=True, dataset=str(dataset_uuid))
     payload = {'file': os.path.join(fixtures_folder, 'file1.fits')}
     uploader, _ = datafiles_api.create(payload, callback=upload_callback)
     uploader.start()

@@ -7,13 +7,13 @@ from click.testing import CliRunner
 
 from arcsecond import cli
 from arcsecond.api.constants import ARCSECOND_API_URL_DEV
-from tests.utils import register_successful_personal_login
+from tests.utils import register_successful_login
 
 
 @httpretty.activate
 def test_empty_datasets_list():
     runner = CliRunner()
-    register_successful_personal_login(runner)
+    register_successful_login(runner)
 
     httpretty.register_uri(
         httpretty.GET,
@@ -30,7 +30,7 @@ def test_empty_datasets_list():
 @httpretty.activate
 def test_datafiles_list_of_datasets():
     runner = CliRunner()
-    register_successful_personal_login(runner)
+    register_successful_login(runner)
 
     dataset_uuid = uuid.uuid4()
     httpretty.register_uri(
@@ -48,7 +48,7 @@ def test_datafiles_list_of_datasets():
 @httpretty.activate
 def test_datafiles_create_with_file():
     runner = CliRunner()
-    register_successful_personal_login(runner)
+    register_successful_login(runner)
 
     dataset_uuid = uuid.uuid4()
     httpretty.register_uri(
