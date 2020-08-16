@@ -223,17 +223,17 @@ class ArcsecondAPI(object):
             click.echo(click.style(ECHO_PREFIX + message, fg='red'))
 
     @classmethod
-    def _check_organisation_membership(cls, state, username, subdomain):
-        ArcsecondAPI._echo_message(state, f'Checking Membership of Organisation "{subdomain}"...')
+    def _check_memberships(cls, state, username):
+        ArcsecondAPI._echo_message(state, f'Checking Memberships...')
         profile, error = PersonalProfileAPIEndPoint(state.make_new_silent()).read(username)
         if error:
             ArcsecondAPI._echo_error(state, error)
         else:
             memberships = {m['organisation']['subdomain']: m['role'] for m in profile['memberships']}
-            if subdomain in memberships.keys():
-                msg = f'Membership confirmed. Role is "{memberships[subdomain]}", stored in {config_file_path()}.'
+            for membership in memberships.keys():
+                msg = f'Membership confirmed. Role is "{memberships[membership]}", stored in {config_file_path()}.'
                 ArcsecondAPI._echo_message(state, msg)
-                config_file_save_organisation_membership(subdomain, memberships[subdomain], state.config_section())
+                config_file_save_organisation_membership(membership, memberships[membership], state.config_section())
             else:
                 ArcsecondAPI._echo_message(state, 'Membership denied.')
 
@@ -281,8 +281,7 @@ class ArcsecondAPI(object):
         elif result:
             # We replace result and error of login with that of api key
             result, error = ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
-            if subdomain:
-                ArcsecondAPI._check_organisation_membership(state, username, subdomain)
+            ArcsecondAPI._check_memberships(state, username)
             return result, error
 
     @classmethod
