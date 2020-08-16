@@ -245,7 +245,7 @@ class ArcsecondAPI(object):
         return config_file_read_organisation_memberships(section=state.config_section())
 
     @classmethod
-    def login(cls, username, password, subdomain, state=None, **kwargs):
+    def login(cls, username, password, state=None, **kwargs):
         state = get_api_state(state, **kwargs)
         result, error = AuthAPIEndPoint(state).login(username, password)
         if error:
