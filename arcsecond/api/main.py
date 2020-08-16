@@ -84,39 +84,12 @@ def set_api_factory(cls):
         return ArcsecondAPI(endpoint_class, state, **kwargs)
 
     for endpoint_class in ENDPOINTS:
-        func_name = 'build_' + endpoint_class.name + '_api'
-        setattr(cls, func_name, staticmethod(types.MethodType(factory, endpoint_class)))
+        setattr(cls, endpoint_class.name, staticmethod(types.MethodType(factory, endpoint_class)))
 
     return cls
 
 
 @set_api_factory
-class Arcsecond(object):
-    @classmethod
-    def is_logged_in(cls, state=None, **kwargs):
-        return ArcsecondAPI.is_logged_in(state, **kwargs)
-
-    @classmethod
-    def username(cls, state=None, **kwargs):
-        return ArcsecondAPI.username(state, **kwargs)
-
-    @classmethod
-    def api_key(cls, state=None, **kwargs):
-        return ArcsecondAPI.api_key(state, **kwargs)
-
-    @classmethod
-    def memberships(cls, state=None, **kwargs):
-        return ArcsecondAPI.memberships(state, **kwargs)
-
-    @classmethod
-    def login(cls, username, password, subdomain, state=None, **kwargs):
-        return ArcsecondAPI.login(username, password, subdomain, state, **kwargs)
-
-    @classmethod
-    def register(cls, username, email, password1, password2, state=None, **kwargs):
-        return ArcsecondAPI.register(username, email, password1, password2, state, **kwargs)
-
-
 class ArcsecondAPI(object):
     def __init__(self, endpoint_class=None, state=None, **kwargs):
         self.state = get_api_state(state, **kwargs)
