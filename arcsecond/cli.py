@@ -335,3 +335,15 @@ def standardstars(state, around, count=5):
     Coordinates are assumed to be Equatorial, with epoch J2000.
     """
     ArcsecondAPI.standardstars(state).list()
+
+
+@main.command(help='Request the list of organisations.')
+@click.argument('subdomain', required=False, nargs=1)
+@open_options
+@pass_state
+def organisations(state, subdomain):
+    api = ArcsecondAPI.organisations(state)
+    if subdomain:
+        api.read(subdomain)
+    else:
+        api.list()
