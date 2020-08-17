@@ -2,14 +2,18 @@
  CLI for arcsecond.io
 """
 import ast
+import os
 import re
 
 from setuptools import find_packages, setup
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
-
 with open('arcsecond/__init__.py', 'rb') as f:
     __version__ = str(ast.literal_eval(_version_re.search(f.read().decode('utf-8')).group(1)))
+
+_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name='arcsecond',
@@ -19,7 +23,7 @@ setup(
     author='Cedric Foellmi',
     author_email='cedric@arcsecond.io',
     description=' CLI for arcsecond.io',
-    long_description=__doc__,
+    long_description=long_description,
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     zip_safe=False,
