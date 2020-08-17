@@ -16,18 +16,16 @@ from arcsecond.config import (config_file_path,
                               config_file_read_username,
                               config_file_read_organisation_memberships,
                               config_file_save_organisation_membership)
-
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
-from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
-
 from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAPIEndPoint, ExoplanetsAPIEndPoint,
                         DataFilesAPIEndPoint, FindingChartsAPIEndPoint, InstrumentsAPIEndPoint, NightLogsAPIEndPoint,
                         ObjectsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
                         ObservationsAPIEndPoint, CalibrationsAPIEndPoint,
                         PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint,
                         StandardStarsAPIEndPoint, TelegramsATelAPIEndPoint, TelescopesAPIEndPoint,
-                        AsyncFileUploader)
+                        AsyncFileUploader, OrganisationsAPIEndPoint)
+from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
@@ -36,18 +34,19 @@ ECHO_ERROR_PREFIX = u' • [error] '
 __all__ = ["ArcsecondAPI", "AsyncFileUploader"]
 
 ENDPOINTS = [ActivitiesAPIEndPoint,
+             CalibrationsAPIEndPoint,
              CataloguesAPIEndPoint,
+             DataFilesAPIEndPoint,
              DatasetsAPIEndPoint,
              ExoplanetsAPIEndPoint,
-             DataFilesAPIEndPoint,
              FindingChartsAPIEndPoint,
              InstrumentsAPIEndPoint,
              NightLogsAPIEndPoint,
              ObjectsAPIEndPoint,
-             ObservingRunsAPIEndPoint,
              ObservationsAPIEndPoint,
-             CalibrationsAPIEndPoint,
+             ObservingRunsAPIEndPoint,
              ObservingSitesAPIEndPoint,
+             OrganisationsAPIEndPoint,
              PersonalProfileAPIEndPoint,
              ProfileAPIEndPoint,  # And not ProfileAPIKeyAPIEndPoint...
              SatellitesAPIEndPoint,
