@@ -1,3 +1,4 @@
+from ._fileuploader import AsyncFileUploader
 from .activities import ActivitiesAPIEndPoint
 from .catalogues import CataloguesAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
@@ -15,28 +16,26 @@ from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPI
 from .satellites import SatellitesAPIEndPoint
 from .standardstars import StandardStarsAPIEndPoint, CataloguesAPIEndPoint
 from .telegrams import TelegramsATelAPIEndPoint
-from ._fileuploader import AsyncFileUploader
 
 __all__ = ["ActivitiesAPIEndPoint",
-           "CataloguesAPIEndPoint",
-           "FindingChartsAPIEndPoint",
-           "DatasetsAPIEndPoint",
-           "DataFilesAPIEndPoint",
-           "ExoplanetsAPIEndPoint",
-           "ObjectsAPIEndPoint",
-           "NightLogsAPIEndPoint",
-           "ObservingRunsAPIEndPoint",
-           "ObservationsAPIEndPoint",
            "CalibrationsAPIEndPoint",
+           "CataloguesAPIEndPoint",
+           "DataFilesAPIEndPoint",
+           "DatasetsAPIEndPoint",
+           "ExoplanetsAPIEndPoint",
+           "FindingChartsAPIEndPoint",
            "InstrumentsAPIEndPoint",
+           "NightLogsAPIEndPoint",
+           "ObjectsAPIEndPoint",
+           "ObservationsAPIEndPoint",
+           "ObservingRunsAPIEndPoint",
            "ObservingSitesAPIEndPoint",
-           "TelescopesAPIEndPoint",
            "OrganisationsAPIEndPoint",
            "PersonalProfileAPIEndPoint",
            "ProfileAPIEndPoint",
            "ProfileAPIKeyAPIEndPoint",
            "SatellitesAPIEndPoint",
            "StandardStarsAPIEndPoint",
-           "CataloguesAPIEndPoint",
+           "TelescopesAPIEndPoint",
            "TelegramsATelAPIEndPoint",
            "AsyncFileUploader"]
