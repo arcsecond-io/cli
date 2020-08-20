@@ -241,7 +241,8 @@ class ArcsecondAPI(object):
     @classmethod
     def memberships(cls, state=None, **kwargs):
         state = get_api_state(state, **kwargs)
-        return config_file_read_organisation_memberships(section=state.config_section())
+        raw_memberships = config_file_read_organisation_memberships(section=state.config_section())
+        return {m: raw_memberships[m] for m in raw_memberships}
 
     @classmethod
     def login(cls, username, password, state=None, **kwargs):
