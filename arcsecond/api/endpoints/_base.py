@@ -97,8 +97,8 @@ class APIEndPoint(object):
     def read(self, id_name_uuid):
         return self._perform_request(self._detail_url(id_name_uuid), 'get', None, None)
 
-    def update(self, id_name_uuid, payload):
-        return self._perform_request(self._detail_url(id_name_uuid), 'patch', payload, None)
+    def update(self, id_name_uuid, payload, callback=None):
+        return self._perform_request(self._detail_url(id_name_uuid), 'patch', payload, callback)
 
     def delete(self, id_name_uuid):
         return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, None)
