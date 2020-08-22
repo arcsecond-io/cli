@@ -37,7 +37,7 @@ def test_datafiles_upload_file_threaded_no_callback():
 
 
 @httpretty.activate
-def test_datafiles_upload_file_threaded_with_callback():
+def test_datafiles_upload_file_create_threaded_with_callback():
     # Using standard CLI runner to make sure we login successfuly as in other tests.
     runner = CliRunner()
     register_successful_login(runner)
@@ -60,6 +60,41 @@ def test_datafiles_upload_file_threaded_with_callback():
     datafiles_api = ArcsecondAPI.datafiles(debug=True, dataset=str(dataset_uuid))
     payload = {'file': os.path.join(fixtures_folder, 'file1.fits')}
     uploader, _ = datafiles_api.create(payload, callback=upload_callback)
+    uploader.start()
+    while uploader.is_alive():
+        pass
+    print(f'is alive? {uploader.is_alive()}', flush=True)
+    results, error = uploader.finish()
+
+    assert results is not None
+    assert error is None
+    assert has_callback_been_called is True
+
+
+@httpretty.activate
+def test_datafiles_upload_file_update_threaded_with_callback():
+    runner = CliRunner()
+    register_successful_login(runner)
+
+    dataset_uuid = uuid.uuid4()
+    filename = 'jupiter99.fits'
+    httpretty.register_uri(
+        httpretty.PATCH,
+        f'{ARCSECOND_API_URL_DEV}/datasets/{str(dataset_uuid)}/datafiles/{filename}/',
+        status=200,
+        body='{"file": "amazon.com..."}'
+    )
+
+    def upload_callback(eventName, progress):
+        print(eventName, progress, flush=True)
+        global has_callback_been_called
+        has_callback_been_called = True
+
+    fixtures_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fixtures')
+    # Go for Python module tests
+    datafiles_api = ArcsecondAPI.datafiles(debug=True, dataset=str(dataset_uuid))
+    payload = {'file': os.path.join(fixtures_folder, 'file1.fits')}
+    uploader, _ = datafiles_api.update(filename, payload, callback=upload_callback)
     uploader.start()
     while uploader.is_alive():
         pass

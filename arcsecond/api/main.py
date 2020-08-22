@@ -141,8 +141,8 @@ class ArcsecondAPI(object):
         else:
             return self._handle_endpoint_response(self.endpoint.read(id_name_uuid))
 
-    def update(self, id_name_uuid, payload):
-        return self._handle_endpoint_response(self.endpoint.update(id_name_uuid, payload))
+    def update(self, id_name_uuid, payload, callback=None):
+        return self._handle_endpoint_response(self.endpoint.update(id_name_uuid, payload, callback=callback))
 
     def delete(self, id_name_uuid):
         return self._handle_endpoint_response(self.endpoint.delete(id_name_uuid))
