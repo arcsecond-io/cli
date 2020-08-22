@@ -14,7 +14,6 @@ has_callback_been_called = False
 
 @httpretty.activate
 def test_datafiles_upload_file_threaded_no_callback():
-    # Using standard CLI runner to make sure we login successfuly as in other tests.
     runner = CliRunner()
     register_successful_login(runner)
 
