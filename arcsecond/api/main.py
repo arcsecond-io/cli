@@ -10,21 +10,18 @@ from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from arcsecond.config import (config_file_path,
-                              config_file_read_api_key,
-                              config_file_save_api_key,
-                              config_file_read_username,
-                              config_file_read_organisation_memberships,
+from arcsecond.config import (config_file_path, config_file_read_api_key, config_file_read_organisation_memberships,
+                              config_file_read_username, config_file_save_api_key,
                               config_file_save_organisation_membership)
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
-from .endpoints import (ActivitiesAPIEndPoint, CataloguesAPIEndPoint, DatasetsAPIEndPoint, ExoplanetsAPIEndPoint,
-                        DataFilesAPIEndPoint, FindingChartsAPIEndPoint, InstrumentsAPIEndPoint, NightLogsAPIEndPoint,
-                        ObjectsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
-                        ObservationsAPIEndPoint, CalibrationsAPIEndPoint,
-                        PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint,
-                        StandardStarsAPIEndPoint, TelegramsATelAPIEndPoint, TelescopesAPIEndPoint,
-                        AsyncFileUploader, OrganisationsAPIEndPoint)
+from .endpoints import (ActivitiesAPIEndPoint, AsyncFileUploader, CalibrationsAPIEndPoint, CataloguesAPIEndPoint,
+                        DataFilesAPIEndPoint, DatasetsAPIEndPoint, ExoplanetsAPIEndPoint, FindingChartsAPIEndPoint,
+                        InstrumentsAPIEndPoint, MembersAPIEndPoint, NightLogsAPIEndPoint, ObjectsAPIEndPoint,
+                        ObservationsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
+                        OrganisationsAPIEndPoint, PersonalProfileAPIEndPoint, ProfileAPIEndPoint,
+                        ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint, StandardStarsAPIEndPoint,
+                        TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
 from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
@@ -41,6 +38,7 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              ExoplanetsAPIEndPoint,
              FindingChartsAPIEndPoint,
              InstrumentsAPIEndPoint,
+             MembersAPIEndPoint,
              NightLogsAPIEndPoint,
              ObjectsAPIEndPoint,
              ObservationsAPIEndPoint,
