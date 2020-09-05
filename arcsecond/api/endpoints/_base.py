@@ -2,10 +2,9 @@ import uuid
 
 import click
 import requests
-from requests_toolbelt.multipart import encoder
-
-from progress.spinner import Spinner
 from progress.bar import Bar
+from progress.spinner import Spinner
+from requests_toolbelt.multipart import encoder
 
 try:
     # Python3
@@ -136,12 +135,13 @@ class APIEndPoint(object):
         # Put method name aside in its own var.
         method_name = method.upper() if isinstance(method, str) else ''
 
-        if self.state and self.state.organisation:
-            self._check_organisation_membership_and_permission(method_name, self.state.organisation)
-
         # Check API key, hence login state. Must do before check for org.
         headers = self._check_and_set_api_key(self.headers or {}, url)
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
+
+        # If there is a custom api_key provided, do not check for local membership permissions.
+        if self.state and self.state.organisation and not self.state.api_key:
+            self._check_organisation_membership_and_permission(method_name, self.state.organisation)
 
         if payload:
             # Filtering None values out of payload.
