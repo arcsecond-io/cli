@@ -9,3 +9,10 @@ class OrganisationsAPIEndPoint(APIEndPoint):
 
     def _detail_url(self, subdomain):
         return self._build_url('organisations', subdomain)
+
+
+class MembersAPIEndPoint(APIEndPoint):
+    name = 'members'
+
+    def _list_url(self, **filters):
+        return self._build_url('members', **filters)

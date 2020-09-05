@@ -11,7 +11,7 @@ from .observingruns import (
     CalibrationsAPIEndPoint
 )
 from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint, TelescopesAPIEndPoint
-from .organisations import OrganisationsAPIEndPoint
+from .organisations import OrganisationsAPIEndPoint, MembersAPIEndPoint
 from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
 from .satellites import SatellitesAPIEndPoint
 from .standardstars import StandardStarsAPIEndPoint, CataloguesAPIEndPoint
@@ -25,6 +25,7 @@ __all__ = ["ActivitiesAPIEndPoint",
            "ExoplanetsAPIEndPoint",
            "FindingChartsAPIEndPoint",
            "InstrumentsAPIEndPoint",
+           "MembersAPIEndPoint",
            "NightLogsAPIEndPoint",
            "ObjectsAPIEndPoint",
            "ObservationsAPIEndPoint",

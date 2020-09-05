@@ -347,3 +347,11 @@ def organisations(state, subdomain):
         api.read(subdomain)
     else:
         api.list()
+
+
+@main.command(help='Request the list of members of an organisation.')
+@click.argument('subdomain', required=True, nargs=1)
+@open_options
+@pass_state
+def members(state, subdomain):
+    ArcsecondAPI.members(state, organisation=subdomain).list()
