@@ -337,7 +337,7 @@ def standardstars(state, around, count=5):
     ArcsecondAPI.standardstars(state).list()
 
 
-@main.command(help='Request the list of organisations.')
+@main.command(help='Request the list of organisations, or the details of one if a subdomain is provided.')
 @click.argument('subdomain', required=False, nargs=1)
 @open_options
 @pass_state
