@@ -16,7 +16,7 @@ class PersonalProfileAPIEndPoint(ProfileAPIEndPoint):
 
 
 class ProfileAPIKeyAPIEndPoint(APIEndPoint):
-    name = 'keys'
+    name = 'apikey'
 
     def _detail_url(self, username):
-        return self._build_url('profiles', username, 'keys')
+        return self._build_url('profiles', username, 'apikey')
