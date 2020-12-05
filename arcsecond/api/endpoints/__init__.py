@@ -11,7 +11,7 @@ from .observingruns import (
     CalibrationsAPIEndPoint
 )
 from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint, TelescopesAPIEndPoint
-from .organisations import OrganisationsAPIEndPoint, MembersAPIEndPoint
+from .organisations import OrganisationsAPIEndPoint, MembersAPIEndPoint, UploadKeysAPIEndPoint
 from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
 from .satellites import SatellitesAPIEndPoint
 from .standardstars import StandardStarsAPIEndPoint, CataloguesAPIEndPoint
@@ -39,4 +39,5 @@ __all__ = ["ActivitiesAPIEndPoint",
            "StandardStarsAPIEndPoint",
            "TelescopesAPIEndPoint",
            "TelegramsATelAPIEndPoint",
+           "UploadKeysAPIEndPoint",
            "AsyncFileUploader"]

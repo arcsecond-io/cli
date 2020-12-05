@@ -55,7 +55,7 @@ def register_successful_login(runner, subdomain='robotland', role='member'):
     )
     httpretty.register_uri(
         httpretty.GET,
-        ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/keys/',
+        ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/apikey/',
         status=200,
         body='{ "api_key": "' + TEST_API_KEY + '" }'
     )

@@ -21,7 +21,7 @@ from .endpoints import (ActivitiesAPIEndPoint, AsyncFileUploader, CalibrationsAP
                         ObservationsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
                         OrganisationsAPIEndPoint, PersonalProfileAPIEndPoint, ProfileAPIEndPoint,
                         ProfileAPIKeyAPIEndPoint, SatellitesAPIEndPoint, StandardStarsAPIEndPoint,
-                        TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
+                        TelegramsATelAPIEndPoint, TelescopesAPIEndPoint, UploadKeysAPIEndPoint)
 from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
@@ -50,7 +50,8 @@ ENDPOINTS = [ActivitiesAPIEndPoint,
              SatellitesAPIEndPoint,
              StandardStarsAPIEndPoint,
              TelescopesAPIEndPoint,
-             TelegramsATelAPIEndPoint]
+             TelegramsATelAPIEndPoint,
+             UploadKeysAPIEndPoint]
 
 # Tricky but values must NOT have leading slash, but MUST have trailing one...
 VALID_PREFIXES = {'dataset': 'datasets/'}
