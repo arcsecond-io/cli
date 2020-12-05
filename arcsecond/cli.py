@@ -355,3 +355,11 @@ def organisations(state, subdomain):
 @pass_state
 def members(state, subdomain):
     ArcsecondAPI.members(state, organisation=subdomain).list()
+
+
+@main.command(help='Request the list of upload keys of an organisation.')
+@click.argument('subdomain', required=True, nargs=1)
+@open_options
+@pass_state
+def uploadkeys(state, subdomain):
+    ArcsecondAPI.uploadkeys(state, organisation=subdomain).list()
