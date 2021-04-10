@@ -4,6 +4,7 @@ import json
 import pprint
 import types
 import webbrowser
+from json import JSONDecodeError
 
 import click
 from pygments import highlight
@@ -178,19 +179,23 @@ class ArcsecondAPI(object):
         if state and state.debug:
             click.echo(click.style(error, fg='red'))
         else:
-            json_obj = json.loads(error)
-            message = ''
-            if 'detail' in json_obj.keys():
-                detail = json_obj['detail']
-                message = ', '.join(detail) if isinstance(detail, list) else detail
-            elif 'error' in json_obj.keys():
-                error = json_obj['error']
-                message = ', '.join(error) if isinstance(error, list) else error
-            elif 'non_field_errors' in json_obj.keys():
-                errors = json_obj['non_field_errors']
-                message = ', '.join(errors) if isinstance(errors, list) else str(errors)
-            else:
+            try:
+                json_obj = json.loads(error)
+            except JSONDecodeError:
                 message = str(error)
+            else:
+                message = ''
+                if 'detail' in json_obj.keys():
+                    detail = json_obj['detail']
+                    message = ', '.join(detail) if isinstance(detail, list) else detail
+                elif 'error' in json_obj.keys():
+                    error = json_obj['error']
+                    message = ', '.join(error) if isinstance(error, list) else error
+                elif 'non_field_errors' in json_obj.keys():
+                    errors = json_obj['non_field_errors']
+                    message = ', '.join(errors) if isinstance(errors, list) else str(errors)
+                else:
+                    message = str(error)
             click.echo(click.style(ECHO_PREFIX + message, fg='red'))
 
     @classmethod
