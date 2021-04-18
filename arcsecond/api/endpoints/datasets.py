@@ -7,9 +7,8 @@ class DatasetsAPIEndPoint(APIEndPoint):
     def _list_url(self, **filters):
         return self._build_url('datasets', **filters)
 
-    def _detail_url(self, uuid_str):
-        self._check_uuid(uuid_str)
-        return self._build_url('datasets', uuid_str)
+    def _detail_url(self, uuid):
+        return self._build_url('datasets', str(uuid))
 
 
 class DataFilesAPIEndPoint(APIEndPoint):
