@@ -74,14 +74,6 @@ class APIEndPoint(object):
     def _open_url(self, name_or_id):
         raise Exception('You must override this method.')
 
-    def _check_uuid(self, uuid_str):
-        if not uuid_str:
-            raise ArcsecondError('Missing UUID')
-        try:
-            uuid.UUID(uuid_str)
-        except ValueError:
-            raise ArcsecondError('Invalid UUID {}.'.format(uuid_str))
-
     def use_headers(self, headers):
         self.headers = headers
 

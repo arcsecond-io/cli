@@ -7,9 +7,8 @@ class ObservingSitesAPIEndPoint(APIEndPoint):
     def _list_url(self, **filters):
         return self._build_url('observingsites', **filters)
 
-    def _detail_url(self, uuid_str):
-        self._check_uuid(uuid_str)
-        return self._build_url('observingsites', uuid_str)
+    def _detail_url(self, uuid):
+        return self._build_url('observingsites', str(uuid))
 
 
 class TelescopesAPIEndPoint(APIEndPoint):
@@ -18,9 +17,8 @@ class TelescopesAPIEndPoint(APIEndPoint):
     def _list_url(self, **filters):
         return self._build_url('telescopes', **filters)
 
-    def _detail_url(self, uuid_str):
-        self._check_uuid(uuid_str)
-        return self._build_url('telescopes', uuid_str)
+    def _detail_url(self, uuid):
+        return self._build_url('telescopes', str(uuid))
 
 
 class InstrumentsAPIEndPoint(APIEndPoint):
@@ -29,6 +27,5 @@ class InstrumentsAPIEndPoint(APIEndPoint):
     def _list_url(self, **filters):
         return self._build_url('instruments', **filters)
 
-    def _detail_url(self, uuid_str):
-        self._check_uuid(uuid_str)
-        return self._build_url('instruments', uuid_str)
+    def _detail_url(self, uuid):
+        return self._build_url('instruments', str(uuid))

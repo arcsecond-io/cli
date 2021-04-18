@@ -7,9 +7,8 @@ class ObservingRunsAPIEndPoint(APIEndPoint):
     def _list_url(self, **filters):
         return self._build_url('observingruns', **filters)
 
-    def _detail_url(self, uuid_str):
-        self._check_uuid(uuid_str)
-        return self._build_url('observingruns', uuid_str)
+    def _detail_url(self, uuid):
+        return self._build_url('observingruns', str(uuid))
 
 
 class NightLogsAPIEndPoint(APIEndPoint):
@@ -18,9 +17,8 @@ class NightLogsAPIEndPoint(APIEndPoint):
     def _list_url(self, **filters):
         return self._build_url('nightlogs', **filters)
 
-    def _detail_url(self, uuid_str):
-        self._check_uuid(uuid_str)
-        return self._build_url('nightlogs', uuid_str)
+    def _detail_url(self, uuid):
+        return self._build_url('nightlogs', str(uuid))
 
 
 class ObservationsAPIEndPoint(APIEndPoint):
@@ -29,9 +27,8 @@ class ObservationsAPIEndPoint(APIEndPoint):
     def _list_url(self, **filters):
         return self._build_url('observations', **filters)
 
-    def _detail_url(self, uuid_str):
-        self._check_uuid(uuid_str)
-        return self._build_url('observations', uuid_str)
+    def _detail_url(self, uuid):
+        return self._build_url('observations', str(uuid))
 
 
 class CalibrationsAPIEndPoint(APIEndPoint):
@@ -40,6 +37,5 @@ class CalibrationsAPIEndPoint(APIEndPoint):
     def _list_url(self, **filters):
         return self._build_url('calibrations', **filters)
 
-    def _detail_url(self, uuid_str):
-        self._check_uuid(uuid_str)
-        return self._build_url('calibrations', uuid_str)
+    def _detail_url(self, uuid):
+        return self._build_url('calibrations', str(uuid))
