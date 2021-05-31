@@ -15,31 +15,31 @@ def test_config_file_path():
     assert path.endswith('.arcsecond.ini')
 
 
-def test_config_file_is_valid_no_file():
+def test_config_file_is_logged_in_no_file():
     with patch('arcsecond.config.config_file_exists', return_value=False):
-        assert config.config_file_is_valid(SECTION) is False
+        assert config.config_file_is_logged_in(SECTION) is False
 
 
-def test_config_file_is_valid_no_keys():
+def test_config_file_is_logged_in_no_keys():
     with patch('arcsecond.config.config_file_exists', return_value=True):
         config.config_file_clear_section(SECTION)
-        assert config.config_file_is_valid(SECTION) is False
+        assert config.config_file_is_logged_in(SECTION) is False
 
 
-def test_config_file_is_valid_has_api_key():
+def test_config_file_is_logged_in_has_api_key():
     config.config_file_save_api_key(API_KEY, USERNAME, SECTION)
-    assert config.config_file_is_valid(SECTION) is True
+    assert config.config_file_is_logged_in(SECTION) is True
 
 
-def test_config_file_is_valid_has_upload_key():
+def test_config_file_is_logged_in_has_upload_key():
     config.config_file_save_upload_key(UPLOAD_KEY, USERNAME, SECTION)
-    assert config.config_file_is_valid(SECTION) is True
+    assert config.config_file_is_logged_in(SECTION) is True
 
 
-def test_config_file_is_valid_has_api_and_upload_keys():
+def test_config_file_is_logged_in_has_api_and_upload_keys():
     config.config_file_save_api_key(API_KEY, USERNAME, SECTION)
     config.config_file_save_upload_key(UPLOAD_KEY, USERNAME, SECTION)
-    assert config.config_file_is_valid(SECTION) is True
+    assert config.config_file_is_logged_in(SECTION) is True
 
 
 def test_config_write_read_api_key():
