@@ -338,28 +338,28 @@ def standardstars(state, around, count=5):
 
 
 @main.command(help='Request the list of organisations, or the details of one if a subdomain is provided.')
-@click.argument('subdomain', required=False, nargs=1)
+@click.argument('organisation', required=False, nargs=1)
 @open_options
 @pass_state
-def organisations(state, subdomain):
+def organisations(state, organisation):
     api = ArcsecondAPI.organisations(state)
-    if subdomain:
-        api.read(subdomain)
+    if organisation:
+        api.read(organisation)
     else:
         api.list()
 
 
 @main.command(help='Request the list of members of an organisation.')
-@click.argument('subdomain', required=True, nargs=1)
+@click.argument('organisation', required=True, nargs=1)
 @open_options
 @pass_state
-def members(state, subdomain):
-    ArcsecondAPI.members(state, organisation=subdomain).list()
+def members(state, organisation):
+    ArcsecondAPI.members(state, organisation=organisation).list()
 
 
 @main.command(help='Request the list of upload keys of an organisation.')
-@click.argument('subdomain', required=True, nargs=1)
+@click.argument('organisation', required=True, nargs=1)
 @open_options
 @pass_state
-def uploadkeys(state, subdomain):
-    ArcsecondAPI.uploadkeys(state, organisation=subdomain).list()
+def uploadkeys(state, organisation):
+    ArcsecondAPI.uploadkeys(state, organisation=organisation).list()
