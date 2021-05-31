@@ -38,3 +38,9 @@ class ArcsecondTooManyPrefixesError(ArcsecondError):
         msg = "Too many endpoint prefixes: {}.\n".format(', '.join(prefixes))
         msg += "Only one can be used at a time."
         super().__init__(msg)
+
+
+class ArcsecondMissingArgumentError(ArcsecondError):
+    def __init__(self, arg):
+        msg = f"Missing '{arg}' argument."
+        super().__init__(msg)

@@ -19,12 +19,17 @@ from .endpoints import (ActivitiesAPIEndPoint, AsyncFileUploader, CalibrationsAP
                         DataFilesAPIEndPoint, DatasetsAPIEndPoint, ExoplanetsAPIEndPoint, FindingChartsAPIEndPoint,
                         InstrumentsAPIEndPoint, MembersAPIEndPoint, NightLogsAPIEndPoint, ObjectsAPIEndPoint,
                         ObservationsAPIEndPoint, ObservingRunsAPIEndPoint, ObservingSitesAPIEndPoint,
-from .error import ArcsecondInvalidEndpointError, ArcsecondNotLoggedInError, ArcsecondTooManyPrefixesError
                         OrganisationUploadKeysAPIEndPoint, OrganisationsAPIEndPoint, PersonalProfileAPIEndPoint,
                         ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint, ProfileSharedKeysAPIEndPoint,
                         ProfileUploadKeyAPIEndPoint, SatellitesAPIEndPoint, StandardStarsAPIEndPoint,
                         TelegramsATelAPIEndPoint, TelescopesAPIEndPoint)
 from .endpoints._base import APIEndPoint
+from .error import (
+    ArcsecondInvalidEndpointError,
+    ArcsecondMissingArgumentError,
+    ArcsecondNotLoggedInError,
+    ArcsecondTooManyPrefixesError
+)
 
 pp = pprint.PrettyPrinter(indent=4, depth=5)
 ECHO_PREFIX = u' • '
