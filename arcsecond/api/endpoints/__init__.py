@@ -2,19 +2,16 @@ from ._fileuploader import AsyncFileUploader
 from .activities import ActivitiesAPIEndPoint
 from .catalogues import CataloguesAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
-from .datasets import DatasetsAPIEndPoint, DataFilesAPIEndPoint
+from .datasets import DataFilesAPIEndPoint, DatasetsAPIEndPoint
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
-from .observingruns import (
-    NightLogsAPIEndPoint,
-    ObservingRunsAPIEndPoint,
-    ObservationsAPIEndPoint,
-    CalibrationsAPIEndPoint
-)
+from .observingruns import (CalibrationsAPIEndPoint, NightLogsAPIEndPoint, ObservationsAPIEndPoint,
+                            ObservingRunsAPIEndPoint)
 from .observingsites import InstrumentsAPIEndPoint, ObservingSitesAPIEndPoint, TelescopesAPIEndPoint
-from .organisations import OrganisationsAPIEndPoint, MembersAPIEndPoint, UploadKeysAPIEndPoint
-from .profiles import PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint
+from .organisations import MembersAPIEndPoint, OrganisationsAPIEndPoint, OrganisationUploadKeysAPIEndPoint
+from .profiles import (PersonalProfileAPIEndPoint, ProfileAPIEndPoint, ProfileAPIKeyAPIEndPoint,
+                       ProfileSharedKeysAPIEndPoint, ProfileUploadKeyAPIEndPoint)
 from .satellites import SatellitesAPIEndPoint
-from .standardstars import StandardStarsAPIEndPoint, CataloguesAPIEndPoint
+from .standardstars import CataloguesAPIEndPoint, StandardStarsAPIEndPoint
 from .telegrams import TelegramsATelAPIEndPoint
 
 __all__ = ["ActivitiesAPIEndPoint",
@@ -35,6 +32,8 @@ __all__ = ["ActivitiesAPIEndPoint",
            "PersonalProfileAPIEndPoint",
            "ProfileAPIEndPoint",
            "ProfileAPIKeyAPIEndPoint",
+           "ProfileUploadKeyAPIEndPoint",
+           "ProfileSharedKeysAPIEndPoint",
            "SatellitesAPIEndPoint",
            "StandardStarsAPIEndPoint",
            "TelescopesAPIEndPoint",
