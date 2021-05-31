@@ -48,7 +48,7 @@ def register(state, username, email, password1, password2):
 @pass_state
 def login(state, username, password, organisation=None):
     """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI.login(username, password, state)
+    ArcsecondAPI.login(username, password, state, organisation=organisation)
 
 
 @main.command(help='Fetch your complete user profile.')
