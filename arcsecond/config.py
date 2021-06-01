@@ -87,11 +87,11 @@ def _config_file_save_personal_key(key_name: str, key_value: str, username: str,
 
 
 def config_file_save_api_key(api_key: str, username: str, section: str = 'main') -> None:
-    __config_file_save_personal_key('api_key', api_key, username, section=section)
+    _config_file_save_personal_key('api_key', api_key, username, section=section)
 
 
 def config_file_save_upload_key(upload_key: str, username: str, section: str = 'main') -> None:
-    __config_file_save_personal_key('upload_key', upload_key, username, section=section)
+    _config_file_save_personal_key('upload_key', upload_key, username, section=section)
 
 
 def config_file_save_shared_key(shared_key: str, username: str, organisation: str, section: str = 'main') -> None:
