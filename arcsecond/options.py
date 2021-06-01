@@ -78,6 +78,19 @@ def debug_option_constructor(f):
                         callback=callback)(f)
 
 
+def test_option_constructor(f):
+    def callback(ctx, param, value):
+        state = ctx.ensure_object(State)
+        state.test = value
+        return value
+
+    return click.option('--test',
+                        is_flag=True,
+                        expose_value=False,
+                        help='Enables or disables test mode (for arcsecond developers). Implies debug.',
+                        callback=callback)(f)
+
+
 def organisation_option_constructor(f):
     def callback(ctx, param, value):
         state = ctx.ensure_object(State)
@@ -106,6 +119,7 @@ def open_option_constructor(f):
 def basic_options(f):
     f = verbose_option_constructor(f)
     f = debug_option_constructor(f)
+    f = test_option_constructor(f)
     return f
 
 
