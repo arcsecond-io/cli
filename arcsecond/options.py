@@ -10,6 +10,7 @@ class State(object):
                  organisation=None,
                  is_using_cli=True,
                  api_key=None,
+                 upload_key=None):
 
         self.verbose = verbose
         self.debug = debug
@@ -18,6 +19,7 @@ class State(object):
         self.organisation = organisation
         self.is_using_cli = is_using_cli
         self.api_key = api_key
+        self.upload_key = upload_key
 
     def config_section(self):
         if self.test:
@@ -34,6 +36,7 @@ class State(object):
                      organisation=self.organisation,
                      is_using_cli=self.is_using_cli,
                      api_key=self.api_key,
+                     upload_key=self.upload_key)
 
 
 # class AliasedGroup(click.Group):
