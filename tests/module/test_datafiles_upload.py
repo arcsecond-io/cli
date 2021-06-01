@@ -41,6 +41,7 @@ def test_datafiles_upload_file_create_threaded_with_callback():
     # Using standard CLI runner to make sure we login successfuly as in other tests.
     runner = CliRunner()
     register_successful_login(runner)
+    has_callback_been_called = False
 
     dataset_uuid = uuid.uuid4()
     httpretty.register_uri(
@@ -75,6 +76,7 @@ def test_datafiles_upload_file_create_threaded_with_callback():
 def test_datafiles_upload_file_update_threaded_with_callback():
     runner = CliRunner()
     register_successful_login(runner)
+    has_callback_been_called = False
 
     dataset_uuid = uuid.uuid4()
     filename = 'jupiter99.fits'
