@@ -59,7 +59,7 @@ def register_successful_login(runner, subdomain='robotland', role='member'):
         status=200,
         body='{ "api_key": "' + TEST_API_KEY + '" }'
     )
-    result = runner.invoke(cli.login, ['-d'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    result = runner.invoke(cli.login, ['--debug', '--test'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
     assert result.exit_code == 0
 
 

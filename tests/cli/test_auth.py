@@ -16,7 +16,7 @@ def test_login_unknown_credentials():
         status=401,
         body='{"detail": "Unable to log in with provided credentials."}'
     )
-    result = runner.invoke(cli.login, ['-d'], input='dummy\ndummy')
+    result = runner.invoke(cli.login, ['--debug', '--test'], input='dummy\ndummy')
     assert result.exit_code == 0 and not result.exception
     assert 'Unable to log in with provided credentials.' in result.output
 
@@ -31,7 +31,7 @@ def test_login_invalid_parameters():
         body='{"detail": "This field may not be blank."}'
     )
     for input in [' \n ', ' \ndummy', 'dummy\n ']:
-        result = runner.invoke(cli.login, ['-d'], input=input)
+        result = runner.invoke(cli.login, ['--debug', '--test'], input=input)
         assert result.exit_code == 0 and not result.exception
         assert 'non_field_errors' in result.output or 'This field may not be blank' in result.output
 
@@ -39,7 +39,7 @@ def test_login_invalid_parameters():
 def test_register_refuse_agreement(monkeypatch):
     runner = CliRunner()
     monkeypatch.setattr('builtins.input', lambda x: "")
-    result = runner.invoke(cli.register, ['-d'], input='test\ntest@test.com\ntest1\ntest1')
+    result = runner.invoke(cli.register, ['--debug', '--test'], input='test\ntest@test.com\ntest1\ntest1')
     assert result.exit_code != 0 and result.exception
 
 
@@ -54,5 +54,5 @@ def test_register_refuse_agreement(monkeypatch):
 #         body='{"key": "dummy_api_key."}'
 #     )
 #     monkeypatch.setattr('builtins.input', lambda x: "y")
-#     result = runner.invoke(cli.register, ['-d'], input='test16\ntest@test.com\ntest1\ntest1')
+#     result = runner.invoke(cli.register, ['--debug', '--test'], input='test16\ntest@test.com\ntest1\ntest1')
 #     assert result.exit_code == 0 and not result.exception

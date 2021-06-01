@@ -31,7 +31,7 @@ def test_activities_with_valid_coordinates():
     )
 
     coords = "{},{}".format(coords_ra, coords_dec)
-    result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '-d'])
+    result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '--debug', '--test'])
     assert result.exit_code == 0 and not result.exception
 
 
@@ -43,7 +43,7 @@ def test_activities_with_invalid_coordinates():
     coords_ra = 2.33
     coords_dec = 4.55
     coords = "{}$$${}".format(coords_ra, coords_dec)
-    result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '-d'])
+    result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '--debug', '--test'])
     assert result.exit_code != 0
     assert isinstance(result.exception, ArcsecondInputValueError)
 
@@ -56,7 +56,7 @@ def test_activities_with_invalid_coordinates2():
     coords_ra = 2.33
     coords_dec = 4.55
     coords = "{},{},{}".format(coords_ra, coords_dec, coords_dec)
-    result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '-d'])
+    result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '--debug', '--test'])
     assert result.exit_code != 0
     assert isinstance(result.exception, ArcsecondInputValueError)
 
@@ -68,6 +68,6 @@ def test_activities_with_invalid_coordinates3():
     site_uuid = str(uuid.uuid4())
     coords_ra = 2.33
     coords = "yoyo,{}".format(coords_ra)
-    result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '-d'])
+    result = runner.invoke(cli.activities, ['create', '--observing_site', site_uuid, '--coordinates', coords, '--debug', '--test'])
     assert result.exit_code != 0
     assert isinstance(result.exception, ArcsecondInputValueError)
