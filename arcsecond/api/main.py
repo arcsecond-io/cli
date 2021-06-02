@@ -244,16 +244,21 @@ class ArcsecondAPI(object):
         if error:
             ArcsecondAPI._echo_error(state, error)
         elif result:
-            if 'oort' in args:
+            auth_token = result['token']
+            # We replace result and error of login with that of key check.
+            if 'apikey' in args:
+                result, error = ArcsecondAPI._get_and_save_api_key(state, username, auth_token)
+            if 'uploadkey' in args:
+                result, error = ArcsecondAPI._get_and_save_upload_key(state, username, auth_token)
+            if 'sharedkeys' in args:
                 if not 'organisation' in kwargs.keys():
                     raise ArcsecondMissingArgumentError('organisation')
-                # We replace result and error of login with that of api key
                 organisation = kwargs.get('organisation')
-                result, error = ArcsecondAPI._get_and_save_upload_keys(state, username, result['key'], organisation)
-            else:
-                # We replace result and error of login with that of api key
-                result, error = ArcsecondAPI._get_and_save_api_key(state, username, result['key'])
-            ArcsecondAPI._check_memberships(state, username)
+                result, error = ArcsecondAPI._get_and_save_shared_keys_for_organisation(state,
+                                                                                        username,
+                                                                                        auth_token,
+                                                                                        organisation)
+            ArcsecondAPI._check_memberships(state, username, auth_token)
         return result, error
 
     @classmethod
@@ -285,9 +290,11 @@ class ArcsecondAPI(object):
         return result, error
 
     @classmethod
-    def _check_memberships(cls, state, username):
+    def _check_memberships(cls, state, username, auth_token):
         ArcsecondAPI._echo_message(state, f'Checking Memberships...')
-        profile, error = PersonalProfileAPIEndPoint(state.make_new_silent()).read(username)
+        endpoint = PersonalProfileAPIEndPoint(state.make_new_silent())
+        endpoint.use_headers({'Authorization': 'Token ' + auth_token})
+        profile, error = endpoint.read(username)
         if error:
             ArcsecondAPI._echo_error(state, error)
         else:
