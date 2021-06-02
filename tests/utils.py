@@ -72,7 +72,7 @@ def save_test_credentials(username, memberships=None):
 
 
 def clear_test_credentials():
-    config_file_clear_section('debug')
+    config_file_clear_section('test')
 
 
 def mock_url_path(method, path, body='', query='', status=200):

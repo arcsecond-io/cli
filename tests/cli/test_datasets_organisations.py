@@ -14,7 +14,7 @@ from tests.utils import (register_successful_login,
 
 class DatasetsInOrganisationsTestCase(TestCase):
     def setUp(self):
-        config_file_clear_section('debug')
+        config_file_clear_section('test')
         httpretty.enable()
 
     def tearDown(self):
