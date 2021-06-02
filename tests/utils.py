@@ -40,12 +40,12 @@ def make_profile_json(subdomain, role):
     return json.dumps(make_profile(subdomain, role))
 
 
-def prepare_successful_login(runner, subdomain='robotland', role='member'):
+def prepare_successful_login(subdomain='robotland', role='member'):
     httpretty.register_uri(
         httpretty.POST,
         ARCSECOND_API_URL_DEV + API_AUTH_PATH_LOGIN,
         status=200,
-        body='{ "key": "935e2b9e24c44581b4ef5f4c8e53213e" }'
+        body='{ "token": "935e2b9e24c44581b4ef5f4c8e53213e" }'
     )
     httpretty.register_uri(
         httpretty.GET,
@@ -62,7 +62,7 @@ def prepare_successful_login(runner, subdomain='robotland', role='member'):
 
 
 def make_successful_login(runner, subdomain='robotland', role='member'):
-    prepare_successful_login(runner, subdomain, role)
+    prepare_successful_login(subdomain, role)
     result = runner.invoke(cli.login, ['--debug', '--test'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
     assert result.exit_code == 0
 

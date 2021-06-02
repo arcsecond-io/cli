@@ -40,15 +40,21 @@ def register(state, username, email, password1, password2):
     ArcsecondAPI.register(username, email, password1, password2, state)
 
 
-@main.command(help='Login to a personal Arcsecond.io account')
+@main.command(help='Login to an Arcsecond.io account')
 @click.option('--username', required=True, nargs=1, prompt=True)
 @click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
-@click.option('--organisation', required=False, help='organisation subdomain')
+@click.option('--organisation', required=False,
+              help='An organisation subdomain. If provided, memberships will be checked.')
 @basic_options
 @pass_state
 def login(state, username, password, organisation=None):
     """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI.login(username, password, state, organisation=organisation)
+    msg = 'Logging in will fetch and store your full-access API key in ~/.arcsecond.ini. '
+    msg += 'Make sure you are on a secure computer.'
+    if click.confirm(msg, default=True):
+        ArcsecondAPI.login(username, password, state, organisation, 'apikey')
+    else:
+        click.echo('Stoping without logging in.')
 
 
 @main.command(help='Fetch your complete user profile.')

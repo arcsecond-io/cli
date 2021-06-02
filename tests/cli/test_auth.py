@@ -1,8 +1,12 @@
 import sys
+
 import httpretty
 from click.testing import CliRunner
+
 from arcsecond import cli
 from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
+from config import config_file_clear_api_key, config_file_read_api_key
+from tests.utils import TEST_LOGIN_PASSWORD, TEST_LOGIN_USERNAME, prepare_successful_login
 
 python_version = sys.version_info.major
 
@@ -36,12 +40,36 @@ def test_login_invalid_parameters():
         assert 'non_field_errors' in result.output or 'This field may not be blank' in result.output
 
 
+@httpretty.activate
+def test_login_valid_parameters_with_confirmation():
+    config_file_clear_api_key('test')
+    assert config_file_read_api_key('test') is None
+    runner = CliRunner(echo_stdin=True)
+    prepare_successful_login()
+    result = runner.invoke(cli.login,
+                           ['--debug', '--test'],
+                           input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD + '\nY')
+    assert result.exit_code == 0 and not result.exception
+    assert config_file_read_api_key('test') is not None
+
+
+def test_login_valid_parameters_without_confirmation():
+    config_file_clear_api_key('test')
+    assert config_file_read_api_key('test') is None
+    runner = CliRunner(echo_stdin=True)
+    prepare_successful_login()
+    result = runner.invoke(cli.login,
+                           ['--debug', '--test'],
+                           input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD + '\nN')
+    assert result.exit_code == 0 and not result.exception
+    assert config_file_read_api_key('test') is None
+
+
 def test_register_refuse_agreement(monkeypatch):
     runner = CliRunner()
     monkeypatch.setattr('builtins.input', lambda x: "")
     result = runner.invoke(cli.register, ['--debug', '--test'], input='test\ntest@test.com\ntest1\ntest1')
     assert result.exit_code != 0 and result.exception
-
 
 # I can't find a way to use httpretyy.activate and monkeypatch at the same time.
 # @httpretty.activate
