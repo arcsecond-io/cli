@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from arcsecond import ArcsecondAPI
 from arcsecond.api.constants import ARCSECOND_API_URL_DEV
-from tests.utils import register_successful_login
+from tests.utils import make_successful_login
 
 has_callback_been_called = False
 
@@ -15,7 +15,7 @@ has_callback_been_called = False
 @httpretty.activate
 def test_datafiles_upload_file_threaded_no_callback():
     runner = CliRunner()
-    register_successful_login(runner)
+    make_successful_login(runner)
 
     dataset_uuid = uuid.uuid4()
     httpretty.register_uri(
@@ -40,7 +40,7 @@ def test_datafiles_upload_file_threaded_no_callback():
 def test_datafiles_upload_file_create_threaded_with_callback():
     # Using standard CLI runner to make sure we login successfuly as in other tests.
     runner = CliRunner()
-    register_successful_login(runner)
+    make_successful_login(runner)
     has_callback_been_called = False
 
     dataset_uuid = uuid.uuid4()
@@ -75,7 +75,7 @@ def test_datafiles_upload_file_create_threaded_with_callback():
 @httpretty.activate
 def test_datafiles_upload_file_update_threaded_with_callback():
     runner = CliRunner()
-    register_successful_login(runner)
+    make_successful_login(runner)
     has_callback_been_called = False
 
     dataset_uuid = uuid.uuid4()

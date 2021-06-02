@@ -7,7 +7,7 @@ from arcsecond import ArcsecondAPI, cli
 from arcsecond.api.error import ArcsecondError
 from arcsecond.config import config_file_clear_section, config_file_save_api_key, \
     config_file_save_organisation_membership
-from tests.utils import (mock_http_get, mock_http_post, mock_url_path, register_successful_login)
+from tests.utils import (mock_http_get, mock_http_post, mock_url_path, make_successful_login)
 
 
 class NightLogsInOrganisationsTestCase(TestCase):
@@ -21,21 +21,21 @@ class NightLogsInOrganisationsTestCase(TestCase):
     def test_nightlogs_list_unlogged(self):
         """As a simple user, I must not be able to access the list of nightlogs of an organisation."""
         runner = CliRunner()
-        register_successful_login(runner)
+        make_successful_login(runner)
         result = runner.invoke(cli.logs, ['--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code != 0 and isinstance(result.exception, ArcsecondError)
 
     def test_organisation_GET_nightlogs_list_logged_but_wrong_organisation(self):
         """No matter role I have, accessing an unknown organisation must fail."""
         runner = CliRunner()
-        register_successful_login(runner, 'saao', 'superadmin')
+        make_successful_login(runner, 'saao', 'superadmin')
         result = runner.invoke(cli.logs, ['--organisation', 'dummy', '--debug', '--test'])
         assert result.exit_code != 0 and isinstance(result.exception, ArcsecondError)
 
     def test_organisation_GET_nightlogs_list_valid_role(self):
         """As a SAAO superadmin, I must be able to access the list of nightlogs."""
         runner = CliRunner()
-        register_successful_login(runner, 'saao', 'superadmin')
+        make_successful_login(runner, 'saao', 'superadmin')
         mock_http_get('/saao/nightlogs/', '[]')
         result = runner.invoke(cli.logs, ['--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code == 0 and not result.exception
@@ -43,7 +43,7 @@ class NightLogsInOrganisationsTestCase(TestCase):
     def test_organisation_POST_nightlogs_list_valid_superadmin_role(self):
         """As a SAAO superadmin, I must be able to create a nightlog."""
         runner = CliRunner()
-        register_successful_login(runner, 'saao', 'superadmin')
+        make_successful_login(runner, 'saao', 'superadmin')
         mock_http_post('/saao/nightlogs/', '[]')
         result = runner.invoke(cli.logs, ['create', '--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code == 0 and not result.exception
@@ -51,7 +51,7 @@ class NightLogsInOrganisationsTestCase(TestCase):
     def test_organisation_POST_nightlogs_list_valid_admin_role(self):
         """As a SAAO admin, I must be able to create a nightlog."""
         runner = CliRunner()
-        register_successful_login(runner, 'saao', 'admin')
+        make_successful_login(runner, 'saao', 'admin')
         mock_http_post('/saao/nightlogs/', '[]')
         result = runner.invoke(cli.logs, ['create', '--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code == 0 and not result.exception
@@ -59,7 +59,7 @@ class NightLogsInOrganisationsTestCase(TestCase):
     def test_organisation_POST_nightlogs_list_valid_member_role(self):
         """As a SAAO member, I must be able to create a nightlog."""
         runner = CliRunner()
-        register_successful_login(runner, 'saao', 'member')
+        make_successful_login(runner, 'saao', 'member')
         mock_http_post('/saao/nightlogs/', '[]')
         result = runner.invoke(cli.logs, ['create', '--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code == 0 and not result.exception
@@ -67,7 +67,7 @@ class NightLogsInOrganisationsTestCase(TestCase):
     def test_organisation_POST_nightlogs_list_invalid_guest_role(self):
         """As a SAAO guest, I must not be able to create a nightlog."""
         runner = CliRunner()
-        register_successful_login(runner, 'saao', 'guest')
+        make_successful_login(runner, 'saao', 'guest')
         mock_http_post('/saao/nightlogs/', '[]')
         result = runner.invoke(cli.logs, ['create', '--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code != 0 and isinstance(result.exception, ArcsecondError)

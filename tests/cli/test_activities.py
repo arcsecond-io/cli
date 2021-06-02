@@ -7,13 +7,13 @@ from click.testing import CliRunner
 from arcsecond import cli
 from arcsecond.api.constants import ARCSECOND_API_URL_DEV
 from arcsecond.api.error import ArcsecondInputValueError
-from tests.utils import register_successful_login
+from tests.utils import make_successful_login
 
 
 @httpretty.activate
 def test_activities_with_valid_coordinates():
     runner = CliRunner()
-    register_successful_login(runner)
+    make_successful_login(runner)
     site_uuid = str(uuid.uuid4())
     coords_ra = 2.33
     coords_dec = 4.55
@@ -38,7 +38,7 @@ def test_activities_with_valid_coordinates():
 @httpretty.activate
 def test_activities_with_invalid_coordinates():
     runner = CliRunner()
-    register_successful_login(runner)
+    make_successful_login(runner)
     site_uuid = str(uuid.uuid4())
     coords_ra = 2.33
     coords_dec = 4.55
@@ -51,7 +51,7 @@ def test_activities_with_invalid_coordinates():
 @httpretty.activate
 def test_activities_with_invalid_coordinates2():
     runner = CliRunner()
-    register_successful_login(runner)
+    make_successful_login(runner)
     site_uuid = str(uuid.uuid4())
     coords_ra = 2.33
     coords_dec = 4.55
@@ -64,7 +64,7 @@ def test_activities_with_invalid_coordinates2():
 @httpretty.activate
 def test_activities_with_invalid_coordinates3():
     runner = CliRunner()
-    register_successful_login(runner)
+    make_successful_login(runner)
     site_uuid = str(uuid.uuid4())
     coords_ra = 2.33
     coords = "yoyo,{}".format(coords_ra)
