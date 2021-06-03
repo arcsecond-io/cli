@@ -53,6 +53,7 @@ def test_login_valid_parameters_with_confirmation():
     assert config_file_read_api_key('test') is not None
 
 
+@httpretty.activate
 def test_login_valid_parameters_without_confirmation():
     config_file_clear_api_key('test')
     assert config_file_read_api_key('test') is None

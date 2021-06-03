@@ -70,7 +70,9 @@ def prepare_successful_login(subdomain='robotland', role='member'):
 
 def make_successful_login(runner, subdomain='robotland', role='member'):
     prepare_successful_login(subdomain, role)
-    result = runner.invoke(cli.login, ['--debug', '--test'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD)
+    result = runner.invoke(cli.login,
+                           ['--debug', '--test'],
+                           input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD + '\nY')
     assert result.exit_code == 0
 
 
