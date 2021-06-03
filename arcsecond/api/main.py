@@ -246,11 +246,11 @@ class ArcsecondAPI(object):
         elif result:
             auth_token = result['token']
             # We replace result and error of login with that of key check.
-            if 'apikey' in args:
+            if 'api_key' in kwargs.keys() and bool(kwargs['api_key']):
                 result, error = ArcsecondAPI._get_and_save_api_key(state, username, auth_token)
-            if 'uploadkey' in args:
+            if 'upload_key' in kwargs.keys() and bool(kwargs['upload_key']):
                 result, error = ArcsecondAPI._get_and_save_upload_key(state, username, auth_token)
-            if 'sharedkeys' in args:
+            if 'shared_keys' in kwargs.keys() and bool(kwargs['shared_keys']):
                 if not 'organisation' in kwargs.keys():
                     raise ArcsecondMissingArgumentError('organisation')
                 organisation = kwargs.get('organisation')

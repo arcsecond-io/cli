@@ -11,6 +11,7 @@ from arcsecond.config import (config_file_clear_section,
 TEST_LOGIN_USERNAME = 'robot1'
 TEST_LOGIN_PASSWORD = 'robotpass'
 TEST_API_KEY = '935e2b9e24c44581b4ef5f4c8e53213e'
+TEST_UPLOAD_KEY = 'b4ef5f4c8e53213e935e2b9e24c44581'
 
 
 def make_profile(subdomain, role):
@@ -59,6 +60,12 @@ def prepare_successful_login(subdomain='robotland', role='member'):
         status=200,
         body='{ "api_key": "' + TEST_API_KEY + '" }'
     )
+    httpretty.register_uri(
+        httpretty.GET,
+        ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/uploadkey/',
+        status=200,
+        body='{ "upload_key": "' + TEST_UPLOAD_KEY + '" }'
+    )
 
 
 def make_successful_login(runner, subdomain='robotland', role='member'):
@@ -70,9 +77,9 @@ def make_successful_login(runner, subdomain='robotland', role='member'):
 def save_test_credentials(username, memberships=None):
     if memberships is None:
         memberships = dict()
-    config_file_save_api_key(TEST_API_KEY, username, section='debug')
+    config_file_save_api_key(TEST_API_KEY, username, section='test')
     for k, v in memberships.items():
-        config_file_save_organisation_membership(k, v, 'debug')
+        config_file_save_organisation_membership(k, v, 'test')
 
 
 def clear_test_credentials():
