@@ -12,7 +12,18 @@ from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from arcsecond.config import *
+from arcsecond.config import (config_file_clear_api_key,
+                              config_file_clear_upload_key,
+                              config_file_is_logged_in,
+                              config_file_path,
+                              config_file_read_api_key,
+                              config_file_read_organisation_memberships,
+                              config_file_read_upload_key,
+                              config_file_read_username,
+                              config_file_save_api_key,
+                              config_file_save_organisation_membership,
+                              config_file_save_shared_key,
+                              config_file_save_upload_key)
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .endpoints import (ActivitiesAPIEndPoint, AsyncFileUploader, CalibrationsAPIEndPoint, CataloguesAPIEndPoint,
