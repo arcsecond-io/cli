@@ -251,7 +251,7 @@ class ArcsecondAPI(object):
             if 'upload_key' in kwargs.keys() and bool(kwargs['upload_key']):
                 result, error = ArcsecondAPI._get_and_save_upload_key(state, username, auth_token)
             if 'shared_keys' in kwargs.keys() and bool(kwargs['shared_keys']):
-                if not 'organisation' in kwargs.keys():
+                if 'organisation' not in kwargs.keys():
                     raise ArcsecondMissingArgumentError('organisation')
                 organisation = kwargs.get('organisation')
                 result, error = ArcsecondAPI._get_and_save_shared_keys_for_organisation(state,
