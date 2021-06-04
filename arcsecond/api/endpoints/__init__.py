@@ -37,5 +37,5 @@ __all__ = ["ActivitiesAPIEndPoint",
            "StandardStarsAPIEndPoint",
            "TelescopesAPIEndPoint",
            "TelegramsATelAPIEndPoint",
-           "UploadKeysAPIEndPoint",
+           "OrganisationUploadKeysAPIEndPoint",
            "AsyncFileUploader"]
