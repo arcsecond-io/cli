@@ -1,5 +1,3 @@
-import uuid
-
 import click
 import requests
 from progress.bar import Bar
