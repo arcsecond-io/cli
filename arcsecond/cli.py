@@ -40,15 +40,21 @@ def register(state, username, email, password1, password2):
     ArcsecondAPI.register(username, email, password1, password2, state)
 
 
-@main.command(help='Login to a personal Arcsecond.io account')
+@main.command(help='Login to an Arcsecond.io account')
 @click.option('--username', required=True, nargs=1, prompt=True)
 @click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
-@click.option('--organisation', required=False, help='organisation subdomain')
+@click.option('--organisation', required=False,
+              help='An organisation subdomain. If provided, memberships will be checked.')
 @basic_options
 @pass_state
 def login(state, username, password, organisation=None):
     """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI.login(username, password, state)
+    msg = 'Logging in will fetch and store your full-access API key in ~/.arcsecond.ini. '
+    msg += 'Make sure you are on a secure computer.'
+    if click.confirm(msg, default=True):
+        ArcsecondAPI.login(username, password, state, organisation, api_key=True)
+    else:
+        click.echo('Stoping without logging in.')
 
 
 @main.command(help='Fetch your complete user profile.')
@@ -338,28 +344,28 @@ def standardstars(state, around, count=5):
 
 
 @main.command(help='Request the list of organisations, or the details of one if a subdomain is provided.')
-@click.argument('subdomain', required=False, nargs=1)
+@click.argument('organisation', required=False, nargs=1)
 @open_options
 @pass_state
-def organisations(state, subdomain):
+def organisations(state, organisation):
     api = ArcsecondAPI.organisations(state)
-    if subdomain:
-        api.read(subdomain)
+    if organisation:
+        api.read(organisation)
     else:
         api.list()
 
 
 @main.command(help='Request the list of members of an organisation.')
-@click.argument('subdomain', required=True, nargs=1)
+@click.argument('organisation', required=True, nargs=1)
 @open_options
 @pass_state
-def members(state, subdomain):
-    ArcsecondAPI.members(state, organisation=subdomain).list()
+def members(state, organisation):
+    ArcsecondAPI.members(state, organisation=organisation).list()
 
 
 @main.command(help='Request the list of upload keys of an organisation.')
-@click.argument('subdomain', required=True, nargs=1)
+@click.argument('organisation', required=True, nargs=1)
 @open_options
 @pass_state
-def uploadkeys(state, subdomain):
-    ArcsecondAPI.uploadkeys(state, organisation=subdomain).list()
+def uploadkeys(state, organisation):
+    ArcsecondAPI.uploadkeys(state, organisation=organisation).list()

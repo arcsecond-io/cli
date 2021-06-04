@@ -36,6 +36,6 @@ def test_cli_global_help():
 
 def test_no_connection_to_server():
     runner = CliRunner()
-    result = runner.invoke(cli.login, ['-d'], input='dummy\ndummy')
+    result = runner.invoke(cli.login, ['--debug', '--test'], input='dummy\ndummy')
     assert result.exit_code != 0
     assert isinstance(result.exception, ArcsecondConnectionError)

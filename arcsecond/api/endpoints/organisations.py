@@ -18,7 +18,7 @@ class MembersAPIEndPoint(APIEndPoint):
         return self._build_url('members', **filters)
 
 
-class UploadKeysAPIEndPoint(APIEndPoint):
+class OrganisationUploadKeysAPIEndPoint(APIEndPoint):
     name = 'uploadkeys'
 
     def _list_url(self, **filters):

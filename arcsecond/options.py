@@ -9,7 +9,8 @@ class State(object):
                  open=None,
                  organisation=None,
                  is_using_cli=True,
-                 api_Key=None):
+                 api_key=None,
+                 upload_key=None):
 
         self.verbose = verbose
         self.debug = debug
@@ -17,7 +18,8 @@ class State(object):
         self.open = open
         self.organisation = organisation
         self.is_using_cli = is_using_cli
-        self.api_key = api_Key
+        self.api_key = api_key
+        self.upload_key = upload_key
 
     def config_section(self):
         if self.test:
@@ -33,7 +35,8 @@ class State(object):
                      test=self.test,
                      organisation=self.organisation,
                      is_using_cli=self.is_using_cli,
-                     api_Key=self.api_key)
+                     api_key=self.api_key,
+                     upload_key=self.upload_key)
 
 
 # class AliasedGroup(click.Group):
@@ -78,6 +81,19 @@ def debug_option_constructor(f):
                         callback=callback)(f)
 
 
+def test_option_constructor(f):
+    def callback(ctx, param, value):
+        state = ctx.ensure_object(State)
+        state.test = value
+        return value
+
+    return click.option('--test',
+                        is_flag=True,
+                        expose_value=False,
+                        help='Enables or disables test mode (for arcsecond developers). Implies debug.',
+                        callback=callback)(f)
+
+
 def organisation_option_constructor(f):
     def callback(ctx, param, value):
         state = ctx.ensure_object(State)
@@ -106,6 +122,7 @@ def open_option_constructor(f):
 def basic_options(f):
     f = verbose_option_constructor(f)
     f = debug_option_constructor(f)
+    f = test_option_constructor(f)
     return f
 
 
