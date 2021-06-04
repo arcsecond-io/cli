@@ -291,7 +291,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _check_memberships(cls, state, username, auth_token):
-        ArcsecondAPI._echo_message(state, f'Checking Memberships...')
+        ArcsecondAPI._echo_message(state, 'Checking Memberships...')
         endpoint = PersonalProfileAPIEndPoint(state.make_new_silent())
         endpoint.use_headers({'Authorization': 'Token ' + auth_token})
         profile, error = endpoint.read(username)
