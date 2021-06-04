@@ -57,7 +57,8 @@ def test_datafiles_create_with_file():
         status=201,
         body='{"result": "OK"}'
     )
-    result = runner.invoke(cli.datafiles, [str(dataset_uuid), 'create', '--file', os.path.abspath(__file__), '--debug', '--test'])
+    result = runner.invoke(cli.datafiles,
+                           [str(dataset_uuid), 'create', '--file', os.path.abspath(__file__), '--debug', '--test'])
     assert result.exit_code == 0 and not result.exception
     data = json.loads(result.output)
     assert data['result'] == 'OK'

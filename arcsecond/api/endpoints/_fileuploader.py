@@ -2,18 +2,7 @@ import threading
 
 import requests
 
-try:
-    # Python3
-    from urllib.parse import urlencode
-except ImportError:
-    # Python2
-    from urllib import urlencode
-
-from arcsecond.api.error import (
-    ArcsecondRequestTimeoutError,
-    ArcsecondConnectionError,
-    ArcsecondError
-)
+from arcsecond.api.error import (ArcsecondConnectionError, ArcsecondError, ArcsecondRequestTimeoutError)
 
 
 class AsyncFileUploader(object):

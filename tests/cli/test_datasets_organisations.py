@@ -1,15 +1,12 @@
+from unittest import TestCase
+
 import httpretty
 from click.testing import CliRunner
-from unittest import TestCase
 
 from arcsecond import cli
 from arcsecond.api.error import ArcsecondError
 from arcsecond.config import config_file_clear_section
-
-from tests.utils import (make_successful_login,
-                         make_successful_login,
-                         mock_http_get,
-                         mock_http_post)
+from tests.utils import make_successful_login, mock_http_get, mock_http_post
 
 
 class DatasetsInOrganisationsTestCase(TestCase):

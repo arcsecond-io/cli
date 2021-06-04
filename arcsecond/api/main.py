@@ -5,14 +5,25 @@ import pprint
 import types
 import webbrowser
 from json import JSONDecodeError
-from typing import Type
+from typing import Optional, Type
 
 import click
 from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from arcsecond.config import *
+from arcsecond.config import (config_file_clear_api_key,
+                              config_file_clear_upload_key,
+                              config_file_is_logged_in,
+                              config_file_path,
+                              config_file_read_api_key,
+                              config_file_read_organisation_memberships,
+                              config_file_read_upload_key,
+                              config_file_read_username,
+                              config_file_save_api_key,
+                              config_file_save_organisation_membership,
+                              config_file_save_shared_key,
+                              config_file_save_upload_key)
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .endpoints import (ActivitiesAPIEndPoint, AsyncFileUploader, CalibrationsAPIEndPoint, CataloguesAPIEndPoint,
@@ -251,7 +262,7 @@ class ArcsecondAPI(object):
             if 'upload_key' in kwargs.keys() and bool(kwargs['upload_key']):
                 result, error = ArcsecondAPI._get_and_save_upload_key(state, username, auth_token)
             if 'shared_keys' in kwargs.keys() and bool(kwargs['shared_keys']):
-                if not 'organisation' in kwargs.keys():
+                if 'organisation' not in kwargs.keys():
                     raise ArcsecondMissingArgumentError('organisation')
                 organisation = kwargs.get('organisation')
                 result, error = ArcsecondAPI._get_and_save_shared_keys_for_organisation(state,
@@ -291,7 +302,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _check_memberships(cls, state, username, auth_token):
-        ArcsecondAPI._echo_message(state, f'Checking Memberships...')
+        ArcsecondAPI._echo_message(state, 'Checking Memberships...')
         endpoint = PersonalProfileAPIEndPoint(state.make_new_silent())
         endpoint.use_headers({'Authorization': 'Token ' + auth_token})
         profile, error = endpoint.read(username)
