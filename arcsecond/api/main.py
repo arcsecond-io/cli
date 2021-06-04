@@ -5,7 +5,7 @@ import pprint
 import types
 import webbrowser
 from json import JSONDecodeError
-from typing import Type
+from typing import Optional, Type
 
 import click
 from pygments import highlight
