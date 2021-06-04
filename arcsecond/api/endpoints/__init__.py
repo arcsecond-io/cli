@@ -1,6 +1,5 @@
 from ._fileuploader import AsyncFileUploader
 from .activities import ActivitiesAPIEndPoint
-from .catalogues import CataloguesAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .datasets import DataFilesAPIEndPoint, DatasetsAPIEndPoint
 from .objects import ExoplanetsAPIEndPoint, ObjectsAPIEndPoint
