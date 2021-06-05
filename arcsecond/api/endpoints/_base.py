@@ -1,24 +1,13 @@
+from urllib.parse import urlencode
+
 import click
 import requests
 from progress.bar import Bar
 from progress.spinner import Spinner
 from requests_toolbelt.multipart import encoder
 
-try:
-    # Python3
-    from urllib.parse import urlencode
-except ImportError:
-    # Python2
-    from urllib import urlencode
-
-from arcsecond.api.constants import (
-    ARCSECOND_API_URL_DEV,
-    ARCSECOND_API_URL_PROD,
-    ARCSECOND_WWW_URL_DEV,
-    ARCSECOND_WWW_URL_PROD,
-    API_AUTH_PATH_LOGIN,
-    API_AUTH_PATH_REGISTER)
-
+from arcsecond.api.constants import (API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER, ARCSECOND_API_URL_DEV,
+                                     ARCSECOND_API_URL_PROD, ARCSECOND_WWW_URL_DEV, ARCSECOND_WWW_URL_PROD)
 from arcsecond.api.error import ArcsecondError
 from arcsecond.api.helpers import extract_multipart_encoder_file_fields
 from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
