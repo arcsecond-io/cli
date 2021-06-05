@@ -31,6 +31,7 @@ class APIEndPoint(object):
     name = None
 
     def __init__(self, state=None, prefix=''):
+        # Provided state may contain overriding api_key or upload_key to be used.
         self.state = state or State()
         self.prefix = prefix
         self.organisation = getattr(state, 'organisation', '')
