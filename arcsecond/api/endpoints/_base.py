@@ -181,10 +181,10 @@ class APIEndPoint(object):
         if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():
             return headers
 
-        if self.state.api_key:
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + self.state.api_key
+        # Choose the strongest key first
+        auth_key = self.state.api_key or self.state.upload_key
 
-        else:
+        if auth_key is None:
             if self.state.verbose:
                 click.echo('Checking local API key... ', nl=False)
 
@@ -195,10 +195,10 @@ class APIEndPoint(object):
                 if not auth_key:
                     raise ArcsecondError('Missing auth keys (API or Upload). You must login first: $ arcsecond login')
 
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + auth_key
-
             if self.state.verbose:
                 click.echo('OK')
+
+        headers['X-Arcsecond-API-Authorization'] = 'Key ' + auth_key
 
         return headers
 
