@@ -1,29 +1,21 @@
+from urllib.parse import urlencode
+
 import click
 import requests
 from progress.bar import Bar
 from progress.spinner import Spinner
 from requests_toolbelt.multipart import encoder
 
-try:
-    # Python3
-    from urllib.parse import urlencode
-except ImportError:
-    # Python2
-    from urllib import urlencode
-
-from arcsecond.api.constants import (
-    ARCSECOND_API_URL_DEV,
-    ARCSECOND_API_URL_PROD,
-    ARCSECOND_WWW_URL_DEV,
-    ARCSECOND_WWW_URL_PROD,
-    API_AUTH_PATH_LOGIN,
-    API_AUTH_PATH_REGISTER)
-
+from arcsecond.api.constants import (API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER, ARCSECOND_API_URL_DEV,
+                                     ARCSECOND_API_URL_PROD, ARCSECOND_WWW_URL_DEV, ARCSECOND_WWW_URL_PROD)
 from arcsecond.api.error import ArcsecondError
 from arcsecond.api.helpers import extract_multipart_encoder_file_fields
-from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
+from arcsecond.config import (
+    config_file_read_api_key,
+    config_file_read_organisation_memberships,
+    config_file_read_upload_key
+)
 from arcsecond.options import State
-
 from ._fileuploader import AsyncFileUploader
 
 SAFE_METHODS = ['GET', 'OPTIONS']
@@ -126,7 +118,7 @@ class APIEndPoint(object):
         method_name = method.upper() if isinstance(method, str) else ''
 
         # Check API key, hence login state. Must do before check for org.
-        headers = self._check_and_set_api_key(self.headers or {}, url)
+        headers = self._check_and_set_auth_key(self.headers or {}, url)
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
 
         # If there is a custom api_key provided, do not check for local membership permissions.
@@ -184,7 +176,7 @@ class APIEndPoint(object):
 
         return response, error
 
-    def _check_and_set_api_key(self, headers, url):
+    def _check_and_set_auth_key(self, headers, url):
         if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():
             return headers
 
@@ -195,11 +187,14 @@ class APIEndPoint(object):
             if self.state.verbose:
                 click.echo('Checking local API key... ', nl=False)
 
-            api_key = config_file_read_api_key(self.state.config_section())
-            if not api_key:
-                raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
+            # Choose the strongest key first
+            auth_key = config_file_read_api_key(self.state.config_section())
+            if not auth_key:
+                auth_key = config_file_read_upload_key(self.state.config_section())
+                if not auth_key:
+                    raise ArcsecondError('Missing auth keys (API or Upload). You must login first: $ arcsecond login')
 
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
+            headers['X-Arcsecond-API-Authorization'] = 'Key ' + auth_key
 
             if self.state.verbose:
                 click.echo('OK')
