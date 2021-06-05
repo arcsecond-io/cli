@@ -12,7 +12,6 @@ from arcsecond.api.error import ArcsecondError
 from arcsecond.api.helpers import extract_multipart_encoder_file_fields
 from arcsecond.config import (
     config_file_read_api_key,
-    config_file_read_organisation_memberships,
     config_file_read_upload_key
 )
 from arcsecond.options import State
@@ -122,10 +121,6 @@ class APIEndPoint(object):
         headers = self._check_and_set_auth_key(self.headers or {}, url)
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
 
-        # If there is a custom api_key provided, do not check for local membership permissions.
-        if self.state and self.state.organisation and not self.state.api_key:
-            self._check_organisation_membership_and_permission(method_name, self.state.organisation)
-
         if payload:
             # Filtering None values out of payload.
             payload = {k: v for k, v in payload.items() if v is not None}
@@ -201,12 +196,3 @@ class APIEndPoint(object):
         headers['X-Arcsecond-API-Authorization'] = 'Key ' + auth_key
 
         return headers
-
-    def _check_organisation_membership_and_permission(self, method_name, organisation):
-        memberships = config_file_read_organisation_memberships(self.state.config_section())
-        if self.state.organisation not in memberships.keys():
-            raise ArcsecondError('No membership found for organisation {}'.format(organisation))
-
-        membership = memberships[self.state.organisation]
-        if method_name not in SAFE_METHODS and membership not in WRITABLE_MEMBERSHIPS:
-            raise ArcsecondError('Membership for organisation {} has no write permission'.format(organisation))
