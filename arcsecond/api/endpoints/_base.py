@@ -10,9 +10,12 @@ from arcsecond.api.constants import (API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
                                      ARCSECOND_API_URL_PROD, ARCSECOND_WWW_URL_DEV, ARCSECOND_WWW_URL_PROD)
 from arcsecond.api.error import ArcsecondError
 from arcsecond.api.helpers import extract_multipart_encoder_file_fields
-from arcsecond.config import config_file_read_api_key, config_file_read_organisation_memberships
+from arcsecond.config import (
+    config_file_read_api_key,
+    config_file_read_organisation_memberships,
+    config_file_read_upload_key
+)
 from arcsecond.options import State
-
 from ._fileuploader import AsyncFileUploader
 
 SAFE_METHODS = ['GET', 'OPTIONS']
@@ -184,11 +187,14 @@ class APIEndPoint(object):
             if self.state.verbose:
                 click.echo('Checking local API key... ', nl=False)
 
-            api_key = config_file_read_api_key(self.state.config_section())
-            if not api_key:
-                raise ArcsecondError('Missing API key. You must login first: $ arcsecond login')
+            # Choose the strongest key first
+            auth_key = config_file_read_api_key(self.state.config_section())
+            if not auth_key:
+                auth_key = config_file_read_upload_key(self.state.config_section())
+                if not auth_key:
+                    raise ArcsecondError('Missing auth keys (API or Upload). You must login first: $ arcsecond login')
 
-            headers['X-Arcsecond-API-Authorization'] = 'Key ' + api_key
+            headers['X-Arcsecond-API-Authorization'] = 'Key ' + auth_key
 
             if self.state.verbose:
                 click.echo('OK')
