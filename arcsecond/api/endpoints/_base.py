@@ -126,7 +126,7 @@ class APIEndPoint(object):
         method_name = method.upper() if isinstance(method, str) else ''
 
         # Check API key, hence login state. Must do before check for org.
-        headers = self._check_and_set_api_key(self.headers or {}, url)
+        headers = self._check_and_set_auth_key(self.headers or {}, url)
         method = getattr(requests, method.lower()) if isinstance(method, str) else method
 
         # If there is a custom api_key provided, do not check for local membership permissions.
@@ -184,7 +184,7 @@ class APIEndPoint(object):
 
         return response, error
 
-    def _check_and_set_api_key(self, headers, url):
+    def _check_and_set_auth_key(self, headers, url):
         if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():
             return headers
 
