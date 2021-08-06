@@ -187,6 +187,10 @@ class ArcsecondAPI(object):
         # A create or update method with a file to upload will return a tuple made of
         # a FileUploader and None. Hence, nothing to print outside.
         if isinstance(result, dict) or isinstance(result, list):
+            if isinstance(result, dict):
+                for key in ['password', 'api_key', 'upload_key', 'key']:
+                    if key in result.keys():
+                        result[key] = result[key][:3] + 9 * '*'
             json_str = json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False)
             # .strip() avoids the empty newline
             click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())
@@ -310,12 +314,15 @@ class ArcsecondAPI(object):
             ArcsecondAPI._echo_error(state, error)
         else:
             memberships = {m['organisation']['subdomain']: m['role'] for m in profile['memberships']}
-            for membership in memberships.keys():
-                msg = f'Membership confirmed. Role is "{memberships[membership]}", stored in {config_file_path()}.'
-                ArcsecondAPI._echo_message(state, msg)
-                config_file_save_organisation_membership(membership, memberships[membership], state.config_section())
+            if len(memberships.keys()) > 0:
+                for membership in memberships.keys():
+                    msg = f'Membership to "{membership}" organisation confirmed. Role is "{memberships[membership]}".'
+                    ArcsecondAPI._echo_message(state, msg)
+                    config_file_save_organisation_membership(membership,
+                                                             memberships[membership],
+                                                             state.config_section())
             else:
-                ArcsecondAPI._echo_message(state, 'Membership denied.')
+                ArcsecondAPI._echo_message(state, 'Membership {membership} denied.')
 
     @classmethod
     def is_logged_in(cls, state: Optional[State] = None, **kwargs) -> bool:
