@@ -186,7 +186,7 @@ class APIEndPoint(object):
 
         if auth_key is None:
             if self.state.verbose:
-                click.echo('Checking local API key... ', nl=False)
+                click.echo('Checking local API|Upload key... ', nl=False)
 
             # Choose the strongest key first
             auth_key = config_file_read_api_key(self.state.config_section())
@@ -195,9 +195,10 @@ class APIEndPoint(object):
                 if not auth_key:
                     raise ArcsecondError('Missing auth keys (API or Upload). You must login first: $ arcsecond login')
 
-            if self.state.verbose:
-                click.echo('OK')
-
         headers['X-Arcsecond-API-Authorization'] = 'Key ' + auth_key
+
+        if self.state.verbose:
+            key_str = auth_key[:3] + 9 * '*'
+            click.echo(f'OK (\'X-Arcsecond-API-Authorization\' = \'Key {key_str}\'')
 
         return headers
