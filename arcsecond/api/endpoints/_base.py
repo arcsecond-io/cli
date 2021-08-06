@@ -144,11 +144,15 @@ class APIEndPoint(object):
     def _perform_spinner_request(self, url, method, method_name, data=None, payload=None, **headers):
         if self.state.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
-            payload_copy = copy.deepcopy(payload)
-            for key in ['password', 'api_key', 'upload_key', 'key']:
-                if key in payload_copy.keys():
-                    payload_copy[key] = payload_copy[key][:3] + 9 * '*'
-            click.echo('Payload: {}'.format(payload_copy))
+            if payload:
+                if isinstance(payload, dict):
+                    payload_copy = copy.deepcopy(payload)
+                    for key in ['password', 'api_key', 'upload_key', 'key']:
+                        if key in payload_copy.keys():
+                            payload_copy[key] = payload_copy[key][:3] + 9 * '*'
+                    click.echo(f'Payload: {payload_copy}')
+                else:
+                    click.echo(f'Payload: {payload}')
 
         performer = AsyncFileUploader(url, method, data=data, payload=payload, **headers)
         performer.start()
