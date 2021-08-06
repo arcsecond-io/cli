@@ -187,6 +187,10 @@ class ArcsecondAPI(object):
         # A create or update method with a file to upload will return a tuple made of
         # a FileUploader and None. Hence, nothing to print outside.
         if isinstance(result, dict) or isinstance(result, list):
+            if isinstance(result, dict):
+                for key in ['password', 'api_key', 'upload_key', 'key']:
+                    if key in result.keys():
+                        result[key] = result[key][:3] + 9 * '*'
             json_str = json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False)
             # .strip() avoids the empty newline
             click.echo(highlight(json_str, JsonLexer(), TerminalFormatter()).strip())
