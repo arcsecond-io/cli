@@ -109,7 +109,7 @@ def config_file_save_shared_key(shared_key: str, username: str, organisation: st
 # -------- ORGANISATIONS ----------------
 
 def config_file_save_organisation_membership(subdomain: str, role: str, section: str = 'main') -> None:
-    _config_file_save_keys_values(subdomain=role, section=section + ':organisations')
+    _config_file_save_keys_values(**{subdomain: role, 'section': section + ':organisations'})
 
 
 def config_file_read_organisation_memberships(section: str = 'main') -> dict:
