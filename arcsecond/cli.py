@@ -40,11 +40,13 @@ def register(state, username, email, password1, password2):
     ArcsecondAPI.register(username, email, password1, password2, state)
 
 
-@main.command(help='Login to an Arcsecond.io account')
-@click.option('--username', required=True, nargs=1, prompt=True)
-@click.option('--password', required=True, nargs=1, prompt=True, hide_input=True)
+@main.command(help='Login to an Arcsecond.io account.')
+@click.option('--username', required=True, nargs=1, prompt=True,
+              help='Account username (without @). Primary email address is also allowed.')
+@click.option('--password', required=True, nargs=1, prompt=True, hide_input=True,
+              help='Account password. It will be transmitted encrypted.')
 @click.option('--organisation', required=False,
-              help='An organisation subdomain. If provided, memberships will be checked.')
+              help='An organisation subdomain. If provided, shared keys will also be fetched.')
 @basic_options
 @pass_state
 def login(state, username, password, organisation=None):
@@ -54,7 +56,7 @@ def login(state, username, password, organisation=None):
     if click.confirm(msg, default=True):
         ArcsecondAPI.login(username, password, state, organisation, api_key=True)
     else:
-        click.echo('Stoping without logging in.')
+        click.echo('Stopping without logging in.')
 
 
 @main.command(help='Fetch your complete user profile.')
@@ -64,12 +66,12 @@ def me(state):
     """Fetch your complete user profile."""
     username = config_file_read_username(state.config_section())
     if not username:
-        msg = 'Invalid/missing username: {}. Make sure to login first: $ arcsecond login'.format(username)
+        msg = f'Invalid/missing username: {username}. Make sure to login first: $ arcsecond login'
         raise ArcsecondError(msg)
     ArcsecondAPI.me(state).read(username)
 
 
-@main.command(help='Request an object.')
+@main.command(help='Request the details of an object (in the /objects/<name>/ API endpoint).')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
@@ -83,7 +85,7 @@ def objects(state, name):
     ArcsecondAPI.objects(state).read(name)
 
 
-@main.command(help='Request an exoplanet (in the /exoplanets/<name>/ API endpoint)')
+@main.command(help='Request the details of an exoplanet (in the /exoplanets/<name>/ API endpoint).')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
@@ -91,7 +93,7 @@ def exoplanets(state, name):
     ArcsecondAPI.exoplanets(state).read(name)
 
 
-@main.command(help='Request the list of object finding charts (in the /findingcharts/<name>/ API endpoint)')
+@main.command(help='Request the list of object finding charts (in the /findingcharts/<name>/ API endpoint).')
 @click.argument('name', required=True, nargs=-1)
 @open_options
 @pass_state
@@ -120,7 +122,7 @@ def instruments(state, name):
     ArcsecondAPI.instruments(state).list()
 
 
-@main.command(help='Request your own list of observing runs (in the /observingruns/ API endpoint)')
+@main.command(help='Access and modify your observing runs (in the /observingruns/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('uuid', required=False, nargs=1, type=click.UUID)
 @click.option('--name', required=False, nargs=1, help="The observing run name.")
@@ -140,7 +142,7 @@ def runs(state, method, uuid, **kwargs):
         api.list()
 
 
-@main.command(help='Request your own list of night logs (in the /nightlogs/ API endpoint)')
+@main.command(help='Access and modify your night logs (in the /nightlogs/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('uuid', required=False, nargs=1, type=click.UUID)
 @click.option('--name', required=False, nargs=1, help="The log name.")
@@ -160,7 +162,7 @@ def logs(state, method, uuid, **kwargs):
         api.list()
 
 
-@main.command(help='Request your own list of observations (in the /observations/ API endpoint)')
+@main.command(help='Access and modify your observations (in the /observations/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('uuid', required=False, nargs=1, type=click.UUID)
 @organisation_options
@@ -179,7 +181,7 @@ def observations(state, method, uuid, **kwargs):
         api.list()
 
 
-@main.command(help='Request your own list of calibrations (in the /calibrations/ API endpoint)')
+@main.command(help='Access and modify your calibrations (in the /calibrations/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('uuid', required=False, nargs=1, type=click.UUID)
 @organisation_options
@@ -230,7 +232,7 @@ def activities(state, method, pk, **kwargs):
         api.list()
 
 
-@main.command(help='Access and modify your own datasets (in the /datasets/ API endpoint)')
+@main.command(help='Access and modify your datasets (in the /datasets/ API endpoint)')
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('uuid', required=False, nargs=1, type=click.UUID)
 @click.option('--name', required=False, nargs=1, help="The dataset name.")
@@ -250,7 +252,7 @@ def datasets(state, method, uuid, **kwargs):
         api.list()
 
 
-@main.command(help='Access and modify your own data files')
+@main.command(help='Access and modify your data files')
 @click.argument('dataset', required=True, nargs=1)
 @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
 @click.argument('pk', required=False, nargs=1)
