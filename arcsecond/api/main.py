@@ -278,6 +278,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _get_and_save_api_key(cls, state, username, auth_token):
+        ArcsecondAPI._echo_message(state, 'Fetching API Key...')
         # To get API key one must fetch it with Auth token obtained via login.
         endpoint = ProfileAPIKeyAPIEndPoint(state.make_new_silent())
         endpoint.use_headers({'Authorization': 'Token ' + auth_token})
@@ -292,6 +293,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _get_and_save_upload_key(cls, state, username, auth_token):
+        ArcsecondAPI._echo_message(state, 'Fetching Upload Key...')
         # To get API key one must fetch it with Auth token obtained via login.
         endpoint = ProfileUploadKeyAPIEndPoint(state.make_new_silent())
         endpoint.use_headers({'Authorization': 'Token ' + auth_token})
@@ -306,7 +308,7 @@ class ArcsecondAPI(object):
 
     @classmethod
     def _check_memberships(cls, state, username, auth_token):
-        ArcsecondAPI._echo_message(state, 'Checking Memberships...')
+        ArcsecondAPI._echo_message(state, 'Checking Organisation Memberships...')
         endpoint = PersonalProfileAPIEndPoint(state.make_new_silent())
         endpoint.use_headers({'Authorization': 'Token ' + auth_token})
         profile, error = endpoint.read(username)
