@@ -68,3 +68,9 @@ def test_config_clear_upload_key():
     assert config.config_file_read_upload_key(SECTION) == random_key
     config.config_file_clear_upload_key(SECTION)
     assert config.config_file_read_upload_key(SECTION) is None
+
+
+def test_config_write_read_username():
+    random_username = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+    config.config_file_save_username(random_username, SECTION)
+    assert config.config_file_read_username(SECTION) == random_username

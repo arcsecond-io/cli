@@ -23,7 +23,8 @@ from arcsecond.config import (config_file_clear_api_key,
                               config_file_save_api_key,
                               config_file_save_organisation_membership,
                               config_file_save_shared_key,
-                              config_file_save_upload_key)
+                              config_file_save_upload_key,
+                              config_file_save_username)
 from arcsecond.options import State
 from .auth import AuthAPIEndPoint
 from .endpoints import (ActivitiesAPIEndPoint, AsyncFileUploader, CalibrationsAPIEndPoint, CataloguesAPIEndPoint,
@@ -261,6 +262,11 @@ class ArcsecondAPI(object):
         elif result:
             auth_token = result['token']
             profile, error = ArcsecondAPI._check_memberships(state, username, auth_token)
+            if profile:
+                # Update username with that of returned profile in case we logged in with email address.
+                username = profile.get('username', username)
+                config_file_save_username(username)
+
             # We replace result and error of login with that of key check.
             if 'api_key' in kwargs.keys() and bool(kwargs['api_key']):
                 result, error = ArcsecondAPI._get_and_save_api_key(state, username, auth_token)

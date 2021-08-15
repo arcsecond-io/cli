@@ -75,50 +75,41 @@ def _config_file_clear_key(key_name: str, section: str = 'main') -> None:
         config.write(f)
 
 
-def _config_file_save_personal_key(key_name: str, key_value: str, username: str, section: str = 'main') -> None:
+def _config_file_save_keys_values(**kwargs) -> None:
+    section = kwargs.pop('section')
+    if section is None:
+        return
     config = ConfigParser()
     config.read(config_file_path())
     if section not in config.keys():
         config.add_section(section)
-    config.set(section, 'username', username)
-    config.set(section, key_name, key_value)
+    for k, v in kwargs.items():
+        config.set(section, k, v)
     with open(config_file_path(), 'w') as f:
         config.write(f)
+
+
+def config_file_save_username(username: str, section: str = 'main') -> None:
+    _config_file_save_keys_values(username=username, section=section)
 
 
 def config_file_save_api_key(api_key: str, username: str, section: str = 'main') -> None:
-    _config_file_save_personal_key('api_key', api_key, username, section=section)
+    _config_file_save_keys_values(api_key=api_key, username=username, section=section)
 
 
 def config_file_save_upload_key(upload_key: str, username: str, section: str = 'main') -> None:
-    _config_file_save_personal_key('upload_key', upload_key, username, section=section)
+    _config_file_save_keys_values(upload_key=upload_key, username=username, section=section)
 
 
 def config_file_save_shared_key(shared_key: str, username: str, organisation: str, section: str = 'main') -> None:
-    config = ConfigParser()
-    config.read(config_file_path())
-    if section not in config.keys():
-        config.add_section(section)
-    config.set(section, 'username', username)
-    section += ':uploads'
-    if section not in config.keys():
-        config.add_section(section)
-    config.set(section, organisation, shared_key)
-    with open(config_file_path(), 'w') as f:
-        config.write(f)
+    _config_file_save_keys_values(username=username, section=section)
+    _config_file_save_keys_values(**{organisation: shared_key, 'section': section + ':uploads'})
 
 
 # -------- ORGANISATIONS ----------------
 
 def config_file_save_organisation_membership(subdomain: str, role: str, section: str = 'main') -> None:
-    config = ConfigParser()
-    config.read(config_file_path())
-    section += ':organisations'
-    if section not in config.keys():
-        config.add_section(section)
-    config.set(section, subdomain, role)
-    with open(config_file_path(), 'w') as f:
-        config.write(f)
+    _config_file_save_keys_values(subdomain=role, section=section + ':organisations')
 
 
 def config_file_read_organisation_memberships(section: str = 'main') -> dict:
