@@ -260,6 +260,7 @@ class ArcsecondAPI(object):
             ArcsecondAPI._echo_error(state, error)
         elif result:
             auth_token = result['token']
+            profile, error = ArcsecondAPI._check_memberships(state, username, auth_token)
             # We replace result and error of login with that of key check.
             if 'api_key' in kwargs.keys() and bool(kwargs['api_key']):
                 result, error = ArcsecondAPI._get_and_save_api_key(state, username, auth_token)
@@ -273,7 +274,6 @@ class ArcsecondAPI(object):
                                                                                         username,
                                                                                         auth_token,
                                                                                         organisation)
-            ArcsecondAPI._check_memberships(state, username, auth_token)
         return result, error
 
     @classmethod
@@ -325,6 +325,7 @@ class ArcsecondAPI(object):
                                                              state.config_section())
             else:
                 ArcsecondAPI._echo_message(state, 'Membership {membership} denied.')
+        return profile, error
 
     @classmethod
     def is_logged_in(cls, state: Optional[State] = None, **kwargs) -> bool:
