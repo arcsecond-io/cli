@@ -13,6 +13,7 @@ echo 'cli.arcsecond.io' > CNAME
 
 git config --global user.email "team@arcsecond.io"
 git config --global user.name "gh actions bot"
+git config --global init.defaultBranch "master"
 
 git init
 git add -A
