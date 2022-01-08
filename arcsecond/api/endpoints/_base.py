@@ -145,14 +145,7 @@ class APIEndPoint(object):
         if self.state.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
             if payload:
-                if isinstance(payload, dict):
-                    payload_copy = copy.deepcopy(payload)
-                    for key in ['password', 'api_key', 'upload_key', 'key']:
-                        if key in payload_copy.keys():
-                            payload_copy[key] = payload_copy[key][:3] + 9 * '*'
-                    click.echo(f'Payload: {payload_copy}')
-                else:
-                    click.echo(f'Payload: {payload}')
+                self._echo_spinner_request_payload(payload)
 
         performer = AsyncFileUploader(url, method, data=data, payload=payload, **headers)
         performer.start()
@@ -173,11 +166,7 @@ class APIEndPoint(object):
             raise error
 
         if self.state.verbose:
-            click.echo()
-            if error:
-                click.echo('Request failed.')
-            elif response:
-                click.echo('Request successful.')
+            self._echo_spinner_request_result(error, response)
 
         return response, error
 
@@ -206,3 +195,20 @@ class APIEndPoint(object):
             click.echo(f'OK (\'X-Arcsecond-API-Authorization\' = \'Key {key_str}\'')
 
         return headers
+
+    def _echo_spinner_request_payload(self, payload):
+        if isinstance(payload, dict):
+            payload_copy = copy.deepcopy(payload)
+            for key in ['password', 'api_key', 'upload_key', 'key']:
+                if key in payload_copy.keys():
+                    payload_copy[key] = payload_copy[key][:3] + 9 * '*'
+            click.echo(f'Payload: {payload_copy}')
+        else:
+            click.echo(f'Payload: {payload}')
+
+    def _echo_spinner_request_result(self, error, response):
+        click.echo()
+        if error:
+            click.echo('Request failed.')
+        elif response:
+            click.echo('Request successful.')
