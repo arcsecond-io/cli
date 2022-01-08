@@ -12,6 +12,6 @@ features:
   - title: Python Module
     details: All the Arcsecond.io resources inside your Python code! Easily plan observations with your own custom rules.
   - title: Arcsecond.io ?
-    details: Arcsecond.io is a unique and comprehensive cloud platform made providing all the necessary resources and tools for preparing astronomical observations.
+    details: Arcsecond.io is a unique and comprehensive cloud platform made by astronomers for astronomers providing all the necessary resources and tools for preparing astronomical observations.
 footer: MIT Licensed | Copyright © 2020-present F52 Tech.
 ---
