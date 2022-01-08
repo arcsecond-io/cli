@@ -24,8 +24,6 @@ jobs:
         CI: true
         node-version: '14'
         cache: 'npm'
-    - name: Reconfigure git to use HTTP authentication
-      run: git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf ssh://git@github.com/
     - name: Deploy docs
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
