@@ -1,18 +1,17 @@
-# Welcome to the Arcsecond CLI documentation 🔭
-
-The Arcsecond Command-Line Interface (CLI) is an open-source utility 
-giving access to multiple public and private resources through the 
-communication with the remote service `api.arcsecond.io`.
-
-Arcsecond.io is a unique and comprehensive cloud platform made by two 
-astronomers, for astronomers aiming at providing all the necessary
-resources and tools for making (professionals and amateur) astronomical
-observations. More details can be found in the
-[About Page](https://www.arcsecond.io/about).
-
-The Arcsecond CLI is freely available on GitHub and can be used in two
-ways:
-* as a terminal command `arcsecond` ...
-* as a Python module `from arcsecond import ArcsecondAPI` ...
-
-(doc in progress)
+---
+home: true
+heroImage: https://statics.arcsecond.io/icons/xs/icon-telescope.png
+heroAlt: Logo image
+heroText: Arcsecond CLI
+tagline: The command-line utility / Python module to access Arcsecond resources.
+actionText: Get Started
+actionLink: /guide/
+features:
+  - title: Command-Line
+    details: All the public and private Arcsecond resources (objects, exoplanets, datasets...) right into your Terminal.
+  - title: Python Module
+    details: All the Arcsecond resources inside your Python code! Easily plan observations with your own custom rules.
+  - title: Arcsecond.io ?
+    details: Arcsecond is a unique and comprehensive cloud platform made providing all the necessary resources and tools for preparing astronomical observations.
+footer: MIT Licensed | Copyright © 2019-present Evan You
+---
