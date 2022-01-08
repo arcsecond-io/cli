@@ -29,7 +29,7 @@ and provide a username and a password.
 ## Login to Arcsecond.io
 
 **You must login first before accessing APIs.** 
-This is for making easy to access private APIs, but also for server logging,
+This is for making easy to access private resources, but also for server logging,
 and to better understand the usage that is made of our APIs.
 
 ```bash
