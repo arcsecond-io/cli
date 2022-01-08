@@ -1,4 +1,4 @@
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Farcsecond-io%2Fcli%2Fbadge&style=flat)](https://actions-badge.atrox.dev/arcsecond-io/cli/goto) [![Deploy Docs](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml) [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
+[![Upload Python Package to Pypi](https://github.com/arcsecond-io/cli/actions/workflows/pythonpublish.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/pythonpublish.yml) [![Run Tests and Linting](https://github.com/arcsecond-io/cli/actions/workflows/pythonpackage.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/pythonpackage.yml) [![Deploy Docs](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml) [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
 
 # Arcsecond CLI
 
