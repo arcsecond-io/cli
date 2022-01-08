@@ -19,11 +19,14 @@ git init
 git add -A
 git commit -m 'deploy'
 
+git remote set-url origin https://arcsecond-io:$GITHUB_TOKEN@github.com/arcsecond-io/cli
+git push -f origin master:gh-pages
+
 # if you are deploying to https://<USERNAME>.github.io
 # git push -f git@github.com:arcsecond-io/arcsecond-io.github.io.git master
 
 # if you are deploying to https://<USERNAME>.github.io/<REPO>
-git push -f git@github.com:arcsecond-io/cli.git master:gh-pages
+# git push -f git@github.com:arcsecond-io/cli.git master:gh-pages
 
 cd -
 
