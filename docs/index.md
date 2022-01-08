@@ -3,7 +3,7 @@ home: true
 heroImage: https://statics.arcsecond.io/icons/xs/icon-telescope.png
 heroAlt: Logo image
 heroText: Arcsecond CLI
-tagline: The command-line utility / Python module to access resources of Arcsecond.io.
+tagline: The command-line utility / Python module to access the resources of Arcsecond.io.
 actionText: Get Started
 actionLink: /guide/
 features:
