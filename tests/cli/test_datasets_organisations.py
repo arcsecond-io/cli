@@ -32,41 +32,17 @@ class DatasetsInOrganisationsTestCase(TestCase):
         assert result.exit_code != 0 and isinstance(result.exception, ArcsecondError)
 
     def test_organisation_GET_datasets_list_valid_role(self):
-        """As a SAAO superadmin, I must be able to access the list of datasets."""
+        """As a SAAO member, I must be able to access the list of datasets."""
         runner = CliRunner()
-        make_successful_login(runner, 'saao', 'superadmin')
+        make_successful_login(runner, 'saao', 'member')
         mock_http_get('/saao/datasets/', '[]')
         result = runner.invoke(cli.datasets, ['--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code == 0 and not result.exception
 
-    def test_organisation_POST_datasets_list_valid_superadmin_role(self):
-        """As a SAAO superadmin, I must be able to create a dataset."""
-        runner = CliRunner()
-        make_successful_login(runner, 'saao', 'superadmin')
-        mock_http_post('/saao/datasets/', '[]')
-        result = runner.invoke(cli.datasets, ['create', '--organisation', 'saao', '--debug', '--test'])
-        assert result.exit_code == 0 and not result.exception
-
-    def test_organisation_POST_datasets_list_valid_admin_role(self):
-        """As a SAAO admin, I must be able to create a dataset."""
-        runner = CliRunner()
-        make_successful_login(runner, 'saao', 'admin')
-        mock_http_post('/saao/datasets/', '[]')
-        result = runner.invoke(cli.datasets, ['create', '--organisation', 'saao', '--debug', '--test'])
-        assert result.exit_code == 0 and not result.exception
-
     def test_organisation_POST_datasets_list_valid_member_role(self):
-        """As a SAAO member, I must be able to create a dataset."""
+        """As a SAAO superadmin, I must be able to create a dataset."""
         runner = CliRunner()
         make_successful_login(runner, 'saao', 'member')
         mock_http_post('/saao/datasets/', '[]')
         result = runner.invoke(cli.datasets, ['create', '--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code == 0 and not result.exception
-
-    def test_organisation_POST_datasets_list_invalid_guest_role(self):
-        """As a SAAO guest, I must not be able to create a dataset."""
-        runner = CliRunner()
-        make_successful_login(runner, 'saao', 'guest')
-        mock_http_post('/saao/datasets/', '[]')
-        result = runner.invoke(cli.datasets, ['create', '--organisation', 'saao', '--debug', '--test'])
-        assert result.exit_code != 0 and isinstance(result.exception, ArcsecondError)

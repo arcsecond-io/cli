@@ -33,44 +33,20 @@ class NightLogsInOrganisationsTestCase(TestCase):
         assert result.exit_code != 0 and isinstance(result.exception, ArcsecondError)
 
     def test_organisation_GET_nightlogs_list_valid_role(self):
-        """As a SAAO superadmin, I must be able to access the list of nightlogs."""
+        """As a SAAO member, I must be able to access the list of nightlogs."""
         runner = CliRunner()
-        make_successful_login(runner, 'saao', 'superadmin')
+        make_successful_login(runner, 'saao', 'member')
         mock_http_get('/saao/nightlogs/', '[]')
         result = runner.invoke(cli.logs, ['--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code == 0 and not result.exception
 
     def test_organisation_POST_nightlogs_list_valid_superadmin_role(self):
-        """As a SAAO superadmin, I must be able to create a nightlog."""
-        runner = CliRunner()
-        make_successful_login(runner, 'saao', 'superadmin')
-        mock_http_post('/saao/nightlogs/', '[]')
-        result = runner.invoke(cli.logs, ['create', '--organisation', 'saao', '--debug', '--test'])
-        assert result.exit_code == 0 and not result.exception
-
-    def test_organisation_POST_nightlogs_list_valid_admin_role(self):
-        """As a SAAO admin, I must be able to create a nightlog."""
-        runner = CliRunner()
-        make_successful_login(runner, 'saao', 'admin')
-        mock_http_post('/saao/nightlogs/', '[]')
-        result = runner.invoke(cli.logs, ['create', '--organisation', 'saao', '--debug', '--test'])
-        assert result.exit_code == 0 and not result.exception
-
-    def test_organisation_POST_nightlogs_list_valid_member_role(self):
         """As a SAAO member, I must be able to create a nightlog."""
         runner = CliRunner()
         make_successful_login(runner, 'saao', 'member')
         mock_http_post('/saao/nightlogs/', '[]')
         result = runner.invoke(cli.logs, ['create', '--organisation', 'saao', '--debug', '--test'])
         assert result.exit_code == 0 and not result.exception
-
-    def test_organisation_POST_nightlogs_list_invalid_guest_role(self):
-        """As a SAAO guest, I must not be able to create a nightlog."""
-        runner = CliRunner()
-        make_successful_login(runner, 'saao', 'guest')
-        mock_http_post('/saao/nightlogs/', '[]')
-        result = runner.invoke(cli.logs, ['create', '--organisation', 'saao', '--debug', '--test'])
-        assert result.exit_code != 0 and isinstance(result.exception, ArcsecondError)
 
 
 class NightLogsInOrganisationsModuleTestCase(TestCase):
