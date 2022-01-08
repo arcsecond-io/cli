@@ -1,16 +1,16 @@
 # CLI a.k.a. Terminal Mode
 
-The Arcsecond CLI usage is similar to a command like `git`, that is,
-`arcsecond` is the main command, followed by a subcommand. Most of the
-subcommands are simply the name of API resources.
+The Arcsecond CLI usage is similar to a utility like `git`. That is,
+`arcsecond` is the main entry point, followed by a command. Most of the
+commands are simply the name of API resources.
 
-Then help is accessible like any other command line:
+The help is accessible like any other command line:
 
 ```bash
 $ arcsecond --help
 ```
 
-or 
+or, for subcommand
 
 ```bash
 $ arcsecond <command> --help
