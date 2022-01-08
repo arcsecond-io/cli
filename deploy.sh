@@ -11,11 +11,12 @@ cd docs/.vitepress/dist
 
 echo 'cli.arcsecond.io' > CNAME
 
+git init
+
 git config user.email "team@arcsecond.io"
 git config user.name "gh actions bot"
 git config --global init.defaultBranch "master"
 
-git init
 git add -A
 git commit -m 'deploy'
 
