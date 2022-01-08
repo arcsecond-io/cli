@@ -25,4 +25,6 @@ jobs:
         node-version: '14'
         cache: 'npm'
     - name: Deploy docs
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: ./deploy.sh
