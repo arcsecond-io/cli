@@ -3,7 +3,7 @@ const guideSidebar = [{ text: 'Usage Guide', link: '/guide/' }]
 module.exports = {
   title: 'Arcsecond CLI',
   description: 'The command-line / Python module of Arcsecond.io.',
-  base: '/',
+  base: '/cli/',
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
