@@ -1,3 +1,7 @@
+---
+sidebar: true
+---
+
 ## Install
 
 Simply issue the following in a Terminal:
@@ -34,7 +38,9 @@ commands are simply the name of API resources.
 For accessing private resources, such as datasets, night logs etc, you must
 log in (or register first).
 
-## Register to Arcsecond.io
+## Setup
+
+### Register to Arcsecond.io
 
 You can register directly from the CLI:
 ```bash
@@ -42,7 +48,7 @@ $ arcsecond register
 ```
 and provide a username and a password.
 
-## Login to Arcsecond.io
+### Login to Arcsecond.io
 
 **You must login first before accessing APIs.** 
 
