@@ -9,8 +9,6 @@ npm run docs:build
 # navigate into the build output directory
 cd docs/.vitepress/dist
 
-echo 'cli.docs.arcsecond.io' > CNAME
-
 git config --global user.email "team@arcsecond.io"
 git config --global user.name "gh actions bot"
 git config --global init.defaultBranch "master"

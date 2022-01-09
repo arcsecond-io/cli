@@ -1,8 +1,16 @@
-# CLI a.k.a. Terminal Mode
+## Install
 
-The Arcsecond CLI usage is similar to a utility like `git`. That is,
-`arcsecond` is the main entry point, followed by a command. Most of the
-commands are simply the name of API resources.
+Simply issue the following in a Terminal:
+
+```bash
+$ pip install arcsecond
+```
+
+To upgrade an existing Arcsecond installation:
+
+```bash
+$ pip install --upgrade arcsecond
+```
 
 The help is accessible like any other command line:
 
@@ -16,7 +24,15 @@ or, for subcommand
 $ arcsecond <command> --help
 ````
 
-However, the first thing to do is to login / register.
+At that point, you can access all the public resources of Arcsecond.io.
+
+The Arcsecond CLI usage is similar to a utility like `git`. That is,
+`arcsecond` is the main entry point, followed by a command. Most of the
+commands are simply the name of API resources.
+
+
+For accessing private resources, such as datasets, night logs etc, you must
+log in (or register first).
 
 ## Register to Arcsecond.io
 
@@ -29,8 +45,6 @@ and provide a username and a password.
 ## Login to Arcsecond.io
 
 **You must login first before accessing APIs.** 
-This is for making easy to access private resources, but also for server logging,
-and to better understand the usage that is made of our APIs.
 
 ```bash
 $ arcsecond login 
