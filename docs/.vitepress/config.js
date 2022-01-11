@@ -7,7 +7,8 @@ module.exports = {
       { text: 'Home', link: '/' },
       { text: 'Install & Setup', link: '/install/' },
       { text: 'Basic Usage Guide', link: '/guide/' },
-      { text: 'Plan Observations', link: '/observations/' }
+      { text: 'Plan Observations', link: '/observations/' },
+      { text: 'Arcsecond Docs', link: 'https://docs.arcsecond.io' }
     ]
   }
 }
