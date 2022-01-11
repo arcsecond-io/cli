@@ -68,3 +68,7 @@ complete access to your private resources too.**
 
 Logging in again will overwrite the current API key with the new one 
 (assuming login is a success, of course).
+
+If you think your key is compromised, you can regenerate one in your profile
+settings in https://www.arcsecond.io. You cannot regenerate an API key with
+the cli.
