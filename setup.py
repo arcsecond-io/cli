@@ -33,7 +33,8 @@ setup(
         'requests',
         'requests_toolbelt',
         'pygments',
-        'configparser'
+        'configparser',
+        'docker'
     ],
     entry_points={
         'console_scripts': [
