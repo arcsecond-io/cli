@@ -3,12 +3,18 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
-from .options import MethodChoiceParamType, State, basic_options, organisation_options
-from .selfhosted import (
+from .hosting import (
     has_all_arcsecond_docker_images,
     is_docker_available,
     pull_all_arcsecond_docker_images,
-    run_all_arcsecond_docker_images
+    run_db_container,
+    setup_hosting_variables
+)
+from .options import (
+    MethodChoiceParamType,
+    State,
+    basic_options,
+    organisation_options
 )
 
 pass_state = click.make_pass_decorator(State, ensure=True)
@@ -101,9 +107,10 @@ def do_try(state):
     if not is_docker_available():
         click.echo('You need to install Docker. Visit https://docker.com')
         return
+    setup_hosting_variables()
     if not has_all_arcsecond_docker_images():
         pull_all_arcsecond_docker_images()
-    run_all_arcsecond_docker_images()
+    run_db_container()
 
 
 @main.command(name='install', help='Install a true self-hosting Arcsecond instance.')

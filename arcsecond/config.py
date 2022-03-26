@@ -26,7 +26,7 @@ def config_file_path() -> Path:
     _config_file_path = _config_dir_path / 'config.ini'
     if old_config_file_path().exists() and not _config_file_path.exists():
         _config_dir_path.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(old_config_file_path), str(_config_file_path))
+        shutil.move(str(old_config_file_path()), str(_config_file_path))
     return _config_file_path
 
 
@@ -117,6 +117,10 @@ def _config_file_save_keys_values(**kwargs) -> None:
         config.set(section, k, v)
     with open(config_file_path(), 'w') as f:
         config.write(f)
+
+
+def config_file_save_key_value(key: str, value: str, section: str = 'main') -> None:
+    _config_file_save_keys_values(**{key: value, 'section': section})
 
 
 def config_file_save_username(username: str, section: str = 'main') -> None:
