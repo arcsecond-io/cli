@@ -3,13 +3,7 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
-from .hosting import (
-    has_all_arcsecond_docker_images,
-    is_docker_available,
-    pull_all_arcsecond_docker_images,
-    run_db_container,
-    setup_hosting_variables
-)
+from .hosting import run_arcsecond, stop_arcsecond
 from .options import (
     MethodChoiceParamType,
     State,
@@ -102,21 +96,23 @@ def me(state):
 ######################## SELF-HOSTING ##################################################################################
 
 @main.command(name='try', help='Try a full-featured demo of a self-hosted Arcsecond instance.')
+@click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
 @pass_state
-def do_try(state):
-    if not is_docker_available():
-        click.echo('You need to install Docker. Visit https://docker.com')
-        return
-    setup_hosting_variables()
-    if not has_all_arcsecond_docker_images():
-        pull_all_arcsecond_docker_images()
-    run_db_container()
+def do_try(state, skip_setup=False):
+    run_arcsecond(do_try=True, skip_setup=skip_setup)
 
 
 @main.command(name='install', help='Install a true self-hosting Arcsecond instance.')
+@click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
 @pass_state
-def do_install(state, organisation):
-    pass
+def do_install(state, skip_setup=False):
+    run_arcsecond(do_try=False, skip_setup=skip_setup)
+
+
+@main.command(name='stop', help='Stop the running self-hosted Arcsecond instance.')
+@pass_state
+def do_try(state):
+    stop_arcsecond()
 
 
 ######################## ORGANISATION MANAGEMENT #######################################################################

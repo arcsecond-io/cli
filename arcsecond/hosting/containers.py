@@ -1,30 +1,28 @@
-import time
+import subprocess
 from pathlib import Path
 
 import click
 import docker
 from docker.errors import APIError, NotFound
 
-from .constants import DOCKER_IMAGE_NAMES
+from arcsecond.config import config_file_read_key
+from .constants import DOCKER_IMAGE_CONTAINERS_NAMES, DOCKER_NETWORK_NAME
+from .images import has_all_arcsecond_docker_images, is_docker_available, pull_all_arcsecond_docker_images
+from .setup import setup_hosting_variables
+from .utils import __perform_container_bookkeeping
 
 
-def is_docker_container_running(name: str):
+def setup_network():
     client = docker.from_env()
     try:
-        container = client.containers.get(name)
+        client.networks.get(DOCKER_NETWORK_NAME)
     except (APIError, NotFound):
-        return False
-    return container.status == 'running'
+        client.networks.create(DOCKER_NETWORK_NAME, driver="bridge")
 
 
 def run_db_container(restart=True):
-    container_name = 'arcsecond-db'
-    client = docker.from_env()
-
-    if restart is True and is_docker_container_running(container_name):
-        container = client.containers.get(container_name)
-        container.stop()
-        time.sleep(1)
+    image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['db']
+    __perform_container_bookkeeping(container_name, restart)
 
     env = {
         'POSTGRES_USER': 'postgres',
@@ -34,12 +32,15 @@ def run_db_container(restart=True):
         'APP_DB_NAME': 'arcsecond_docker'
     }
 
-    check = {
-        'test': ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"],
-        'timeout': '45s',
-        'interval': '10s',
-        'retries': 10
-    }
+    # undocumented, test must be a string. See
+    # https://github.com/docker/docker-py/issues/2529
+    # check = {
+    #     'test': "CMD pg_isready -q -d postgres -U postgres",
+    #     'interval': 1e9 * 1,
+    #     'timeout': 1e9 * 30,
+    #     'retries': 10,
+    #     'start_period': 1e9 * 30
+    # }
 
     ports = {
         '5432/tcp': 5432
@@ -50,29 +51,146 @@ def run_db_container(restart=True):
         'arcsecond_postgres_data': {'bind': '/var/lib/postgresql/data/', 'mode': 'rw'}
     }
 
-    click.echo(f'Starting Database container...')
-    client.containers.run(DOCKER_IMAGE_NAMES[-1],
+    click.echo(f'Starting {service_name}...')
+    client = docker.from_env()
+    client.containers.run(image_name,
                           detach=True,
                           environment=env,
                           name=container_name,
+                          network=DOCKER_NETWORK_NAME,
                           ports=ports,
                           remove=True,
                           volumes=vol)
 
-#
-# def are_all_arcsecond_docker_containers_running():
-#     return all([is_docker_container_running(name) for name in DOCKER_CONTAINER_NAMES])
-#
-#
-# def run_all_arcsecond_docker_images(tag: str = 'latest'):
-#     client = docker.from_env()
-#     for index, name in enumerate(DOCKER_CONTAINER_NAMES):
-#         if is_docker_container_running(name):
-#             container = client.containers.get(name)
-#             click.echo(f'Stopping running container {name}...')
-#             container.stop()
-#             click.echo(f'Pruning stopped container {name} to reclaim disk space...')
-#             client.containers.prune({'name': name})
-#         else:
-#             click.echo(f'Starting container {name}...')
-#             client.containers.run(DOCKER_IMAGE_NAMES[index], detach=True)
+    click.echo(f'Waiting for {service_name} to start...')
+    subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:5432"])
+
+
+def run_mb_container(restart=True):
+    image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['mb']
+    __perform_container_bookkeeping(container_name, restart)
+
+    env = {
+        'RABBITMQ_DEFAULT_USER': 'arcsecond_docker',
+        'RABBITMQ_DEFAULT_PASS': 'arcsecond_docker',
+        'RABBITMQ_DEFAULT_VHOST': 'arcsecond_docker_vhost',
+        'RABBITMQ_NODE_PORT': '5672'
+    }
+
+    ports = {
+        '5672/tcp': 5672
+    }
+
+    click.echo(f'Starting {service_name} container...')
+    client = docker.from_env()
+    client.containers.run(image_name,
+                          detach=True,
+                          environment=env,
+                          name=container_name,
+                          network=DOCKER_NETWORK_NAME,
+                          ports=ports,
+                          remove=True)
+
+    click.echo(f'Waiting for {service_name} to start...')
+    subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:5672"])
+
+
+def run_api_container(restart=True, do_try=True):
+    image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['api']
+    __perform_container_bookkeeping(container_name, restart)
+
+    section = 'hosting:try' if do_try else 'hosting'
+
+    env = {
+        'SECRET_KEY': config_file_read_key('secret_key', section=section),
+        'DJANGO_SETTINGS_MODULE': 'settings.local',
+        'RABBITMQ_USER': 'arcsecond_docker',
+        'RABBITMQ_PASSWORD': 'arcsecond_docker',
+        'RABBITMQ_VHOST': 'arcsecond_docker_vhost',
+        'RABBITMQ_SERVER': DOCKER_IMAGE_CONTAINERS_NAMES['mb'][1] + ':5672',
+        'EMAIL_HOST': 'ssl0.ovh.net',
+        'EMAIL_HOST_PASSWORD': 'dummy',
+        'EMAIL_HOST_USER': 'cedric@arcsecond.io',
+        'EMAIL_ADMIN': 'cedric@arcsecond.io',
+        'ARCSECOND_DATA_STORAGE': ''
+    }
+
+    # for key in ['EMAIL_HOST', 'EMAIL_HOST_USER', 'EMAIL_HOST_PASSWORD', 'EMAIL_ADMIN']:
+    #     value = config_file_read_key(key.lower(), section=section)
+    #     if value[0] == '$':
+    #         value = os.environ.get(value[1:], '')
+    #     if value.strip() == '':
+    #         # raise an error
+    #         pass
+    #     env.update(**{key: value})
+
+    vol = {
+        'arcsecond_api_static_files': {'bind': '/home/app/static', 'mode': 'rw'}
+    }
+
+    # port = config_file_read_key('api_port', section=section)
+    ports = {
+        '8000/tcp': 8000
+    }
+
+    cmd = "sh -c 'python manage.py migrate --no-input && " \
+          "python manage.py collectstatic --no-input && " \
+          f"gunicorn --bind 0.0.0.0:8000 arcsecond.wsgi:application'"
+
+    click.echo(f'Starting {service_name} container (be patient, this one may take a minute or two)...')
+    client = docker.from_env()
+    client.containers.run(image_name,
+                          command=cmd,
+                          detach=True,
+                          environment=env,
+                          name=container_name,
+                          network=DOCKER_NETWORK_NAME,
+                          ports=ports,
+                          remove=True,
+                          volumes=vol)
+
+    click.echo(f'Waiting for {service_name} container to start...')
+    subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:8000"])
+
+
+def run_www_container(restart=True):
+    image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['www']
+    __perform_container_bookkeeping(container_name, restart)
+
+    # port = config_file_read_key('api_port', section=section)
+    ports = {
+        '80/tcp': 3003
+    }
+
+    click.echo(f'Starting {service_name}...')
+    client = docker.from_env()
+    client.containers.run(image_name,
+                          detach=True,
+                          name=container_name,
+                          network=DOCKER_NETWORK_NAME,
+                          ports=ports,
+                          remove=True)
+
+    click.echo(f'Waiting for {service_name} to start...')
+    subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:3003"])
+
+
+def run_arcsecond(do_try=True, skip_setup=False):
+    if not is_docker_available():
+        click.echo('You need to install Docker. Visit https://docker.com')
+        return
+    if not skip_setup:
+        setup_hosting_variables(do_try=do_try)
+    if not has_all_arcsecond_docker_images():
+        pull_all_arcsecond_docker_images()
+    setup_network()
+    run_db_container(restart=True)
+    run_mb_container(restart=True)
+    run_api_container(restart=True, do_try=do_try)
+    run_www_container(restart=True)
+
+
+def stop_arcsecond():
+    container_names = [cont for (_, cont, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()]
+    for container_name in container_names:
+        __perform_container_bookkeeping(container_name, stop=True)

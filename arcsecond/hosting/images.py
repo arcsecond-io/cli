@@ -4,7 +4,7 @@ import click
 import docker
 from docker.errors import APIError, ImageNotFound
 
-from .constants import DOCKER_IMAGE_NAMES
+from .constants import DOCKER_IMAGE_CONTAINERS_NAMES
 
 
 def is_docker_available() -> bool:
@@ -47,9 +47,11 @@ def update_docker_image(name: str, tag: str = 'latest'):
 
 
 def has_all_arcsecond_docker_images(tag: str = 'latest'):
-    return all([has_docker_image(name, tag) for name in DOCKER_IMAGE_NAMES])
+    image_names = [im for (im, _, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()]
+    return all([has_docker_image(name, tag) for name in image_names])
 
 
 def pull_all_arcsecond_docker_images(tag: str = 'latest'):
-    for image_name in DOCKER_IMAGE_NAMES:
+    image_names = [im for (im, _, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()]
+    for image_name in image_names:
         update_docker_image(image_name, tag)
