@@ -30,7 +30,6 @@ def has_docker_image(name: str, tag: str = 'latest'):
         # Print log
         return False
     else:
-        click.echo(f'Docker image {name}:{tag} is available. OK.')
         return True
 
 
@@ -41,6 +40,7 @@ def update_docker_image(name: str, tag: str = 'latest'):
     try:
         click.echo(f'Pulling Docker image {name}:{tag}...')
         client.images.pull(name, tag=tag)
+        return True
     except APIError:
         # Print log
         return False

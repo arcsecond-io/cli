@@ -3,7 +3,7 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
-from .hosting import run_arcsecond, stop_arcsecond
+from .hosting import run_arcsecond, stop_arcsecond, get_arcsecond_status
 from .options import (
     MethodChoiceParamType,
     State,
@@ -111,8 +111,14 @@ def do_install(state, skip_setup=False):
 
 @main.command(name='stop', help='Stop the running self-hosted Arcsecond instance.')
 @pass_state
-def do_try(state):
+def do_stop(state):
     stop_arcsecond()
+
+
+@main.command(name='status', help='Stop the running self-hosted Arcsecond instance.')
+@pass_state
+def do_get_status(state):
+    get_arcsecond_status()
 
 
 ######################## ORGANISATION MANAGEMENT #######################################################################
