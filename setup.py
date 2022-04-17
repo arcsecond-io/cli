@@ -22,7 +22,7 @@ setup(
     license='MIT',
     author='Cedric Foellmi',
     author_email='cedric@arcsecond.io',
-    description=' CLI for arcsecond.io',
+    description='CLI for arcsecond.io',
     long_description=long_description,
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
