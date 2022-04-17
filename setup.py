@@ -34,7 +34,8 @@ setup(
         'requests_toolbelt',
         'pygments',
         'configparser',
-        'docker'
+        'docker',
+        'wait-for-it'
     ],
     entry_points={
         'console_scripts': [
