@@ -10,7 +10,7 @@ jobs:
     - name: Setup node
       uses: actions/setup-node@v1
       with:
-        node-version: '14.x'
+        node-version: '16.x'
     - name: Cache node modules
       uses: actions/cache@v1
       with:
@@ -22,7 +22,7 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.READ_PACKAGE_TOKEN }}
         CI: true
-        node-version: '14'
+        node-version: '16'
         cache: 'npm'
     - name: Deploy docs
       env:
