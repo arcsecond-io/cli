@@ -17,10 +17,12 @@ from arcsecond.config import (config_file_clear_api_key,
                               config_file_is_logged_in,
                               config_file_path,
                               config_file_read_api_key,
+                              config_file_read_api_server,
                               config_file_read_organisation_memberships,
                               config_file_read_upload_key,
                               config_file_read_username,
                               config_file_save_api_key,
+                              config_file_save_api_server,
                               config_file_save_organisation_membership,
                               config_file_save_shared_key,
                               config_file_save_upload_key,
@@ -79,10 +81,8 @@ VALID_PREFIXES = {'dataset': 'datasets/'}
 def get_api_state(state=None, **kwargs):
     state = state or State(is_using_cli=False)
 
-    if 'debug' in kwargs.keys():
-        state.debug = kwargs.get('debug')
-    if 'test' in kwargs.keys():
-        state.test = kwargs.get('test')
+    if 'api_name' in kwargs.keys():
+        state.api_name = kwargs.get('api_name')
     if 'verbose' in kwargs.keys():
         state.verbose = kwargs.get('verbose')
     if 'organisation' in kwargs.keys():
@@ -92,8 +92,8 @@ def get_api_state(state=None, **kwargs):
     if 'upload_key' in kwargs.keys():
         state.upload_key = kwargs.get('upload_key')
 
-    if state.verbose and state.debug and state.is_using_cli:
-        click.echo(f'{ECHO_PREFIX}debug mode{ECHO_PREFIX}')
+    if state.verbose and state.is_using_cli:
+        click.echo(f'{ECHO_PREFIX}{state.api_name}{ECHO_PREFIX}')
 
     return state
 
@@ -342,6 +342,17 @@ class ArcsecondAPI(object):
     def username(cls, state: Optional[State] = None, **kwargs) -> str:
         state = get_api_state(state, **kwargs)
         return config_file_read_username(section=state.config_section()) or ''
+
+    @classmethod
+    def get_api_name(cls, state: Optional[State] = None, **kwargs) -> str:
+        state = get_api_state(state, **kwargs)
+        return config_file_read_api_server(section=state.config_section()) or ''
+
+    @classmethod
+    def set_api_name(cls, address: str, state: Optional[State] = None, **kwargs) -> str:
+        state = get_api_state(state, **kwargs)
+        print(address, state.config_section())
+        return config_file_save_api_server(address, section=state.config_section())
 
     @classmethod
     def api_key(cls, state: Optional[State] = None, **kwargs) -> str:

@@ -58,6 +58,21 @@ def login(state, username, password, organisation=None):
         click.echo('Stopping without logging in.')
 
 
+@main.command(help='Configure the API server address.')
+@click.argument('name', required=False, nargs=1)
+@click.argument('address', required=False, nargs=1)
+@pass_state
+def api(state, name=None, address=None):
+    """Configure the API server address"""
+    if name is None:
+        name = 'main'
+    state.api_name = name
+    if address is None:
+        print(ArcsecondAPI.get_api_name(state))
+    else:
+        ArcsecondAPI.set_api_name(address, state)
+
+
 @main.command(help='Get your complete user profile.')
 @basic_options
 @pass_state

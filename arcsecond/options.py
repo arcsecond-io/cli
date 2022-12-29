@@ -4,21 +4,24 @@ import click
 class State(object):
     def __init__(self,
                  verbose=0,
-                 test=False,
+                 api_name='main',
                  organisation=None,
                  is_using_cli=True,
                  api_key=None,
                  upload_key=None):
         self.verbose = verbose
-        self.test = test
+        self.api_name = api_name
         self.organisation = organisation
         self.is_using_cli = is_using_cli
         self.api_key = api_key
         self.upload_key = upload_key
 
+    def config_section(self):
+        return self.api_name
+
     def make_new_silent(self):
         return State(verbose=0,
-                     test=self.test,
+                     api_name=self.api_name,
                      organisation=self.organisation,
                      is_using_cli=self.is_using_cli,
                      api_key=self.api_key,
@@ -81,16 +84,26 @@ def verbose_option_constructor(f):
 #                         callback=callback)(f)
 
 
-def test_option_constructor(f):
+# def test_option_constructor(f):
+#     def callback(ctx, param, value):
+#         state = ctx.ensure_object(State)
+#         state.test = value
+#         return value
+#
+#     return click.option('--test',
+#                         is_flag=True,
+#                         expose_value=False,
+#                         help='Enable test mode (for Arcsecond developers). Implies debug.',
+#                         callback=callback)(f)
+
+def api_option_constructor(f):
     def callback(ctx, param, value):
         state = ctx.ensure_object(State)
-        state.test = value
+        state.api_name = value
         return value
 
-    return click.option('--test',
-                        is_flag=True,
-                        expose_value=False,
-                        help='Enable test mode (for Arcsecond developers). Implies debug.',
+    return click.option('--api',
+                        help='Choose API name (i.e. API server).',
                         callback=callback)(f)
 
 
@@ -121,12 +134,13 @@ def organisation_option_constructor(f):
 
 def basic_options(f):
     f = verbose_option_constructor(f)
-    f = test_option_constructor(f)
+    f = api_option_constructor(f)
     return f
 
 
 def organisation_options(f):
     f = basic_options(f)
+    f = api_option_constructor(f)
     f = organisation_option_constructor(f)
     return f
 

@@ -4,6 +4,8 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Optional
 
+from .api.constants import ARCSECOND_API_URL_PROD
+
 
 def old_config_file_path() -> Path:
     return (Path.home() / '.arcsecond.ini').expanduser()
@@ -64,6 +66,13 @@ def config_file_read_key(key: str, section: str = 'main') -> Optional[str]:
     return config[section].get(key, None)
 
 
+def config_file_read_api_server(section: str = 'main') -> Optional[str]:
+    result = config_file_read_key('api_server', section=section)
+    if section == 'main' and (result is None or result == ''):
+        result = ARCSECOND_API_URL_PROD
+    return result
+
+
 def config_file_read_username(section: str = 'main') -> Optional[str]:
     return config_file_read_key('username', section=section)
 
@@ -112,6 +121,10 @@ def _config_file_save_keys_values(**kwargs) -> None:
 
 def config_file_save_username(username: str, section: str = 'main') -> None:
     _config_file_save_keys_values(username=username, section=section)
+
+
+def config_file_save_api_server(address: str, section: str = 'main'):
+    _config_file_save_keys_values(api_server=address, section=section)
 
 
 def config_file_save_api_key(api_key: str, username: str, section: str = 'main') -> None:
