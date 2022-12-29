@@ -1,10 +1,31 @@
 import os
+import shutil
 from configparser import ConfigParser
+from pathlib import Path
 from typing import Optional
 
 
-def config_file_path() -> str:
-    return os.path.expanduser('~/.arcsecond.ini')
+def old_config_file_path() -> Path:
+    return (Path.home() / '.arcsecond.ini').expanduser()
+
+
+def config_dir_path() -> Path:
+    _config_root_path = Path.home() / '.config'
+    if 'XDG_CONFIG_DIRS' in os.environ.keys():
+        _config_root_path = Path(os.environ['XDG_CONFIG_DIRS'])
+    return _config_root_path / 'arcsecond'
+
+
+def config_file_path() -> Path:
+    _config_root_path = Path.home() / '.config'
+    if 'XDG_CONFIG_DIRS' in os.environ.keys():
+        _config_root_path = Path(os.environ['XDG_CONFIG_DIRS'])
+    _config_dir_path = config_dir_path()
+    _config_file_path = _config_dir_path / 'config.ini'
+    if old_config_file_path().exists() and not _config_file_path.exists():
+        _config_dir_path.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(old_config_file_path()), str(_config_file_path))
+    return _config_file_path
 
 
 def config_file_exists() -> bool:
