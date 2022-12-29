@@ -7,10 +7,14 @@ from docker.errors import APIError, NotFound
 
 from arcsecond.config import config_file_read_key
 from .constants import DOCKER_IMAGE_CONTAINERS_NAMES, DOCKER_NETWORK_NAME
-from .images import has_all_arcsecond_docker_images, has_docker_image, is_docker_available, \
+from .images import (
+    has_all_arcsecond_docker_images,
+    has_docker_image,
+    is_docker_available,
     pull_all_arcsecond_docker_images
+)
 from .setup import setup_hosting_variables
-from .utils import __get_docker_container_status, __perform_container_bookkeeping
+from .utils import __get_docker_container_status, __perform_container_bookkeeping, is_docker_container_running
 
 
 def setup_network():
@@ -23,6 +27,9 @@ def setup_network():
 
 def run_db_container(restart=True):
     image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['db']
+    if is_docker_container_running(container_name) and not restart:
+        return
+
     __perform_container_bookkeeping(container_name, restart)
 
     env = {
@@ -69,6 +76,9 @@ def run_db_container(restart=True):
 
 def run_mb_container(restart=True):
     image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['mb']
+    if is_docker_container_running(container_name) and not restart:
+        return
+
     __perform_container_bookkeeping(container_name, restart)
 
     env = {
@@ -98,6 +108,9 @@ def run_mb_container(restart=True):
 
 def run_api_container(restart=True, do_try=True):
     image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['api']
+    if is_docker_container_running(container_name) and not restart:
+        return
+
     __perform_container_bookkeeping(container_name, restart)
 
     section = 'hosting:try' if do_try else 'hosting'
@@ -156,6 +169,9 @@ def run_api_container(restart=True, do_try=True):
 
 def run_www_container(restart=True):
     image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['www']
+    if is_docker_container_running(container_name) and not restart:
+        return
+
     __perform_container_bookkeeping(container_name, restart)
 
     # port = config_file_read_key('api_port', section=section)
@@ -185,9 +201,9 @@ def run_arcsecond(do_try=True, skip_setup=False):
     if not has_all_arcsecond_docker_images():
         pull_all_arcsecond_docker_images()
     setup_network()
-    run_db_container(restart=True)
-    run_mb_container(restart=True)
-    run_api_container(restart=True, do_try=do_try)
+    run_db_container(restart=False)
+    run_mb_container(restart=False)
+    run_api_container(restart=False, do_try=do_try)
     run_www_container(restart=True)
 
 
