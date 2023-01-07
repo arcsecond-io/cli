@@ -78,7 +78,7 @@ def api(state, name=None, address=None):
 @pass_state
 def me(state):
     """Fetch your complete user profile."""
-    username = config_file_read_username(state.config_section())
+    username = config_file_read_username(state.config_section)
     if not username:
         msg = f'Invalid/missing username: {username}. Make sure to login first: $ arcsecond login'
         raise ArcsecondError(msg)

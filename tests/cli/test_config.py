@@ -12,7 +12,7 @@ UPLOAD_KEY = '9-8-7'
 
 def test_config_file_path():
     path = config.config_file_path()
-    assert path.endswith('.arcsecond.ini')
+    assert str(path).endswith('arcsecond/config.ini')
 
 
 def test_config_file_is_logged_in_no_file():

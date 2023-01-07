@@ -26,7 +26,7 @@ def test_datafiles_upload_file_threaded_no_callback():
     )
 
     # Go for Python module tests
-    datafiles_api = ArcsecondAPI.datafiles(dataset=str(dataset_uuid), debug=True, test=True)
+    datafiles_api = ArcsecondAPI.datafiles(dataset=str(dataset_uuid), api='test')
     uploader, _ = datafiles_api.create({'file': os.path.abspath(__file__)})
     uploader.start()
     time.sleep(0.1)
@@ -58,7 +58,7 @@ def test_datafiles_upload_file_create_threaded_with_callback():
 
     fixtures_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fixtures')
     # Go for Python module tests
-    datafiles_api = ArcsecondAPI.datafiles(dataset=str(dataset_uuid), debug=True, test=True)
+    datafiles_api = ArcsecondAPI.datafiles(dataset=str(dataset_uuid), api='test')
     payload = {'file': os.path.join(fixtures_folder, 'file1.fits')}
     uploader, _ = datafiles_api.create(payload, callback=upload_callback)
     uploader.start()
@@ -94,7 +94,7 @@ def test_datafiles_upload_file_update_threaded_with_callback():
 
     fixtures_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fixtures')
     # Go for Python module tests
-    datafiles_api = ArcsecondAPI.datafiles(dataset=str(dataset_uuid), debug=True, test=True)
+    datafiles_api = ArcsecondAPI.datafiles(dataset=str(dataset_uuid), api='test')
     payload = {'file': os.path.join(fixtures_folder, 'file1.fits')}
     uploader, _ = datafiles_api.update(filename, payload, callback=upload_callback)
     uploader.start()

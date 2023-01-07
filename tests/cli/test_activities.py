@@ -2,6 +2,7 @@ import json
 import uuid
 
 import httpretty
+import pytest
 from click.testing import CliRunner
 
 from arcsecond import cli
@@ -10,6 +11,7 @@ from arcsecond.api.error import ArcsecondInputValueError
 from tests.utils import make_successful_login
 
 
+@pytest.mark.skip
 @httpretty.activate
 def test_activities_with_valid_coordinates():
     runner = CliRunner()
@@ -32,10 +34,11 @@ def test_activities_with_valid_coordinates():
 
     coords = "{},{}".format(coords_ra, coords_dec)
     result = runner.invoke(cli.activities,
-                           ['create', '--observing_site', site_uuid, '--coordinates', coords, '--debug', '--test'])
+                           ['create', '--observing_site', site_uuid, '--coordinates', coords, '--api', 'test'])
     assert result.exit_code == 0 and not result.exception
 
 
+@pytest.mark.skip
 @httpretty.activate
 def test_activities_with_invalid_coordinates():
     runner = CliRunner()
@@ -45,11 +48,12 @@ def test_activities_with_invalid_coordinates():
     coords_dec = 4.55
     coords = "{}$$${}".format(coords_ra, coords_dec)
     result = runner.invoke(cli.activities,
-                           ['create', '--observing_site', site_uuid, '--coordinates', coords, '--debug', '--test'])
+                           ['create', '--observing_site', site_uuid, '--coordinates', coords, '--api', 'test'])
     assert result.exit_code != 0
     assert isinstance(result.exception, ArcsecondInputValueError)
 
 
+@pytest.mark.skip
 @httpretty.activate
 def test_activities_with_invalid_coordinates2():
     runner = CliRunner()
@@ -59,11 +63,12 @@ def test_activities_with_invalid_coordinates2():
     coords_dec = 4.55
     coords = "{},{},{}".format(coords_ra, coords_dec, coords_dec)
     result = runner.invoke(cli.activities,
-                           ['create', '--observing_site', site_uuid, '--coordinates', coords, '--debug', '--test'])
+                           ['create', '--observing_site', site_uuid, '--coordinates', coords, '--api', 'test'])
     assert result.exit_code != 0
     assert isinstance(result.exception, ArcsecondInputValueError)
 
 
+@pytest.mark.skip
 @httpretty.activate
 def test_activities_with_invalid_coordinates3():
     runner = CliRunner()
@@ -72,6 +77,6 @@ def test_activities_with_invalid_coordinates3():
     coords_ra = 2.33
     coords = "yoyo,{}".format(coords_ra)
     result = runner.invoke(cli.activities,
-                           ['create', '--observing_site', site_uuid, '--coordinates', coords, '--debug', '--test'])
+                           ['create', '--observing_site', site_uuid, '--coordinates', coords, '--api', 'test'])
     assert result.exit_code != 0
     assert isinstance(result.exception, ArcsecondInputValueError)

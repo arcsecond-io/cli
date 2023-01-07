@@ -6,11 +6,12 @@ from arcsecond import cli
 from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
 from arcsecond.config import (config_file_clear_section,
                               config_file_save_api_key,
+                              config_file_save_api_server,
                               config_file_save_organisation_membership)
 
 TEST_LOGIN_USERNAME = 'robot1'
 TEST_LOGIN_PASSWORD = 'robotpass'
-TEST_API_KEY = '935e2b9e24c44581b4ef5f4c8e53213e'
+TEST_API_KEY = '4c4458935e2b9e21b4ef5f4c8e53213e'
 TEST_UPLOAD_KEY = 'b4ef5f4c8e53213e935e2b9e24c44581'
 
 
@@ -42,6 +43,7 @@ def make_profile_json(subdomain, role):
 
 
 def prepare_successful_login(subdomain='robotland', role='member'):
+    config_file_save_api_server(ARCSECOND_API_URL_DEV, section='test')
     httpretty.register_uri(
         httpretty.POST,
         ARCSECOND_API_URL_DEV + API_AUTH_PATH_LOGIN,
@@ -70,9 +72,7 @@ def prepare_successful_login(subdomain='robotland', role='member'):
 
 def make_successful_login(runner, subdomain='robotland', role='member'):
     prepare_successful_login(subdomain, role)
-    result = runner.invoke(cli.login,
-                           ['--debug', '--test'],
-                           input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD + '\nY')
+    result = runner.invoke(cli.login, ['--api', 'test'], input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD + '\nY')
     assert result.exit_code == 0
 
 
@@ -86,6 +86,7 @@ def save_test_credentials(username, memberships=None):
 
 def clear_test_credentials():
     config_file_clear_section('test')
+    config_file_save_api_server(ARCSECOND_API_URL_DEV, section='test')
 
 
 def mock_url_path(method, path, body='', query='', status=200):

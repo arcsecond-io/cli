@@ -79,18 +79,14 @@ VALID_PREFIXES = {'dataset': 'datasets/'}
 
 
 def get_api_state(state=None, **kwargs):
-    state = state or State(is_using_cli=False)
+    if 'api' in kwargs.keys():
+        kwargs.update(api_name=kwargs.get('api'))
 
-    if 'api_name' in kwargs.keys():
-        state.api_name = kwargs.get('api_name')
-    if 'verbose' in kwargs.keys():
-        state.verbose = kwargs.get('verbose')
-    if 'organisation' in kwargs.keys():
-        state.organisation = kwargs.get('organisation')
-    if 'api_key' in kwargs.keys():
-        state.api_key = kwargs.get('api_key')
-    if 'upload_key' in kwargs.keys():
-        state.upload_key = kwargs.get('upload_key')
+    state = state or State(is_using_cli=False)
+    state.update(**kwargs)
+
+    if state.api_name and not state.api_server:
+        state.api_server = config_file_read_api_server(state.api_name)
 
     if state.verbose and state.is_using_cli:
         click.echo(f'{ECHO_PREFIX}{state.api_name}{ECHO_PREFIX}')
@@ -201,7 +197,7 @@ class ArcsecondAPI(object):
         if not state.is_using_cli:
             return
 
-        if state and state.debug:
+        if state:
             click.echo(click.style(error, fg='red'))
         else:
             try:
@@ -234,7 +230,7 @@ class ArcsecondAPI(object):
         if result:
             upload_key_dict = next((x for x in result if result.get('organisation') == organisation), None)
             if upload_key_dict:
-                config_file_save_shared_key(upload_key_dict['key'], username, organisation, state.config_section())
+                config_file_save_shared_key(upload_key_dict['key'], username, organisation, state.config_section)
                 msg = f'Successful Shared key retrieval and storage in {config_file_path()}. Enjoy.'
                 ArcsecondAPI._echo_message(state, msg)
             else:
@@ -265,7 +261,7 @@ class ArcsecondAPI(object):
             if profile:
                 # Update username with that of returned profile in case we logged in with email address.
                 username = profile.get('username', username)
-                config_file_save_username(username)
+                config_file_save_username(username, section=state.config_section)
 
             # We replace result and error of login with that of key check.
             if 'api_key' in kwargs.keys() and bool(kwargs['api_key']):
@@ -292,7 +288,7 @@ class ArcsecondAPI(object):
         if error:
             ArcsecondAPI._echo_error(state, error)
         if result:
-            config_file_save_api_key(result['api_key'], username, state.config_section())
+            config_file_save_api_key(result['api_key'], username, state.config_section)
             msg = f'Successful API key retrieval and storage in {config_file_path()}. Enjoy.'
             ArcsecondAPI._echo_message(state, msg)
         return result, error
@@ -307,7 +303,7 @@ class ArcsecondAPI(object):
         if error:
             ArcsecondAPI._echo_error(state, error)
         if result:
-            config_file_save_upload_key(result['upload_key'], username, state.config_section())
+            config_file_save_upload_key(result['upload_key'], username, state.config_section)
             msg = f'Successful Upload key retrieval and storage in {config_file_path()}. Enjoy.'
             ArcsecondAPI._echo_message(state, msg)
         return result, error
@@ -328,7 +324,7 @@ class ArcsecondAPI(object):
                     ArcsecondAPI._echo_message(state, msg)
                     config_file_save_organisation_membership(membership,
                                                              memberships[membership],
-                                                             state.config_section())
+                                                             state.config_section)
             else:
                 ArcsecondAPI._echo_message(state, 'Membership {membership} denied.')
         return profile, error
@@ -336,46 +332,46 @@ class ArcsecondAPI(object):
     @classmethod
     def is_logged_in(cls, state: Optional[State] = None, **kwargs) -> bool:
         state = get_api_state(state, **kwargs)
-        return config_file_is_logged_in(section=state.config_section())
+        return config_file_is_logged_in(section=state.config_section)
 
     @classmethod
     def username(cls, state: Optional[State] = None, **kwargs) -> str:
         state = get_api_state(state, **kwargs)
-        return config_file_read_username(section=state.config_section()) or ''
+        return config_file_read_username(section=state.config_section) or ''
 
     @classmethod
     def get_api_name(cls, state: Optional[State] = None, **kwargs) -> str:
         state = get_api_state(state, **kwargs)
-        return config_file_read_api_server(section=state.config_section()) or ''
+        return config_file_read_api_server(section=state.config_section) or ''
 
     @classmethod
     def set_api_name(cls, address: str, state: Optional[State] = None, **kwargs) -> str:
+        kwargs.update(api_server=address)
         state = get_api_state(state, **kwargs)
-        print(address, state.config_section())
-        return config_file_save_api_server(address, section=state.config_section())
+        return config_file_save_api_server(address, section=state.config_section)
 
     @classmethod
     def api_key(cls, state: Optional[State] = None, **kwargs) -> str:
         state = get_api_state(state, **kwargs)
-        return config_file_read_api_key(section=state.config_section()) or ''
+        return config_file_read_api_key(section=state.config_section) or ''
 
     @classmethod
     def upload_key(cls, state: Optional[State] = None, **kwargs) -> str:
         state = get_api_state(state, **kwargs)
-        return config_file_read_upload_key(section=state.config_section()) or ''
+        return config_file_read_upload_key(section=state.config_section) or ''
 
     @classmethod
     def clear_api_key(cls, key_name, state: Optional[State] = None, **kwargs) -> str:
         state = get_api_state(state, **kwargs)
-        return config_file_clear_api_key(section=state.config_section()) or ''
+        return config_file_clear_api_key(section=state.config_section) or ''
 
     @classmethod
     def clear_upload_key(cls, key_name, state: Optional[State] = None, **kwargs) -> str:
         state = get_api_state(state, **kwargs)
-        return config_file_clear_upload_key(section=state.config_section()) or ''
+        return config_file_clear_upload_key(section=state.config_section) or ''
 
     @classmethod
     def memberships(cls, state: Optional[State] = None, **kwargs):
         state = get_api_state(state, **kwargs)
-        raw_memberships = config_file_read_organisation_memberships(section=state.config_section())
+        raw_memberships = config_file_read_organisation_memberships(section=state.config_section)
         return {m: raw_memberships[m] for m in raw_memberships}

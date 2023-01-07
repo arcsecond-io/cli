@@ -12,29 +12,31 @@ python_version = sys.version_info.major
 
 @httpretty.activate
 def test_login_unknown_credentials():
-    runner = CliRunner()
+    config.config_file_save_api_server(ARCSECOND_API_URL_DEV, section='test')
     httpretty.register_uri(
         httpretty.POST,
         ARCSECOND_API_URL_DEV + API_AUTH_PATH_LOGIN,
         status=401,
         body='{"detail": "Unable to log in with provided credentials."}'
     )
-    result = runner.invoke(cli.login, ['--debug', '--test'], input='dummy\ndummy')
+    runner = CliRunner()
+    result = runner.invoke(cli.login, ['--api', 'test'], input='dummy\ndummy')
     assert result.exit_code == 0 and not result.exception
     assert 'Unable to log in with provided credentials.' in result.output
 
 
 @httpretty.activate
 def test_login_invalid_parameters():
-    runner = CliRunner()
+    config.config_file_save_api_server(ARCSECOND_API_URL_DEV, section='test')
     httpretty.register_uri(
         httpretty.POST,
         ARCSECOND_API_URL_DEV + API_AUTH_PATH_LOGIN,
         status=401,
         body='{"detail": "This field may not be blank."}'
     )
+    runner = CliRunner()
     for input in [' \n ', ' \ndummy', 'dummy\n ']:
-        result = runner.invoke(cli.login, ['--debug', '--test'], input=input)
+        result = runner.invoke(cli.login, ['--api', 'test'], input=input)
         assert result.exit_code == 0 and not result.exception
         assert 'non_field_errors' in result.output or 'This field may not be blank' in result.output
 
@@ -46,7 +48,7 @@ def test_login_valid_parameters_with_confirmation():
     runner = CliRunner(echo_stdin=True)
     prepare_successful_login()
     result = runner.invoke(cli.login,
-                           ['--debug', '--test'],
+                           ['--api', 'test'],
                            input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD + '\nY')
     assert result.exit_code == 0 and not result.exception
     assert config.config_file_read_api_key('test') is not None
@@ -59,19 +61,20 @@ def test_login_valid_parameters_without_confirmation():
     runner = CliRunner(echo_stdin=True)
     prepare_successful_login()
     result = runner.invoke(cli.login,
-                           ['--debug', '--test'],
+                           ['--api', 'test'],
                            input=TEST_LOGIN_USERNAME + '\n' + TEST_LOGIN_PASSWORD + '\nN')
     assert result.exit_code == 0 and not result.exception
     assert config.config_file_read_api_key('test') is None
 
 
 def test_register_refuse_agreement(monkeypatch):
+    config.config_file_save_api_server(ARCSECOND_API_URL_DEV, section='test')
     runner = CliRunner()
     monkeypatch.setattr('builtins.input', lambda x: "")
-    result = runner.invoke(cli.register, ['--debug', '--test'], input='test\ntest@test.com\ntest1\ntest1')
+    result = runner.invoke(cli.register, ['--api', 'test'], input='test\ntest@test.com\ntest1\ntest1')
     assert result.exit_code != 0 and result.exception
 
-# I can't find a way to use httpretyy.activate and monkeypatch at the same time.
+# I can't find a way to use httpretty.activate and monkeypatch at the same time.
 # @httpretty.activate
 # def test_register_agree_on_agreement(monkeypatch):
 #     runner = CliRunner()
@@ -82,5 +85,5 @@ def test_register_refuse_agreement(monkeypatch):
 #         body='{"key": "dummy_api_key."}'
 #     )
 #     monkeypatch.setattr('builtins.input', lambda x: "y")
-#     result = runner.invoke(cli.register, ['--debug', '--test'], input='test16\ntest@test.com\ntest1\ntest1')
+#     result = runner.invoke(cli.register, ['--api', 'test'], input='test16\ntest@test.com\ntest1\ntest1')
 #     assert result.exit_code == 0 and not result.exception

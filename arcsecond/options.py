@@ -2,26 +2,40 @@ import click
 
 
 class State(object):
+
     def __init__(self,
+                 is_using_cli=True,
                  verbose=0,
                  api_name='main',
-                 organisation=None,
-                 is_using_cli=True,
-                 api_key=None,
-                 upload_key=None):
+                 api_server='',
+                 organisation='',
+                 api_key='',
+                 upload_key=''):
+        self.is_using_cli = is_using_cli
         self.verbose = verbose
         self.api_name = api_name
+        self.api_server = api_server
         self.organisation = organisation
-        self.is_using_cli = is_using_cli
         self.api_key = api_key
         self.upload_key = upload_key
 
+    def update(self, **kwargs):
+        self.is_using_cli = kwargs.get('is_using_cli', self.is_using_cli)
+        self.verbose = kwargs.get('verbose', self.verbose)
+        self.api_name = kwargs.get('api_name', self.api_name)
+        self.api_server = kwargs.get('api_server', self.api_server)
+        self.organisation = kwargs.get('organisation', self.organisation)
+        self.api_key = kwargs.get('api_key', self.api_key)
+        self.upload_key = kwargs.get('upload_key', self.upload_key)
+
+    @property
     def config_section(self):
         return self.api_name
 
     def make_new_silent(self):
         return State(verbose=0,
                      api_name=self.api_name,
+                     api_server=self.api_server,
                      organisation=self.organisation,
                      is_using_cli=self.is_using_cli,
                      api_key=self.api_key,
@@ -56,34 +70,6 @@ def verbose_option_constructor(f):
                         callback=callback)(f)
 
 
-# def debug_option_constructor(f):
-#     def callback(ctx, param, value):
-#         state = ctx.ensure_object(State)
-#         state.debug = value
-#         return value
-#
-#     return click.option('-d',
-#                         '--debug',
-#                         is_flag=True,
-#                         expose_value=False,
-#                         help='Enable debug mode (for Arcsecond developers).',
-#                         callback=callback)(f)
-#
-#
-# def staging_option_constructor(f):
-#     def callback(ctx, param, value):
-#         state = ctx.ensure_object(State)
-#         state.debug = value
-#         return value
-#
-#     return click.option('-s',
-#                         '--staging',
-#                         is_flag=True,
-#                         expose_value=False,
-#                         help='Enable staging mode (for Arcsecond developers).',
-#                         callback=callback)(f)
-
-
 # def test_option_constructor(f):
 #     def callback(ctx, param, value):
 #         state = ctx.ensure_object(State)
@@ -103,6 +89,7 @@ def api_option_constructor(f):
         return value
 
     return click.option('--api',
+                        expose_value=False,
                         help='Choose API name (i.e. API server).',
                         callback=callback)(f)
 

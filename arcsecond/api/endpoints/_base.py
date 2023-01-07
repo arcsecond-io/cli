@@ -7,8 +7,10 @@ from progress.bar import Bar
 from progress.spinner import Spinner
 from requests_toolbelt.multipart import encoder
 
-from arcsecond.api.constants import (API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER, ARCSECOND_API_URL_DEV,
-                                     ARCSECOND_API_URL_PROD, ARCSECOND_WWW_URL_DEV, ARCSECOND_WWW_URL_PROD)
+from arcsecond.api.constants import (
+    API_AUTH_PATH_LOGIN,
+    API_AUTH_PATH_REGISTER
+)
 from arcsecond.api.error import ArcsecondError
 from arcsecond.api.helpers import extract_multipart_encoder_file_fields
 from arcsecond.config import (
@@ -38,7 +40,7 @@ class APIEndPoint(object):
         self.headers = {}
 
     def _get_base_url(self):
-        return ARCSECOND_API_URL_DEV if self.state.debug else ARCSECOND_API_URL_PROD
+        return self.state.api_server
 
     def _root_url(self):
         prefix = self.prefix
@@ -53,8 +55,7 @@ class APIEndPoint(object):
         return url + query
 
     def _root_open_url(self):
-        if hasattr(self.state, 'open'):
-            return ARCSECOND_WWW_URL_DEV if self.state.debug is True else ARCSECOND_WWW_URL_PROD
+        pass
 
     def _list_url(self, **filters):
         raise Exception('You must override this method.')
@@ -182,9 +183,9 @@ class APIEndPoint(object):
                 click.echo('Checking local API|Upload key... ', nl=False)
 
             # Choose the strongest key first
-            auth_key = config_file_read_api_key(self.state.config_section())
+            auth_key = config_file_read_api_key(self.state.config_section)
             if not auth_key:
-                auth_key = config_file_read_upload_key(self.state.config_section())
+                auth_key = config_file_read_upload_key(self.state.config_section)
                 if not auth_key:
                     raise ArcsecondError('Missing auth keys (API or Upload). You must login first: $ arcsecond login')
 

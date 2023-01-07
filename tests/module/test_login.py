@@ -10,7 +10,7 @@ def test_login_basic():
     clear_test_credentials()
     assert config.config_file_read_api_key('test') is None
     prepare_successful_login()
-    ArcsecondAPI.login(TEST_LOGIN_USERNAME, TEST_LOGIN_PASSWORD, debug=True, test=True)
+    ArcsecondAPI.login(TEST_LOGIN_USERNAME, TEST_LOGIN_PASSWORD, api='test')
     assert config.config_file_read_api_key('test') is None
     assert config.config_file_read_upload_key('test') is None
 
@@ -20,7 +20,7 @@ def test_login_apikey():
     clear_test_credentials()
     assert config.config_file_read_api_key('test') is None
     prepare_successful_login()
-    ArcsecondAPI.login(TEST_LOGIN_USERNAME, TEST_LOGIN_PASSWORD, api_key=True, debug=True, test=True)
+    ArcsecondAPI.login(TEST_LOGIN_USERNAME, TEST_LOGIN_PASSWORD, api_key=True, api='test')
     assert config.config_file_read_api_key('test') == TEST_API_KEY
     assert config.config_file_read_upload_key('test') is None
 
@@ -30,7 +30,7 @@ def test_login_uploadkey():
     clear_test_credentials()
     assert config.config_file_read_api_key('test') is None
     prepare_successful_login()
-    ArcsecondAPI.login(TEST_LOGIN_USERNAME, TEST_LOGIN_PASSWORD, upload_key=True, debug=True, test=True)
+    ArcsecondAPI.login(TEST_LOGIN_USERNAME, TEST_LOGIN_PASSWORD, upload_key=True, api='test')
     assert config.config_file_read_api_key('test') is None
     assert config.config_file_read_upload_key('test') == TEST_UPLOAD_KEY
 
@@ -40,6 +40,6 @@ def test_login_both_apikey_uploadkey():
     clear_test_credentials()
     assert config.config_file_read_api_key('test') is None
     prepare_successful_login()
-    ArcsecondAPI.login(TEST_LOGIN_USERNAME, TEST_LOGIN_PASSWORD, api_key=True, upload_key=True, debug=True, test=True)
+    ArcsecondAPI.login(TEST_LOGIN_USERNAME, TEST_LOGIN_PASSWORD, api_key=True, upload_key=True, api='test')
     assert config.config_file_read_api_key('test') == TEST_API_KEY
     assert config.config_file_read_upload_key('test') == TEST_UPLOAD_KEY
