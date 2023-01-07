@@ -50,8 +50,8 @@ def register(state, username, email, password1, password2):
 @pass_state
 def login(state, username, password, organisation=None):
     """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
-    msg = 'Logging in will fetch and store your full-access API key in ~/.arcsecond.ini. '
-    msg += 'Make sure you are on a secure computer.'
+    msg = 'Logging in will fetch and store your full-access API key in ~/config/arcsecond/config.ini. '
+    msg += 'Make sure you are on a secured computer.'
     if click.confirm(msg, default=True):
         ArcsecondAPI.login(username, password, state, organisation, api_key=True)
     else:
