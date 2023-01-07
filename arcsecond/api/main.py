@@ -150,13 +150,7 @@ class ArcsecondAPI(object):
         if type(id_name_uuid) is tuple:
             id_name_uuid = " ".join(id_name_uuid)
 
-        if self.state.open:
-            url = self.endpoint._open_url(id_name_uuid)
-            if self.state.verbose:
-                click.echo('Opening URL in browser : ' + url)
-            webbrowser.open(url)
-        else:
-            return self._handle_endpoint_response(self.endpoint.read(id_name_uuid))
+        return self._handle_endpoint_response(self.endpoint.read(id_name_uuid))
 
     def update(self, id_name_uuid, payload, callback=None):
         return self._handle_endpoint_response(self.endpoint.update(id_name_uuid, payload, callback=callback))
