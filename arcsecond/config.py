@@ -21,9 +21,10 @@ def config_dir_path() -> Path:
 def config_file_path() -> Path:
     _config_dir_path = config_dir_path()
     _config_file_path = _config_dir_path / 'config.ini'
-    if old_config_file_path().exists() and not _config_file_path.exists():
+    if not _config_file_path.exists():
         _config_dir_path.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(old_config_file_path()), str(_config_file_path))
+        if old_config_file_path().exists():
+            shutil.move(str(old_config_file_path()), str(_config_file_path))
     return _config_file_path
 
 
