@@ -22,7 +22,7 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.READ_PACKAGE_TOKEN }}
         CI: true
-        node-version: '16'
+        node-version: '16.x'
         cache: 'npm'
     - name: Deploy docs
       env:
