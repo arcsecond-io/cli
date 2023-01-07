@@ -19,9 +19,6 @@ def config_dir_path() -> Path:
 
 
 def config_file_path() -> Path:
-    _config_root_path = Path.home() / '.config'
-    if 'XDG_CONFIG_DIRS' in os.environ.keys():
-        _config_root_path = Path(os.environ['XDG_CONFIG_DIRS'])
     _config_dir_path = config_dir_path()
     _config_file_path = _config_dir_path / 'config.ini'
     if old_config_file_path().exists() and not _config_file_path.exists():
