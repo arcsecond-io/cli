@@ -3,8 +3,6 @@ from urllib.parse import urlencode
 
 import click
 import requests
-from progress.bar import Bar
-from progress.spinner import Spinner
 from requests_toolbelt.multipart import encoder
 
 from arcsecond.api.constants import (
@@ -134,8 +132,8 @@ class APIEndPoint(object):
         encoded_data = encoder.MultipartEncoder(fields=fields)
 
         if self.state.is_using_cli is True and self.state.verbose:
-            bar = Bar('Uploading ' + fields['file'][0], suffix='%(percent)d%%')
-            return encoder.MultipartEncoderMonitor(encoded_data, lambda m: bar.goto(m.bytes_read / m.len * 100))
+            bar = lambda percent: f"Uploading {fields['file'][0]} {percent}%%'"
+            return encoder.MultipartEncoderMonitor(encoded_data, lambda m: bar(m.bytes_read / m.len * 100))
         elif self.state.is_using_cli is False and callback:
             return encoder.MultipartEncoderMonitor(encoded_data, lambda m: callback(EVENT_METHOD_PROGRESS_PERCENT,
                                                                                     m.bytes_read / m.len * 100))
@@ -150,12 +148,6 @@ class APIEndPoint(object):
 
         performer = AsyncFileUploader(url, method, data=data, payload=payload, **headers)
         performer.start()
-
-        spinner = Spinner()
-        while performer.is_alive():
-            if self.state.verbose:
-                spinner.next()
-
         response, error = performer.finish()
 
         # If we have an error and it is an ArcsecondError, raise it.

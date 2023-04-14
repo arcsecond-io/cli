@@ -33,8 +33,7 @@ setup(
         'requests',
         'requests_toolbelt',
         'pygments',
-        'configparser',
-        'progress'
+        'configparser'
     ],
     entry_points={
         'console_scripts': [
