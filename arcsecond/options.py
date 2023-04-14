@@ -42,20 +42,6 @@ class State(object):
                      upload_key=self.upload_key)
 
 
-# class AliasedGroup(click.Group):
-#
-#     def get_command(self, ctx, cmd_name):
-#         rv = click.Group.get_command(self, ctx, cmd_name)
-#         if rv is not None:
-#             return rv
-#         matches = [x for x in self.list_commands(ctx) if x[0] == cmd_name]
-#         if not matches:
-#             return None
-#         elif len(matches) == 1:
-#             return click.Group.get_command(self, ctx, matches[0])
-#         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
-
-
 def verbose_option_constructor(f):
     def callback(ctx, param, value):
         state = ctx.ensure_object(State)
@@ -69,18 +55,6 @@ def verbose_option_constructor(f):
                         help='Increases verbosity.',
                         callback=callback)(f)
 
-
-# def test_option_constructor(f):
-#     def callback(ctx, param, value):
-#         state = ctx.ensure_object(State)
-#         state.test = value
-#         return value
-#
-#     return click.option('--test',
-#                         is_flag=True,
-#                         expose_value=False,
-#                         help='Enable test mode (for Arcsecond developers). Implies debug.',
-#                         callback=callback)(f)
 
 def api_option_constructor(f):
     def callback(ctx, param, value):
@@ -105,20 +79,6 @@ def organisation_option_constructor(f):
                         callback=callback)(f)
 
 
-# def open_option_constructor(f):
-#     def callback(ctx, param, value):
-#         state = ctx.ensure_object(State)
-#         state.open = value
-#         return value
-#
-#     return click.option('-o',
-#                         '--open',
-#                         is_flag=True,
-#                         expose_value=False,
-#                         help="Open the corresponding webpage in the default browser.",
-#                         callback=callback)(f)
-
-
 def basic_options(f):
     f = verbose_option_constructor(f)
     f = api_option_constructor(f)
@@ -130,12 +90,6 @@ def organisation_options(f):
     f = api_option_constructor(f)
     f = organisation_option_constructor(f)
     return f
-
-
-# def open_options(f):
-#     f = basic_options(f)
-#     f = open_option_constructor(f)
-#     return f
 
 
 class MethodChoiceParamType(click.ParamType):
