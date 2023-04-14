@@ -33,11 +33,11 @@ class State(object):
         return self.api_name
 
     def make_new_silent(self):
-        return State(verbose=0,
+        return State(is_using_cli=self.is_using_cli,
+                     verbose=0,
                      api_name=self.api_name,
                      api_server=self.api_server,
                      organisation=self.organisation,
-                     is_using_cli=self.is_using_cli,
                      api_key=self.api_key,
                      upload_key=self.upload_key)
 
