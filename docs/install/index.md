@@ -50,7 +50,7 @@ and provide a username and a password.
 
 ### Login to Arcsecond.io
 
-**You must login first before accessing APIs.** 
+**You must log in first before accessing APIs.** 
 
 ```bash
 $ arcsecond login 
@@ -63,7 +63,7 @@ $ arcsecond login --username <username> --password <password>
 ```
 
 By registering or logging in, **your private API key will be stored locally** 
-in the config file in `~/.arcsecond.ini`. **Do not share this key. It gives a
+in the config file in `~/.arcsecond.ini`. **Do not share this key. It gives 
 complete access to your private resources too.**
 
 Logging in again will overwrite the current API key with the new one 
