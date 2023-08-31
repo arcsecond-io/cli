@@ -55,10 +55,10 @@ class APIEndPoint(object):
     def _root_open_url(self):
         pass
 
-    def _list_url(self, **filters):
+    def _get_list_url(self, **filters):
         raise Exception('You must override this method.')
 
-    def _detail_url(self, name_or_id):
+    def _get_detail_url(self, name_or_id):
         raise Exception('You must override this method.')
 
     def _open_url(self, name_or_id):
@@ -68,21 +68,19 @@ class APIEndPoint(object):
         self.headers = headers
 
     def list(self, **filters):
-        return self._perform_request(self._list_url(**filters), 'get', None, None)
+        return self._perform_request(self._get_list_url(**filters), 'get', None, None)
 
     def create(self, payload, callback=None):
-        # If a file is provided as part of the payload, a instance of AsyncFileUploader is returned
-        # in place of a standard JSON body response.
-        return self._perform_request(self._list_url(), 'post', payload, callback)
+        return self._perform_request(self._get_list_url(), 'post', payload, callback)
 
     def read(self, id_name_uuid):
-        return self._perform_request(self._detail_url(id_name_uuid), 'get', None, None)
+        return self._perform_request(self._get_detail_url(id_name_uuid), 'get', None, None)
 
     def update(self, id_name_uuid, payload, callback=None):
-        return self._perform_request(self._detail_url(id_name_uuid), 'patch', payload, callback)
+        return self._perform_request(self._get_detail_url(id_name_uuid), 'patch', payload, callback)
 
     def delete(self, id_name_uuid):
-        return self._perform_request(self._detail_url(id_name_uuid), 'delete', None, None)
+        return self._perform_request(self._get_detail_url(id_name_uuid), 'delete', None, None)
 
     def _perform_request(self, url, method, payload, callback=None):
         method_name, method, payload, headers = self._prepare_request(url, method, payload)

@@ -4,7 +4,7 @@ from ._base import APIEndPoint
 class ObjectsAPIEndPoint(APIEndPoint):
     name = 'objects'
 
-    def _detail_url(self, name):
+    def _get_detail_url(self, name):
         return self._build_url('objects', name)
 
     def _open_url(self, name):
@@ -14,10 +14,10 @@ class ObjectsAPIEndPoint(APIEndPoint):
 class ExoplanetsAPIEndPoint(APIEndPoint):
     name = 'exoplanets'
 
-    def _list_url(self, **filters):
+    def _get_list_url(self, **filters):
         return self._build_url('exoplanets', **filters)
 
-    def _detail_url(self, name):
+    def _get_detail_url(self, name):
         return self._build_url('exoplanets', name)
 
     def _open_url(self, name):
