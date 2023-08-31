@@ -150,7 +150,7 @@ class APIEndPoint(object):
         performer.start()
         response, error = performer.finish()
 
-        # If we have an error and it is an ArcsecondError, raise it.
+        # If we have an error, and it is an ArcsecondError, raise it.
         # As for now, only ArcsecondError could be returned, and there is no
         # real point of returning both response and error below. But
         # methods in main.py expect them both.
