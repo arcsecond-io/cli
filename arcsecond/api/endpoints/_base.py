@@ -3,20 +3,17 @@ from urllib.parse import urlencode
 
 import click
 import requests
-from requests_toolbelt.multipart import encoder
 
 from arcsecond.api.constants import (
     API_AUTH_PATH_LOGIN,
     API_AUTH_PATH_REGISTER
 )
 from arcsecond.api.error import ArcsecondError
-from arcsecond.api.helpers import extract_multipart_encoder_file_fields
 from arcsecond.config import (
     config_file_read_api_key,
     config_file_read_upload_key
 )
 from arcsecond.options import State
-from ._fileuploader import AsyncFileUploader
 
 SAFE_METHODS = ['GET', 'OPTIONS']
 WRITABLE_MEMBERSHIPS = ['superadmin', 'admin', 'member']
@@ -68,98 +65,62 @@ class APIEndPoint(object):
         self.headers = headers
 
     def list(self, **filters):
-        return self._perform_request(self._get_list_url(**filters), 'get', None, None)
+        return self._perform_request(self._get_list_url(**filters), 'get', None)
 
-    def create(self, payload, callback=None):
-        return self._perform_request(self._get_list_url(), 'post', payload, callback)
+    def create(self, payload):
+        return self._perform_request(self._get_list_url(), 'post', payload)
 
     def read(self, id_name_uuid):
-        return self._perform_request(self._get_detail_url(id_name_uuid), 'get', None, None)
+        return self._perform_request(self._get_detail_url(id_name_uuid), 'get', None)
 
-    def update(self, id_name_uuid, payload, callback=None):
-        return self._perform_request(self._get_detail_url(id_name_uuid), 'patch', payload, callback)
+    def update(self, id_name_uuid, payload):
+        return self._perform_request(self._get_detail_url(id_name_uuid), 'patch', payload)
 
     def delete(self, id_name_uuid):
-        return self._perform_request(self._get_detail_url(id_name_uuid), 'delete', None, None)
+        return self._perform_request(self._get_detail_url(id_name_uuid), 'delete', None)
 
-    def _perform_request(self, url, method, payload, callback=None):
-        method_name, method, payload, headers = self._prepare_request(url, method, payload)
+    def _perform_request(self, url, method_name, payload):
+        method, json, headers = self._prepare_request(url, method_name, payload)
 
-        payload, fields = extract_multipart_encoder_file_fields(payload)
-        if fields is None:
-            # Standard JSON sync request
-            return self._perform_spinner_request(url, method, method_name, None, payload, **headers)
+        if self.state.verbose:
+            click.echo(f'Sending {method_name} request to {url}')
+            if json:
+                self._echo_spinner_request_payload(json)
+
+        try:
+            response = method(url, json=json, headers=headers)
+        except Exception as e:
+            return None, ArcsecondError(str(e))
         else:
-            # Process payload synchronously nonetheless
-            if payload:
-                self._perform_spinner_request(url, method, method_name, None, payload, **headers)
-
-            # File upload
-            upload_monitor = self._build_dynamic_upload_data(fields, callback)
-            headers.update(**{'Content-Type': upload_monitor.content_type})
-
-            if self.state.is_using_cli:
-                return self._perform_spinner_request(url, method, method_name, upload_monitor, None, **headers)
+            if isinstance(response, dict):
+                # Responses of standard JSON payload requests are dict
+                return response
+            elif response is not None:
+                if 200 <= response.status_code < 300:
+                    return response.json() if response.text else {}, None
+                else:
+                    return None, ArcsecondError(response.text)
             else:
-                return AsyncFileUploader(url, method, data=upload_monitor, payload=None, **headers), None
+                return None, ArcsecondError('No response?')
 
-    def _prepare_request(self, url, method, payload):
-        assert (url and method)
+    def _prepare_request(self, url, method_name, payload):
+        assert (url and method_name)
 
         if self.state.verbose:
             click.echo('Preparing request...')
 
-        if not isinstance(method, str) or callable(method):
-            raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method)))
-
-        # Put method name aside in its own var.
-        method_name = method.upper() if isinstance(method, str) else ''
+        if not isinstance(method_name, str) or callable(method_name):
+            raise ArcsecondError('Invalid HTTP request method {}. '.format(str(method_name)))
 
         # Check API key, hence login state. Must do before check for org.
         headers = self._check_and_set_auth_key(self.headers or {}, url)
-        method = getattr(requests, method.lower()) if isinstance(method, str) else method
+        method = getattr(requests, method_name.lower()) if isinstance(method_name, str) else method_name
 
         if payload:
             # Filtering None values out of payload.
             payload = {k: v for k, v in payload.items() if v is not None}
 
-        return method_name, method, payload, headers
-
-    def _build_dynamic_upload_data(self, fields, callback=None):
-        # The monitor is the data!
-        encoded_data = encoder.MultipartEncoder(fields=fields)
-
-        if self.state.is_using_cli is True and self.state.verbose:
-            bar = lambda percent: f"Uploading {fields['file'][0]} {percent}%%'"
-            return encoder.MultipartEncoderMonitor(encoded_data, lambda m: bar(m.bytes_read / m.len * 100))
-        elif self.state.is_using_cli is False and callback:
-            return encoder.MultipartEncoderMonitor(encoded_data, lambda m: callback(EVENT_METHOD_PROGRESS_PERCENT,
-                                                                                    m.bytes_read / m.len * 100))
-        else:
-            return encoder.MultipartEncoderMonitor(encoded_data, None)
-
-    def _perform_spinner_request(self, url, method, method_name, data=None, payload=None, **headers):
-        if self.state.verbose:
-            click.echo('Sending {} request to {}'.format(method_name, url))
-            if payload:
-                self._echo_spinner_request_payload(payload)
-
-        performer = AsyncFileUploader(url, method, data=data, payload=payload, **headers)
-        performer.start()
-        response, error = performer.finish()
-
-        # If we have an error, and it is an ArcsecondError, raise it.
-        # As for now, only ArcsecondError could be returned, and there is no
-        # real point of returning both response and error below. But
-        # methods in main.py expect them both.
-
-        if error and isinstance(error, ArcsecondError):
-            raise error
-
-        if self.state.verbose:
-            self._echo_spinner_request_result(error, response)
-
-        return response, error
+        return method, payload, headers
 
     def _check_and_set_auth_key(self, headers, url):
         if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():

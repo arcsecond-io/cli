@@ -2,6 +2,12 @@ class ArcsecondError(Exception):
     pass
 
 
+class ArcsecondRequestError(ArcsecondError):
+    def __init__(self, error_string):
+        msg = f"Request failed: {error_string}"
+        super().__init__(msg)
+
+
 class ArcsecondInputValueError(ArcsecondError):
     def __init__(self, msg):
         super().__init__(msg)

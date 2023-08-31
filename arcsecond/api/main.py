@@ -140,8 +140,8 @@ class ArcsecondAPI(object):
     def list(self, **filters):
         return self._handle_endpoint_response(self.endpoint.list(**filters))
 
-    def create(self, payload, callback=None):
-        return self._handle_endpoint_response(self.endpoint.create(payload, callback=callback))
+    def create(self, payload):
+        return self._handle_endpoint_response(self.endpoint.create(payload))
 
     def read(self, id_name_uuid):
         if not id_name_uuid:

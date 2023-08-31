@@ -1,4 +1,3 @@
-from ._fileuploader import AsyncFileUploader
 from .activities import ActivitiesAPIEndPoint
 from .charts import FindingChartsAPIEndPoint
 from .datasets import DataFilesAPIEndPoint, DatasetsAPIEndPoint
@@ -37,5 +36,4 @@ __all__ = ["ActivitiesAPIEndPoint",
            "StandardStarsAPIEndPoint",
            "TelescopesAPIEndPoint",
            "TelegramsATelAPIEndPoint",
-           "OrganisationUploadKeysAPIEndPoint",
-           "AsyncFileUploader"]
+           "OrganisationUploadKeysAPIEndPoint"]
