@@ -6,7 +6,7 @@ from arcsecond import config
 
 SECTION = 'test'
 USERNAME = 'cedric'
-API_KEY = '1-2-3'
+ACCESS_KEY = '1-2-3'
 UPLOAD_KEY = '9-8-7'
 
 
@@ -28,7 +28,7 @@ def test_config_file_is_logged_in_no_keys():
 
 def test_config_file_is_logged_in_has_api_key():
     config.config_file_clear_section(SECTION)
-    config.config_file_save_api_key(API_KEY, USERNAME, SECTION)
+    config.config_file_save_api_key(ACCESS_KEY, USERNAME, SECTION)
     assert config.config_file_is_logged_in(SECTION) is True
 
 
@@ -40,7 +40,7 @@ def test_config_file_is_logged_in_has_upload_key():
 
 def test_config_file_is_logged_in_has_api_and_upload_keys():
     config.config_file_clear_section(SECTION)
-    config.config_file_save_api_key(API_KEY, USERNAME, SECTION)
+    config.config_file_save_api_key(ACCESS_KEY, USERNAME, SECTION)
     config.config_file_save_upload_key(UPLOAD_KEY, USERNAME, SECTION)
     assert config.config_file_is_logged_in(SECTION) is True
 

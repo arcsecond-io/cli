@@ -53,7 +53,7 @@ def login(state, username, password, organisation=None):
     msg = 'Logging in will fetch and store your full-access API key in ~/config/arcsecond/config.ini. '
     msg += 'Make sure you are on a secured computer.'
     if click.confirm(msg, default=True):
-        ArcsecondAPI.login(username, password, state, organisation, api_key=True)
+        ArcsecondAPI.login(username, password, state, organisation, access_key=True)
     else:
         click.echo('Stopping without logging in.')
 

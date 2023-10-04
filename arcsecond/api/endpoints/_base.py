@@ -33,7 +33,7 @@ class APIEndPoint(object):
     name = None
 
     def __init__(self, state=None, prefix=''):
-        # Provided state may contain overriding api_key or upload_key to be used.
+        # Provided state may contain overriding access_key or upload_key to be used.
         self.state = state or State()
         self.prefix = prefix
         self.organisation = getattr(state, 'organisation', '')
@@ -176,14 +176,14 @@ class APIEndPoint(object):
             return headers
 
         # Choose the strongest key first
-        auth_key = self.state.api_key or self.state.upload_key
+        auth_key = self.state.access_key or self.state.upload_key
 
         if auth_key is None:
             if self.state.verbose:
                 click.echo('Checking local API|Upload key... ', nl=False)
 
             # Choose the strongest key first
-            auth_key = config_file_read_api_key(self.state.config_section)
+            auth_key = self.config.access_key or self.config.upload_key
             if not auth_key:
                 auth_key = config_file_read_upload_key(self.state.config_section)
                 if not auth_key:
