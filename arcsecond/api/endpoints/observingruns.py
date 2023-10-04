@@ -39,3 +39,11 @@ class CalibrationsAPIEndPoint(APIEndPoint):
 
     def _detail_url(self, uuid):
         return self._build_url('calibrations', str(uuid))
+
+
+class FindingChartsAPIEndPoint(APIEndPoint):
+    name = 'findingcharts'
+
+    def _list_url(self, **filters):
+        name = filters.get('name') or ''
+        return self._build_url('findingcharts', name)
