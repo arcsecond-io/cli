@@ -258,7 +258,7 @@ class ArcsecondAPI(object):
                 config_file_save_username(username, section=state.config_section)
 
             # We replace result and error of login with that of key check.
-            if 'api_key' in kwargs.keys() and bool(kwargs['api_key']):
+            if 'access_key' in kwargs.keys() and bool(kwargs['access_key']):
                 result, error = ArcsecondAPI._get_and_save_api_key(state, username, auth_token)
             if 'upload_key' in kwargs.keys() and bool(kwargs['upload_key']):
                 result, error = ArcsecondAPI._get_and_save_upload_key(state, username, auth_token)
@@ -282,7 +282,7 @@ class ArcsecondAPI(object):
         if error:
             ArcsecondAPI._echo_error(state, error)
         if result:
-            config_file_save_api_key(result['api_key'], username, state.config_section)
+            config_file_save_api_key(result['access_key'], username, state.config_section)
             msg = f'Successful API key retrieval and storage in {config_file_path()}. Enjoy.'
             ArcsecondAPI._echo_message(state, msg)
         return result, error
@@ -345,7 +345,7 @@ class ArcsecondAPI(object):
         return config_file_save_api_server(address, section=state.config_section)
 
     @classmethod
-    def api_key(cls, state: Optional[State] = None, **kwargs) -> str:
+    def access_key(cls, state: Optional[State] = None, **kwargs) -> str:
         state = get_api_state(state, **kwargs)
         return config_file_read_api_key(section=state.config_section) or ''
 

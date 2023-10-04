@@ -60,7 +60,7 @@ def prepare_successful_login(subdomain='robotland', role='member'):
         httpretty.GET,
         ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/apikey/',
         status=200,
-        body='{ "api_key": "' + TEST_API_KEY + '" }'
+        body='{ "access_key": "' + TEST_API_KEY + '" }'
     )
     httpretty.register_uri(
         httpretty.GET,
