@@ -22,18 +22,20 @@ setup(
     license='MIT',
     author='Cedric Foellmi',
     author_email='cedric@arcsecond.io',
-    description=' CLI for arcsecond.io',
+    description='CLI for arcsecond.io',
     long_description=long_description,
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     zip_safe=False,
     platforms='any',
     install_requires=[
-        'click',
-        'requests',
+        'click>=8',
+        'requests>=2.26',
         'requests_toolbelt',
         'pygments',
-        'configparser'
+        'configparser',
+        'docker',
+        'wait-for-it'
     ],
     entry_points={
         'console_scripts': [
@@ -41,7 +43,7 @@ setup(
         ],
     },
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',

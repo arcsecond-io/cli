@@ -3,6 +3,7 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
+from .hosting import run_arcsecond, stop_arcsecond, get_arcsecond_status
 from .options import State, basic_options
 
 pass_state = click.make_pass_decorator(State, ensure=True)
@@ -27,7 +28,9 @@ def version():
     click.echo(__version__)
 
 
-@main.command(short_help='Register a free Arcsecond account.')
+######################## PERSONAL ACCOUNT ##############################################################################
+
+@main.command(short_help='Register a free Arcsecond.io account.')
 @click.option('--username', required=True, nargs=1, prompt=True)
 @click.option('--email', required=True, nargs=1, prompt=True)
 @click.option('--password1', required=True, nargs=1, prompt=True, hide_input=True)
@@ -85,21 +88,37 @@ def me(state):
     ArcsecondAPI.me(state).read(username)
 
 
-@main.command(help='Get the list of observing sites (in the /observingsites/ API endpoint)')
-@basic_options
+######################## SELF-HOSTING ##################################################################################
+
+@main.command(name='try', help='Try a full-featured demo of a self-hosted Arcsecond instance.')
+@click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
 @pass_state
-def observingsites(state):
-    ArcsecondAPI.observingsites(state).list()
+def do_try(state, skip_setup=False):
+    run_arcsecond(do_try=True, skip_setup=skip_setup)
 
 
-@main.command(help='Get the list of telescopes (in the /telescopes/ API endpoint)')
-@basic_options
+@main.command(name='install', help='Install a true self-hosting Arcsecond instance.')
+@click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
 @pass_state
-def telescopes(state):
-    ArcsecondAPI.telescopes(state).list()
+def do_install(state, skip_setup=False):
+    run_arcsecond(do_try=False, skip_setup=skip_setup)
 
 
-@main.command(help='Get the list of organisations, or the details of one if a subdomain is provided.')
+@main.command(name='stop', help='Stop the running self-hosted Arcsecond instance.')
+@pass_state
+def do_stop(state):
+    stop_arcsecond()
+
+
+@main.command(name='status', help='Stop the running self-hosted Arcsecond instance.')
+@pass_state
+def do_get_status(state):
+    get_arcsecond_status()
+
+
+######################## ORGANISATION MANAGEMENT #######################################################################
+
+@main.command(help='Request the list of organisations, or the details of one if a subdomain is provided.')
 @click.argument('organisation', required=False, nargs=1)
 @basic_options
 @pass_state
@@ -111,7 +130,7 @@ def organisations(state, organisation):
         api.list()
 
 
-@main.command(help='Get the list of members of an organisation.')
+@main.command(help='Request the list of members of an organisation.')
 @click.argument('organisation', required=True, nargs=1)
 @basic_options
 @pass_state
@@ -119,40 +138,9 @@ def members(state, organisation):
     ArcsecondAPI.members(state, organisation=organisation).list()
 
 
-@main.command(help='Get the list of upload keys of an organisation.')
+@main.command(help='Request the list of upload keys of an organisation.')
 @click.argument('organisation', required=True, nargs=1)
 @basic_options
 @pass_state
 def uploadkeys(state, organisation):
     ArcsecondAPI.uploadkeys(state, organisation=organisation).list()
-
-# @main.command(help='Access and modify the observing activities (in the /activities/ API endpoint)')
-# @click.argument('method', required=False, nargs=1, type=MethodChoiceParamType(), default='read')
-# @click.argument('pk', required=False, nargs=1)
-# @click.option('--title', required=False, nargs=1, help="The activity title. Optional.")
-# @click.option('--content', required=False, nargs=1, help="The activity content body. Optional.")
-# @click.option('--observing_site', required=False, nargs=1, help="The observing site UUID. Optional.")
-# @click.option('--telescope', required=False, nargs=1, help="The telescope UUID. Optional.")
-# @click.option('--instrument', required=False, nargs=1, help="The instrument UUID. Optional.")
-# @click.option('--target_name', required=False, nargs=1, help="The target name. Optional")
-# @click.option('--coordinates',
-#               required=False,
-#               nargs=1,
-#               help="The target coordinates. Optional. Decimal degrees, format: coordinates=RA,Dec")
-# @click.option('--organisation', required=False, nargs=1, help="Your organisation acronym (for organisations). Optional")
-# @click.option('--collaboration', required=False, nargs=1, help="Your collaboration acronym. Optional")
-# @basic_options
-# @pass_state
-# def activities(state, method, pk, **kwargs):
-#     api = ArcsecondAPI.activities(state)
-#     if method == 'create':
-#         kwargs.update(coordinates=make_coords_dict(kwargs))
-#         api.create(kwargs)  # the kwargs dict is the payload!
-#     elif method == 'read':
-#         api.read(pk)  # will handle list if pk is None
-#     elif method == 'update':
-#         api.update(pk, kwargs)
-#     elif method == 'delete':
-#         api.delete(pk)
-#     else:
-#         api.list()
