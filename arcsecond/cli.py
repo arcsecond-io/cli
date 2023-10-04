@@ -4,12 +4,7 @@ from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
 from .config import config_file_read_username
 from .hosting import run_arcsecond, stop_arcsecond, get_arcsecond_status
-from .options import (
-    MethodChoiceParamType,
-    State,
-    basic_options,
-    organisation_options
-)
+from .options import State, basic_options
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
@@ -149,4 +144,3 @@ def members(state, organisation):
 @pass_state
 def uploadkeys(state, organisation):
     ArcsecondAPI.uploadkeys(state, organisation=organisation).list()
-

@@ -29,8 +29,8 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=[
-        'click',
-        'requests',
+        'click>=8',
+        'requests>=2.26',
         'requests_toolbelt',
         'pygments',
         'configparser',
