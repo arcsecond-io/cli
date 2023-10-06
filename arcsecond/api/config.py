@@ -91,7 +91,7 @@ class Config(object):
     def upload_key(self) -> Optional[str]:
         return self.__read_key('upload_key')
 
-    def clear_api_key(self) -> None:
+    def clear_access_key(self) -> None:
         return self.__clear_key('access_key')
 
     def clear_upload_key(self, ) -> None:
@@ -107,7 +107,7 @@ class Config(object):
             self.__section.set(k, v)
         self.__save()
 
-    def save_api_key(self, access_key: str) -> None:
+    def save_access_key(self, access_key: str) -> None:
         self.save(access_key=access_key)
 
     def save_upload_key(self, upload_key: str) -> None:
