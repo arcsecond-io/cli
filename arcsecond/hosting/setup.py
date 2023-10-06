@@ -1,11 +1,6 @@
 import secrets
 import click
 
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import TerminalFormatter
-
-
 from arcsecond.config import config_file_path, config_file_read_key, config_file_save_key_value
 
 

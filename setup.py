@@ -32,7 +32,6 @@ setup(
         'click>=8',
         'requests>=2.26',
         'requests_toolbelt',
-        'pygments',
         'configparser',
         'docker',
         'wait-for-it'
