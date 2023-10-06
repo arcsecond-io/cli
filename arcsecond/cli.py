@@ -1,8 +1,8 @@
 import click
 
+from api.config import Config
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError
-from .config import config_file_read_username
 from .hosting import run_arcsecond, stop_arcsecond, get_arcsecond_status
 from .options import State, basic_options
 
@@ -39,7 +39,7 @@ def version():
 @pass_state
 def register(state, username, email, password1, password2):
     """Register for a free personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI.register(username, email, password1, password2, state)
+    ArcsecondAPI(state).register(username, email, password1, password2)
 
 
 @main.command(help='Login to an Arcsecond account.')
@@ -47,16 +47,14 @@ def register(state, username, email, password1, password2):
               help='Account username (without @). Primary email address is also allowed.')
 @click.option('--password', required=True, nargs=1, prompt=True, hide_input=True,
               help='Account password. It will be transmitted encrypted.')
-@click.option('--organisation', required=False,
-              help='An organisation subdomain. If provided, shared keys will also be fetched.')
 @basic_options
 @pass_state
-def login(state, username, password, organisation=None):
+def login(state, username, password):
     """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
     msg = 'Logging in will fetch and store your full-access API key in ~/config/arcsecond/config.ini. '
-    msg += 'Make sure you are on a secured computer.'
+    msg += 'Make sure you are on a secure computer.'
     if click.confirm(msg, default=True):
-        ArcsecondAPI.login(username, password, state, organisation, access_key=True)
+        ArcsecondAPI(state).login(username, password)
     else:
         click.echo('Stopping without logging in.')
 
@@ -70,10 +68,11 @@ def api(state, name=None, address=None):
     if name is None:
         name = 'main'
     state.api_name = name
+    api = ArcsecondAPI(state)
     if address is None:
-        print(ArcsecondAPI.get_api_name(state))
+        print(api.get_api_name())
     else:
-        ArcsecondAPI.set_api_name(address, state)
+        api.set_api_name(address)
 
 
 @main.command(help='Get your complete user profile.')
@@ -81,11 +80,11 @@ def api(state, name=None, address=None):
 @pass_state
 def me(state):
     """Fetch your complete user profile."""
-    username = config_file_read_username(state.config_section)
+    username = Config(state.config_section).username or None
     if not username:
         msg = f'Invalid/missing username: {username}. Make sure to login first: $ arcsecond login'
         raise ArcsecondError(msg)
-    ArcsecondAPI.me(state).read(username)
+    ArcsecondAPI(api).profiles.read(username)
 
 
 ######################## SELF-HOSTING ##################################################################################
@@ -114,33 +113,3 @@ def do_stop(state):
 @pass_state
 def do_get_status(state):
     get_arcsecond_status()
-
-
-######################## ORGANISATION MANAGEMENT #######################################################################
-
-@main.command(help='Request the list of organisations, or the details of one if a subdomain is provided.')
-@click.argument('organisation', required=False, nargs=1)
-@basic_options
-@pass_state
-def organisations(state, organisation):
-    api = ArcsecondAPI.organisations(state)
-    if organisation:
-        api.read(organisation)
-    else:
-        api.list()
-
-
-@main.command(help='Request the list of members of an organisation.')
-@click.argument('organisation', required=True, nargs=1)
-@basic_options
-@pass_state
-def members(state, organisation):
-    ArcsecondAPI.members(state, organisation=organisation).list()
-
-
-@main.command(help='Request the list of upload keys of an organisation.')
-@click.argument('organisation', required=True, nargs=1)
-@basic_options
-@pass_state
-def uploadkeys(state, organisation):
-    ArcsecondAPI.uploadkeys(state, organisation=organisation).list()
