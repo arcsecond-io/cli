@@ -122,7 +122,7 @@ class ArcsecondAPI(object):
         return Config(get_state(state).config_section).upload_key
 
     @classmethod
-    def clear_api_key(cls, state: Optional[State] = None) -> None:
+    def clear_access_key(cls, state: Optional[State] = None) -> None:
         Config(get_state(state).config_section).clear_access_key()
 
     @classmethod
