@@ -1,4 +1,4 @@
-from .endpoints._base import APIEndPoint
+from .endpoint import APIEndPoint
 from .error import ArcsecondError
 from .constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
 
@@ -12,7 +12,7 @@ class AuthAPIEndPoint(APIEndPoint):
         if not password:
             raise ArcsecondError("Invalid 'password' parameter {}.".format(password))
 
-        url = self._root_url() + API_AUTH_PATH_LOGIN
+        url = self._get_base_url() + API_AUTH_PATH_LOGIN
         return self._perform_request(url, 'post', {'username': username, 'password': password})
 
     def register(self, username, email, password1, password2):
@@ -29,6 +29,6 @@ class AuthAPIEndPoint(APIEndPoint):
         if terms_agreement.lower() not in ['y', 'Y', 'yes', 'YES']:
             raise ArcsecondError("Agreement to Terms and Conditions not accepted. Aborting registration.")
 
-        url = self._root_url() + API_AUTH_PATH_REGISTER
+        url = self._get_base_url() + API_AUTH_PATH_REGISTER
         payload = {'username': username, 'email': email, 'password1': password1, 'password2': password2}
         return self._perform_request(url, 'post', payload)
