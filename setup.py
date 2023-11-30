@@ -34,7 +34,8 @@ setup(
         'requests_toolbelt',
         'configparser',
         'docker',
-        'wait-for-it'
+        'wait-for-it',
+        'py-machineid'
     ],
     entry_points={
         'console_scripts': [
