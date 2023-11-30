@@ -6,40 +6,36 @@ import requests
 from arcsecond.api.config import Config
 from arcsecond.api.constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
 from arcsecond.api.error import ArcsecondError
-from arcsecond.options import State
 
 SAFE_METHODS = ['GET', 'OPTIONS']
 WRITABLE_MEMBERSHIPS = ['superadmin', 'admin', 'member']
 
 
 class APIEndPoint(object):
-    def __init__(self, name: str, state=None, subresource=''):
-        self.__name = name
-        # Provided state may contain overriding access_key or upload_key to be used.
-        self.__state = state or State()
-        self.__config = Config(self.__state.config_section)
-        self.__subdomain = getattr(state, 'organisation', '')
+    def __init__(self, path: str, config: Config, subresource=''):
+        self.__path = path
+        self.__config = config
         self.__subresource = subresource
         self.__headers = {}
 
     @property
-    def name(self):
-        return self.__name
+    def path(self):
+        return self.__path
 
     def _get_base_url(self):
-        return self.__state.api_server
+        return self.__config.api_server
 
     def _build_url(self, *args, **filters):
-        fragments = [f for f in [self.__subdomain, ] + list(args) + [self.__subresource, ] if f and len(f) > 0]
+        fragments = [f for f in [self.__config.subdomain, ] + list(args) + [self.__subresource, ] if f and len(f) > 0]
         url = self._get_base_url() + '/' + '/'.join(fragments) + '/'
         query = '?' + urlencode(filters) if len(filters) > 0 else ''
         return url + query
 
     def _list_url(self, **filters):
-        return self._build_url(self.__name, **filters)
+        return self._build_url(self.__path, **filters)
 
     def _detail_url(self, uuid_or_id):
-        return self._build_url(self.__name, str(uuid_or_id))
+        return self._build_url(self.__path, str(uuid_or_id))
 
     def use_headers(self, headers):
         self.__headers = headers
@@ -65,7 +61,7 @@ class APIEndPoint(object):
             # Filtering None values out of payload.
             payload = {k: v for k, v in payload.items() if v is not None}
 
-        if self.__state.verbose:
+        if self.__config.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
 
         method = getattr(requests, method_name.lower())
@@ -87,10 +83,10 @@ class APIEndPoint(object):
             return headers
 
         # Choose the strongest key first
-        auth_key = self.__state.access_key or self.__state.upload_key
+        auth_key = self.__config.access_key or self.__config.upload_key
 
         if auth_key is None:
-            if self.__state.verbose:
+            if self.__config.verbose:
                 click.echo('Checking local API|Upload key... ', nl=False)
 
             # Choose the strongest key first
@@ -100,9 +96,9 @@ class APIEndPoint(object):
 
         headers['X-Arcsecond-API-Authorization'] = 'Key ' + auth_key
 
-        if self.__state.verbose:
+        if self.__config.verbose:
             key_str = auth_key[:3] + 9 * '*'
-            click.echo(f'OK (\'X-Arcsecond-API-Authorization\' = \'Key {key_str}\'')
+            click.echo(f'\'X-Arcsecond-API-Authorization\' = \'Key {key_str}\'')
 
         return headers
 

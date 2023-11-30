@@ -1,10 +1,11 @@
-from .api import ArcsecondAPI, ArcsecondError, ArcsecondConnectionError, ArcsecondInvalidEndpointError
+from .api import ArcsecondAPI, ArcsecondError, ArcsecondConnectionError, ArcsecondInvalidEndpointError, Config
 
 name = 'arcsecond'
 
 __all__ = ["ArcsecondAPI",
            "ArcsecondError",
            "ArcsecondConnectionError",
-           "ArcsecondInvalidEndpointError"]
+           "ArcsecondInvalidEndpointError",
+           "Config"]
 
 __version__ = '2.0.3'

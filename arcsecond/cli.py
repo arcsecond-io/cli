@@ -1,8 +1,7 @@
 import click
 
-from api.config import Config
 from . import __version__
-from .api import ArcsecondAPI, ArcsecondError
+from .api import ArcsecondAPI, ArcsecondError, Config
 from .hosting import run_arcsecond, stop_arcsecond, get_arcsecond_status
 from .options import State, basic_options
 
@@ -59,20 +58,20 @@ def login(state, username, password):
         click.echo('Stopping without logging in.')
 
 
-@main.command(help='Configure the API server address.')
+@main.command(help='Get or set the API server address (fully qualified domain name).')
 @click.argument('name', required=False, nargs=1)
-@click.argument('address', required=False, nargs=1)
+@click.argument('fqdn', required=False, nargs=1)
 @pass_state
-def api(state, name=None, address=None):
+def api(state, name=None, fqdn=None):
     """Configure the API server address"""
     if name is None:
         name = 'main'
     state.api_name = name
-    api = ArcsecondAPI(state)
-    if address is None:
-        print(api.get_api_name())
+    _api = ArcsecondAPI(state)
+    if fqdn is None:
+        click.echo(f"name: {name}, fqdn: {_api.get_api_name()}")
     else:
-        api.set_api_name(address)
+        _api.set_api_name(fqdn)
 
 
 @main.command(help='Get your complete user profile.')
@@ -84,7 +83,7 @@ def me(state):
     if not username:
         msg = f'Invalid/missing username: {username}. Make sure to login first: $ arcsecond login'
         raise ArcsecondError(msg)
-    ArcsecondAPI(api).profiles.read(username)
+    ArcsecondAPI(state).profiles.read(username)
 
 
 ######################## SELF-HOSTING ##################################################################################
@@ -93,14 +92,14 @@ def me(state):
 @click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
 @pass_state
 def do_try(state, skip_setup=False):
-    run_arcsecond(do_try=True, skip_setup=skip_setup)
+    run_arcsecond(state, do_try=True, skip_setup=skip_setup)
 
 
 @main.command(name='install', help='Install a true self-hosting Arcsecond instance.')
 @click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
 @pass_state
 def do_install(state, skip_setup=False):
-    run_arcsecond(do_try=False, skip_setup=skip_setup)
+    run_arcsecond(state, do_try=False, skip_setup=skip_setup)
 
 
 @main.command(name='stop', help='Stop the running self-hosted Arcsecond instance.')
