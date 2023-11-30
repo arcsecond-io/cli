@@ -4,22 +4,18 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Optional
 
+from arcsecond.options import State
 from .constants import ARCSECOND_API_URL_PROD
 
 
 class Config(object):
-    def __init__(self, section: str = 'main'):
+    def __init__(self, state: State):
+        self.__state = state
         self.__config = ConfigParser()
         self.__config.read(str(Config.__config_file_path()))
-        self.__section_name = section
-        self.__org_section_name = section + ':organisations'
-        self.__section = self.__config[section] \
-            if self.__section_name in self.__config.sections() \
+        self.__section = self.__config[self.api_name] \
+            if self.api_name in self.__config.sections() \
             else None
-        self.__org_section = self.__config[self.__org_section_name] \
-            if self.__org_section_name in self.__config.sections() \
-            else None
-        self.__section_name = section
 
     @classmethod
     def __old_config_file_path(cls):
@@ -50,6 +46,10 @@ class Config(object):
         return path.exists() and path.is_file()
 
     @property
+    def file_path(self) -> str:
+        return str(Config.__config_file_path())
+
+    @property
     def is_logged_in(self) -> bool:
         if self.__section is None:
             return False
@@ -62,20 +62,29 @@ class Config(object):
 
     def clear(self) -> None:
         if self.__section is not None:
-            del self.__config[self.__section_name]
+            del self.__config[self.api_name]
             self.__section = None
-        if self.__org_section is not None:
-            del self.__config[self.__org_section_name]
-            self.__org_section = None
         self.__save()
 
     def __read_key(self, key: str) -> Optional[str]:
         return self.__section.get(key, None) if self.__section else None
 
     @property
+    def api_name(self) -> Optional[str]:
+        return self.__state.api_name
+
+    @property
+    def subdomain(self) -> Optional[str]:
+        return self.__state.subdomain
+
+    @property
+    def verbose(self) -> Optional[str]:
+        return self.__state.verbose
+
+    @property
     def api_server(self) -> Optional[str]:
         result = self.__read_key('api_server')
-        if self.__section_name == 'main' and (result is None or result == ''):
+        if self.api_name == 'main' and (result is None or result == ''):
             result = ARCSECOND_API_URL_PROD
         return result
 
@@ -85,11 +94,15 @@ class Config(object):
 
     @property
     def access_key(self) -> Optional[str]:
-        return self.__read_key('access_key')
+        return self.__read_key('access_key') or self.__read_key('api_key')
 
     @property
     def upload_key(self) -> Optional[str]:
         return self.__read_key('upload_key')
+
+    def read_key(self, key_name: str, section_name: str = '') -> Optional[str]:
+        section = self.__config[section_name] if section_name else self.__section
+        return section[key_name] if key_name in section else None
 
     def clear_access_key(self) -> None:
         return self.__clear_key('access_key')
@@ -103,8 +116,10 @@ class Config(object):
             self.__save()
 
     def save(self, **kwargs) -> None:
+        section_name = kwargs.pop('section', None)
+        section = self.__config[section_name] if section_name else self.__section
         for k, v in kwargs.items():
-            self.__section.set(k, v)
+            section[k] = v
         self.__save()
 
     def save_access_key(self, access_key: str) -> None:
@@ -113,5 +128,6 @@ class Config(object):
     def save_upload_key(self, upload_key: str) -> None:
         self.save(upload_key=upload_key)
 
-    def save_shared_key(self, shared_key: str, username: str, organisation: str) -> None:
-        self.__org_section.set(username=shared_key)
+    def save_shared_key(self, shared_key: str, subdomain: str) -> None:
+        subdomain = subdomain or self.__state.subdomain
+        self.__section['shared:' + subdomain] = shared_key

@@ -2,43 +2,31 @@ import click
 
 
 class State(object):
+    """Object to collect the state of CLI commands.
+    Its properties will be transferred to the Config object which will manage
+    the persistence of the various parameters.
+    """
     def __init__(self,
                  is_using_cli=True,
                  verbose=0,
                  api_name='main',
-                 api_server='',
-                 organisation='',
-                 access_key='',
-                 upload_key=''):
+                 subdomain=''):
         self.is_using_cli = is_using_cli
         self.verbose = verbose
         self.api_name = api_name
-        self.api_server = api_server
-        self.organisation = organisation
-        self.access_key = access_key
-        self.upload_key = upload_key
+        self.subdomain = subdomain
 
     def update(self, **kwargs):
         self.is_using_cli = kwargs.get('is_using_cli', self.is_using_cli)
         self.verbose = kwargs.get('verbose', self.verbose)
         self.api_name = kwargs.get('api_name', self.api_name)
-        self.api_server = kwargs.get('api_server', self.api_server)
-        self.organisation = kwargs.get('organisation', self.organisation)
-        self.access_key = kwargs.get('access_key', self.access_key)
-        self.upload_key = kwargs.get('upload_key', self.upload_key)
-
-    @property
-    def config_section(self):
-        return self.api_name
+        self.subdomain = kwargs.get('subdomain', self.subdomain)
 
     def make_new_silent(self):
         return State(is_using_cli=self.is_using_cli,
                      verbose=0,
                      api_name=self.api_name,
-                     api_server=self.api_server,
-                     organisation=self.organisation,
-                     access_key=self.access_key,
-                     upload_key=self.upload_key)
+                     subdomain=self.subdomain)
 
 
 def verbose_option_constructor(f):
