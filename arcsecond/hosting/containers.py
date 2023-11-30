@@ -5,16 +5,8 @@ import click
 import docker
 from docker.errors import APIError, NotFound
 
-from arcsecond.config import config_file_read_key
 from .constants import DOCKER_IMAGE_CONTAINERS_NAMES, DOCKER_NETWORK_NAME
-from .images import (
-    has_all_arcsecond_docker_images,
-    has_docker_image,
-    is_docker_available,
-    pull_all_arcsecond_docker_images
-)
-from .setup import setup_hosting_variables
-from .utils import __get_docker_container_status, __perform_container_bookkeeping, is_docker_container_running
+from .utils import __perform_container_bookkeeping, is_docker_container_running
 
 
 def setup_network():
@@ -106,7 +98,7 @@ def run_mb_container(restart=True):
     subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:5672"])
 
 
-def run_api_container(restart=True, do_try=True):
+def run_api_container(config, restart=True, do_try=True):
     image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['api']
     if is_docker_container_running(container_name) and not restart:
         return
@@ -116,27 +108,19 @@ def run_api_container(restart=True, do_try=True):
     section = 'hosting:try' if do_try else 'hosting'
 
     env = {
-        'SECRET_KEY': config_file_read_key('secret_key', section=section),
+        'SECRET_KEY': config.read_key('secret_key', section_name=section),
         'DJANGO_SETTINGS_MODULE': 'settings.local',
         'RABBITMQ_USER': 'arcsecond_docker',
         'RABBITMQ_PASSWORD': 'arcsecond_docker',
         'RABBITMQ_VHOST': 'arcsecond_docker_vhost',
         'RABBITMQ_SERVER': DOCKER_IMAGE_CONTAINERS_NAMES['mb'][1] + ':5672',
-        'EMAIL_HOST': 'ssl0.ovh.net',
-        'EMAIL_HOST_PASSWORD': 'dummy',
-        'EMAIL_HOST_USER': 'cedric@arcsecond.io',
-        'EMAIL_ADMIN': 'cedric@arcsecond.io',
-        'ARCSECOND_DATA_STORAGE': ''
+        'EMAIL_HOST': config.read_key('email_host', section_name=section),
+        'EMAIL_HOST_USER': config.read_key('email_host_user', section_name=section),
+        'EMAIL_HOST_PASSWORD': config.read_key('email_host_password', section_name=section),
+        'EMAIL_ADMIN': config.read_key('email_admin', section_name=section),
+        'FIELD_ENCRYPTION_KEY': config.read_key('field_encryption_key', section_name=section),
+        # 'ARCSECOND_DATA_STORAGE': ''
     }
-
-    # for key in ['EMAIL_HOST', 'EMAIL_HOST_USER', 'EMAIL_HOST_PASSWORD', 'EMAIL_ADMIN']:
-    #     value = config_file_read_key(key.lower(), section=section)
-    #     if value[0] == '$':
-    #         value = os.environ.get(value[1:], '')
-    #     if value.strip() == '':
-    #         # raise an error
-    #         pass
-    #     env.update(**{key: value})
 
     vol = {
         'arcsecond_api_static_files': {'bind': '/home/app/static', 'mode': 'rw'}
@@ -144,17 +128,12 @@ def run_api_container(restart=True, do_try=True):
 
     # port = config_file_read_key('api_port', section=section)
     ports = {
-        '8000/tcp': 8000
+        '8080/tcp': 8080
     }
-
-    cmd = "sh -c 'python manage.py migrate --no-input && " \
-          "python manage.py collectstatic --no-input && " \
-          f"gunicorn --bind 0.0.0.0:8000 arcsecond.wsgi:application'"
 
     click.echo(f'Starting {service_name} container (be patient, this one may take a minute or two)...')
     client = docker.from_env()
     client.containers.run(image_name,
-                          command=cmd,
                           detach=True,
                           environment=env,
                           name=container_name,
@@ -164,7 +143,7 @@ def run_api_container(restart=True, do_try=True):
                           volumes=vol)
 
     click.echo(f'Waiting for {service_name} container to start...')
-    subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:8000"])
+    subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:8080"])
 
 
 def run_www_container(restart=True):
@@ -190,33 +169,3 @@ def run_www_container(restart=True):
 
     click.echo(f'Waiting for {service_name} to start...')
     subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:3003"])
-
-
-def run_arcsecond(do_try=True, skip_setup=False):
-    if not is_docker_available():
-        click.echo('You need to install Docker. Visit https://docker.com')
-        return
-    if not skip_setup:
-        setup_hosting_variables(do_try=do_try)
-    if not has_all_arcsecond_docker_images():
-        pull_all_arcsecond_docker_images()
-    setup_network()
-    run_db_container(restart=False)
-    run_mb_container(restart=False)
-    run_api_container(restart=False, do_try=do_try)
-    run_www_container(restart=True)
-
-
-def stop_arcsecond():
-    container_names = [cont for (_, cont, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()]
-    for container_name in container_names:
-        __perform_container_bookkeeping(container_name, stop=True)
-
-
-def get_arcsecond_status():
-    for image_name, container_name, service_name in DOCKER_IMAGE_CONTAINERS_NAMES.values():
-        container_status = __get_docker_container_status(container_name)
-        container_status_msg = f'Container status: {container_status}.' if container_status is not None else 'No running container.'
-        image_status = has_docker_image(image_name)
-        image_status_msg = 'Docker image locally available.' if image_status is True else 'Image not yet pulled.'
-        click.echo(f'Service "{service_name}": {image_status_msg} {container_status_msg}')

@@ -10,3 +10,11 @@ DOCKER_IMAGE_CONTAINERS_NAMES = {
 }
 
 DOCKER_NETWORK_NAME = 'arcsecond-net'
+
+BANNER = """ 
+ +-+-+-+-+-+-+-+ +-+-+ +-+-+-+-+-+-+-+-+-+-+
+ |W|e|l|c|o|m|e| |t|o| |A|r|c|s|e|c|o|n|d|!|
+ +-+-+-+-+-+-+-+ +-+-+ +-+-+-+-+-+-+-+-+-+-+"""
+
+PREFIX = ' • '
+PREFIX_SUB = '   • '
