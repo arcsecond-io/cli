@@ -2,7 +2,7 @@ import sys
 
 import click
 
-from arcsecond import ArcsecondAPI, Config
+from arcsecond import Config
 from .checks import (
     is_docker_available,
     setup_docker_host_on_macos,
@@ -38,15 +38,8 @@ def run_arcsecond(state, do_try=True, skip_setup=False):
         return
     if not is_user_logged_in(state):
         return
-
-    config = Config(state.config_section)
-    if not has_user_verified_email(state):
-        return
-
-    if not ArcsecondAPI.is_logged_in(state):
-        msg = 'You need to be logged in. '
-        msg += 'Use `arcsecond login` or visit https://www.arcsecond.io/register if you need to register first.'
-        click.echo(msg)
+    config = Config(state)
+    if do_try is False and not has_user_verified_email(state):
         return
     # LICENSING...
     if not skip_setup:

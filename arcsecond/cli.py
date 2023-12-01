@@ -67,11 +67,11 @@ def api(state, name=None, fqdn=None):
     if name is None:
         name = 'main'
     state.api_name = name
-    _api = ArcsecondAPI(state)
     if fqdn is None:
-        click.echo(f"name: {name}, fqdn: {_api.get_api_name()}")
+        click.echo(f"name: {name}, fqdn: {ArcsecondAPI.get_api_name(state)}")
     else:
-        _api.set_api_name(fqdn)
+        click.echo(f"Setting {fqdn} as fqdn for API {name}.")
+        ArcsecondAPI.set_api_name(fqdn, state)
 
 
 @main.command(help='Get your complete user profile.')
@@ -90,6 +90,7 @@ def me(state):
 
 @main.command(name='try', help='Try a full-featured demo of a self-hosted Arcsecond instance.')
 @click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
+@basic_options
 @pass_state
 def do_try(state, skip_setup=False):
     run_arcsecond(state, do_try=True, skip_setup=skip_setup)
@@ -97,6 +98,7 @@ def do_try(state, skip_setup=False):
 
 @main.command(name='install', help='Install a true self-hosting Arcsecond instance.')
 @click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
+@basic_options
 @pass_state
 def do_install(state, skip_setup=False):
     run_arcsecond(state, do_try=False, skip_setup=skip_setup)

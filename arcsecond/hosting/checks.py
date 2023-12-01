@@ -54,6 +54,16 @@ def is_user_logged_in(state) -> bool:
 
 def has_user_verified_email(state) -> bool:
     click.echo(PREFIX + 'Check if user email address is verified.')
-    profile, error = ArcsecondAPI(state, verbose=True).fetch_full_profile()
-    print(profile)
+    profile, error = ArcsecondAPI(state).fetch_full_profile()
+    if profile and not error:
+        result = bool(profile.get('is_verified', False))
+        email = profile.get('email', '?')
+        if result is True:
+            click.echo(PREFIX_SUB + f'Email {email} is verified.')
+            return True
+        else:
+            click.echo(PREFIX_SUB + f"Email {email} must be verified before full Arcsecond installation.")
+            click.echo(PREFIX_SUB + f"Visit https://www.arcsecond.io/@{profile.get('username')}#emails")
+            return False
+    click.echo(PREFIX_SUB + str(error))
     return False
