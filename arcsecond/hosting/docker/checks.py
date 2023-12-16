@@ -8,7 +8,7 @@ from arcsecond.hosting.constants import PREFIX_SUB, PREFIX, PREFIX_SUB_FAIL
 
 
 def setup_docker_host_on_macos() -> None:
-    click.echo(PREFIX + 'Setup of $DOCKER_HOST on macOS.')
+    click.echo(PREFIX + 'Setup of $DOCKER_HOST on macOS...')
     context = subprocess.check_output(['docker', 'context', 'list', '--format', 'json'])
     data = json.loads(context)
     docker_host_list = [x['DockerEndpoint'] for x in data if x['Current']]

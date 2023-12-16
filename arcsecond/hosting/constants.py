@@ -5,5 +5,5 @@ BANNER = """
  +-+-+-+-+-+-+-+ +-+-+ +-+-+-+-+-+-+-+-+-+-+"""
 
 PREFIX = ' • '
-PREFIX_SUB = '   • '
+PREFIX_SUB = '   √ '
 PREFIX_SUB_FAIL = '   x '
