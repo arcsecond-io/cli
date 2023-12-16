@@ -1,8 +1,13 @@
+import json
+import os
+import subprocess
 import time
 
 import click
 import docker
 from docker.errors import APIError, NotFound
+
+from arcsecond.hosting.constants import PREFIX_SUB, PREFIX
 
 
 def __get_docker_container_status(name: str):
@@ -34,3 +39,14 @@ def __perform_container_bookkeeping(container_name: str, stop: bool):
         container = client.containers.get(container_name)
         container.stop()
         time.sleep(1)
+
+
+def setup_docker_host_on_macos() -> None:
+    click.echo(PREFIX + 'Setup of $DOCKER_HOST on macOS.')
+    context = subprocess.check_output(['docker', 'context', 'list', '--format', 'json'])
+    data = json.loads(context)
+    docker_host_list = [x['DockerEndpoint'] for x in data if x['Current']]
+    if len(docker_host_list) != 1:
+        print(PREFIX_SUB + 'WARN: Unable to find the current Docker host.')
+    os.environ['DOCKER_HOST'] = docker_host_list[0]
+    click.echo(PREFIX_SUB + '$DOCKER_HOST=' + docker_host_list[0])

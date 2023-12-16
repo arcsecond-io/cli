@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 
 import click
@@ -6,7 +7,9 @@ import docker
 from docker.errors import APIError, NotFound
 
 from .constants import DOCKER_IMAGE_CONTAINERS_NAMES, DOCKER_NETWORK_NAME
-from .utils import __perform_container_bookkeeping, is_docker_container_running
+from .images import has_docker_image
+from .utils import __perform_container_bookkeeping, is_docker_container_running, setup_docker_host_on_macos, \
+    __get_docker_container_status
 
 
 def setup_network():
@@ -169,3 +172,24 @@ def run_www_container(restart=True):
 
     click.echo(f'Waiting for {service_name} to start...')
     subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:3003"])
+
+
+def stop_all_containers():
+    container_names = [cont for (_, cont, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()]
+    for container_name in container_names:
+        __perform_container_bookkeeping(container_name, stop=True)
+
+
+def get_all_containers_status_string() -> str:
+    if sys.platform == 'darwin':
+        setup_docker_host_on_macos()
+    statuses = []
+    for image_name, container_name, service_name in DOCKER_IMAGE_CONTAINERS_NAMES.values():
+        container_status = __get_docker_container_status(container_name)
+        container_status_msg = f'Container status: {container_status}.' \
+            if container_status is not None \
+            else 'No running container.'
+        image_status = has_docker_image(image_name)
+        image_status_msg = 'Docker image locally available.' if image_status is True else 'Image not yet pulled.'
+        statuses.append(f'Service "{service_name}": {image_status_msg} {container_status_msg}')
+    return '\n'.join(statuses)
