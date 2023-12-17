@@ -17,8 +17,8 @@ class ArcsecondAPI(object):
         self.config = Config(state)
 
         self.profiles = APIEndPoint('profiles', self.config)
-        self.profiles_accesskeys = APIEndPoint('profiles', self.config, 'apikeys')
-        self.profiles_uploadkeys = APIEndPoint('profiles', self.config, 'uploadkeys')
+        self.profiles_accesskey = APIEndPoint('profiles', self.config, 'apikey')
+        self.profiles_uploadkey = APIEndPoint('profiles', self.config, 'uploadkey')
         self.profiles_sharedkeys = APIEndPoint('profiles', self.config, 'sharedkeys')
 
         self.organisations = APIEndPoint('organisations', self.config)
@@ -34,32 +34,31 @@ class ArcsecondAPI(object):
         self.datafiles = APIEndPoint('datafiles', self.config)
 
     def register(self, username, email, password1, password2):
-        result, error = AuthAPIEndPoint(self.config).register(username, email, password1, password2)
+        result, error = AuthAPIEndPoint('', self.config).register(username, email, password1, password2)
         if error and self.config.verbose:
             click.echo(click.style(error, fg='red'))
         return result, error
 
-    def login(self, username, password, state=None, **kwargs):
-        state = get_state(state, **kwargs)
-        result, error = AuthAPIEndPoint(state).login(username, password)
-        if error and state.verbose:
+    def login(self, username, password):
+        result, error = AuthAPIEndPoint('', self.config).login(username, password)
+        if error and self.config.verbose:
             click.echo(click.style(error, fg='red'))
         elif result:
             auth_token = result['token']
-            self.profiles.use_headers({'Authorization': 'Token ' + auth_token})
-            profile, profile_error = self.profiles.read(username)
+            self.profiles_accesskey.use_headers({'Authorization': 'Token ' + auth_token})
+            result, access_key_error = self.profiles_accesskey.read(username)
             if error:
-                click.echo(click.style(profile_error, fg='red'))
+                click.echo(click.style(access_key_error, fg='red'))
             else:
-                # Update username with that of returned profile in case we logged in with email address.
-                username = profile.get('username', username)
-                self.config.save(username=username)
+                self.config.save_access_key(result.get('api_key'))
+                if self.config.verbose:
+                    click.echo('Login successful (access key stored).')
         return result, error
 
     def fetch_access_key(self):
         if self.config.verbose:
             click.echo('Fetching API Key...')
-        result, error = self.profiles_accesskeys.read(self.config.username)
+        result, error = self.profiles_accesskey.read(self.config.username)
         if error and self.config.verbose:
             click.echo(click.style(error, fg='red'))
         elif result:
@@ -72,7 +71,7 @@ class ArcsecondAPI(object):
     def fetch_upload_key(self):
         if self.config.verbose:
             click.echo('Fetching Upload Key...')
-        result, error = self.profiles_uploadkeys.read(self.config.username)
+        result, error = self.profiles_uploadkey.read(self.config.username)
         if error and self.config.verbose:
             click.echo(click.style(error, fg='red'))
         elif result:
