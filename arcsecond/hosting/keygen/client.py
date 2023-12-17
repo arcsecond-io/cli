@@ -1,6 +1,7 @@
 import json
 import os
 
+import click
 import requests
 
 from arcsecond import Config
@@ -34,16 +35,20 @@ class KeygenClient(object):
                 "data": {
                     "type": "users",
                     "attributes": {
-                        "firstName": arcsecond_profile.first_name or "Famous",
-                        "lastName": arcsecond_profile.last_name or "Astronomer",
-                        "email": arcsecond_profile.email(),
+                        "firstName": arcsecond_profile.get('first_name', 'Famous') or "Famous",
+                        "lastName": arcsecond_profile.get('last_name', 'Astronomer') or "Astronomer",
+                        "email": arcsecond_profile.get('email'),
                         "password": None  # passwordless user
                     }
                 }
             })
         )
-        user_id = res.json().get('id')
-        self.__config_save(user=user_id)
+        if res.status_code != 201:
+            click.echo('We are unable to create user, yet we cannot find your user id.')
+            click.echo('Please, contact cedric@arcsecond.io to fix the situation.')
+            return
+        user_id = res.json().get('data').get('id')
+        self.__config_save(user=user_id, email=arcsecond_profile.get('email'))
         return user_id
 
     def create_license(self):
