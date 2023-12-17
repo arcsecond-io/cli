@@ -13,8 +13,8 @@ class Config(object):
         self.__state = state
         self.__config = ConfigParser()
         self.__config.read(str(Config.__config_file_path()))
-        self.__section = self.__config[self.api_name] \
-            if self.api_name in self.__config.sections() \
+        self.__section = self.__config[self.__state.api_name] \
+            if self.__state.api_name in self.__config.sections() \
             else None
 
     @classmethod
@@ -101,8 +101,12 @@ class Config(object):
         return self.__read_key('upload_key')
 
     def read_key(self, key_name: str, section_name: str = '') -> Optional[str]:
-        section = self.__config[section_name] if section_name else self.__section
-        return section[key_name] if key_name in section else None
+        try:
+            section = self.__config[section_name] if section_name else self.__section
+        except KeyError:
+            return None
+        else:
+            return section[key_name] if key_name in section else None
 
     def clear_access_key(self) -> None:
         return self.__clear_key('access_key')
@@ -117,7 +121,11 @@ class Config(object):
 
     def save(self, **kwargs) -> None:
         section_name = kwargs.pop('section', None)
-        section = self.__config[section_name] if section_name else self.__section
+        try:
+            section = self.__config[section_name] if section_name else self.__section
+        except KeyError:
+            self.__config[section_name] = {}
+            section = self.__config[section_name]
         for k, v in kwargs.items():
             section[k] = v
         self.__save()
