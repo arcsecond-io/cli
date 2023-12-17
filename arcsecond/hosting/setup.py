@@ -33,7 +33,7 @@ def _validate_email_host_item(value):
     value = _validate_value_base(value)
     if value[0] == '$':
         value = os.environ[value[1:]].lower()
-        print('Value: ' + value)
+        click.echo('Value: ' + value)
     return value
 
 
