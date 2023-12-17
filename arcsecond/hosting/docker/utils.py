@@ -47,6 +47,6 @@ def setup_docker_host_on_macos() -> None:
     data = json.loads(context)
     docker_host_list = [x['DockerEndpoint'] for x in data if x['Current']]
     if len(docker_host_list) != 1:
-        print(PREFIX_SUB + 'WARN: Unable to find the current Docker host.')
+        click.echo(PREFIX_SUB + 'WARN: Unable to find the current Docker host.')
     os.environ['DOCKER_HOST'] = docker_host_list[0]
     click.echo(PREFIX_SUB + '$DOCKER_HOST=' + docker_host_list[0])
