@@ -13,8 +13,8 @@ def old_config_file_path() -> Path:
 
 def config_dir_path() -> Path:
     _config_root_path = Path.home() / '.config'
-    if 'XDG_CONFIG_DIRS' in os.environ.keys():
-        _config_root_path = Path(os.environ['XDG_CONFIG_DIRS'])
+    # if 'XDG_CONFIG_HOME' in os.environ.keys():
+    #     _config_root_path = Path(os.environ['XDG_CONFIG_HOME'])
     return _config_root_path / 'arcsecond'
 
 
