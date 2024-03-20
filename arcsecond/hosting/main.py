@@ -2,15 +2,15 @@ import sys
 
 import click
 
+from arcsecond import Config, ArcsecondAPI
 from arcsecond.hosting import docker
 from arcsecond.hosting import keygen
-from .constants import BANNER, PREFIX
 from .checks import (
-    fetch_user_profile,
     is_arcsecond_api_reachable,
     is_user_logged_in,
     has_user_verified_email
 )
+from .constants import BANNER, PREFIX
 from .setup import setup_hosting_variables
 
 __version__ = '0.1.0 (Alpha) - Please, send feedback to cedric@arcsecond.io'
@@ -31,13 +31,17 @@ def run_arcsecond(state, do_try=True, skip_setup=False):
     if do_try is False and not has_user_verified_email(state):
         return
 
-    # config = Config(state)
-    klient = keygen.KeygenClient(state, do_try)
-    profile = fetch_user_profile(state)
-    klient.create_user(profile)
-    klient.create_license()
+    profile, error = ArcsecondAPI(state).fetch_full_profile()
+    if error is not None:
+        click.echo(str(error))
+        return
 
-    return
+    config = Config(state)
+    klient = keygen.KeygenClient(config, do_try, profile)
+    status, msg = klient.setup_and_validate_license()
+    click.echo(PREFIX + msg)
+    if status is False:
+        return
 
     if not skip_setup:
         setup_hosting_variables(config, do_try=do_try)

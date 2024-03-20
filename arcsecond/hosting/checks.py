@@ -47,10 +47,3 @@ def has_user_verified_email(state) -> bool:
             return False
     click.echo(PREFIX_SUB_FAIL + str(error))
     return False
-
-
-def fetch_user_profile(state) -> object:
-    assert ArcsecondAPI.is_logged_in(state)
-    profile, error = ArcsecondAPI(state).fetch_full_profile()
-    assert error is None
-    return profile

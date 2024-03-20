@@ -1,33 +1,39 @@
 import json
-import os
 
 import click
+import machineid
 import requests
 
-from arcsecond import Config
+from .utils import generate_password
 
 
 class KeygenClient(object):
-    def __init__(self, state, do_try):
-        self.__config = Config(state)
+    def __init__(self, config, do_try, profile):
+        self.__config = config
         self.__section_name = 'keygen:try' if do_try else 'keygen'
         self.__base_url = "https://api.keygen.sh/v1/accounts/arcsecond-io"
         self.__default_headers = {
             "Content-Type": "application/vnd.api+json",
             "Accept": "application/vnd.api+json"
         }
+        self.__profile = profile
 
     def __config_save(self, **kwargs):
         kwargs.update(section=self.__section_name)
         self.__config.save(**kwargs)
 
-    def get_user_id(self):
-        self.__config.read_key('user', self.__section_name)
+    def __config_get(self, key):
+        return self.__config.read_key(key, self.__section_name)
 
-    def create_user(self, arcsecond_profile):
-        user_id = self.get_user_id()
+    def __create_user(self):
+        user_id = self.__config_get('user_id')
         if user_id is not None:
-            return user_id
+            return user_id, 'OK'
+
+        email = self.__profile.get('email')
+        password = generate_password()
+        self.__config_save(password=password, email=email)
+
         res = requests.post(
             self.__base_url + "/users",
             headers=self.__default_headers,
@@ -35,30 +41,62 @@ class KeygenClient(object):
                 "data": {
                     "type": "users",
                     "attributes": {
-                        "firstName": arcsecond_profile.get('first_name', 'Famous') or "Famous",
-                        "lastName": arcsecond_profile.get('last_name', 'Astronomer') or "Astronomer",
-                        "email": arcsecond_profile.get('email'),
-                        "password": None  # passwordless user
+                        "firstName": self.__profile.get('first_name', 'Famous') or "Famous",
+                        "lastName": self.__profile.get('last_name', 'Astronomer') or "Astronomer",
+                        "email": email,
+                        "password": password
                     }
                 }
             })
         )
-        if res.status_code != 201:
-            click.echo('We are unable to create user, yet we cannot find your user id.')
-            click.echo('Please, contact cedric@arcsecond.io to fix the situation.')
-            return
-        user_id = res.json().get('data').get('id')
-        self.__config_save(user=user_id, email=arcsecond_profile.get('email'))
-        return user_id
 
-    def create_license(self):
-        user_id = self.get_user_id()
-        if user_id is not None:
-            return None
-        product_id = 'cf22a770-6252-44c2-b1ad-acd9dccad9ff'
+        if res.status_code != 201:
+            msg = 'We are unable to create user, yet we cannot find your user id.\n'
+            msg += 'Please, contact cedric@arcsecond.io to fix the situation.'
+            return None, msg
+
+        data = res.json().get('data')
+        user_id = data.get('id')
+        self.__config_save(user_id=user_id)
+
+        return user_id, 'OK'
+
+    def _generate_user_token(self):
+        email, password = self.__config_get('email'), self.__config_get('password')
+        res = requests.post(
+            self.__base_url + "/tokens",
+            headers={"Accept": "application/vnd.api+json"},
+            auth=(email, password)
+        )
+        data = res.json().get('data')
+        user_token = data.get('attributes').get('token')
+        self.__config_save(user_token=user_token)
+        return user_token, 'OK'
+
+    def __create_license(self, user_id):
+        license_key = self.__config_get('license_key')
+        if license_key:
+            return license_key, 'OK'
+
+        user_token, msg = self._generate_user_token()
+        res = requests.get(
+            self.__base_url + "/licenses?limit=1",
+            headers={
+                "Accept": "application/vnd.api+json",
+                "Authorization": "Bearer " + user_token
+            }
+        )
+
+        data = res.json().get('data')
+        if len(data) == 1:
+            license_id = data[0].get('id')
+            license_key = data[0].get('attributes').get('key')
+            self.__config_save(licence_id=license_id, license_key=license_key)
+            return license_key, 'OK'
+
         policy_id = '8cecf79e-35b4-40fb-848b-31b0c19455ba'
         headers = {**self.__default_headers}
-        headers['Authorization'] = "Bearer " + product_id
+        headers['Authorization'] = "Bearer " + user_token
         res = requests.post(
             self.__base_url + "/licenses",
             headers=headers,
@@ -76,34 +114,37 @@ class KeygenClient(object):
                 }
             })
         )
-        print(res.json())
 
-    def activate_license(license_key):
-        machine_fingerprint = machineid.hashed_id('arcsecond')
-        validation = requests.post(
-            "https://api.keygen.sh/v1/accounts/{}/licenses/actions/validate-key".format(
-                os.environ['KEYGEN_ACCOUNT_ID']),
-            headers={
-                "Content-Type": "application/vnd.api+json",
-                "Accept": "application/vnd.api+json"
-            },
+        # TODO: deal with failure.
+        data = res.json().get('data')
+        license_id = data.get('id')
+        license_key = data.get('attributes').get('key')
+        self.__config_save(licence_id=license_id, license_key=license_key)
+
+        return license_key, 'OK'
+
+    def __activate_license(self, license_key):
+        machine_fingerprint = machineid.hashed_id()
+        res = requests.post(
+            self.__base_url + "/licenses/actions/validate-key",
+            headers=self.__default_headers,
             data=json.dumps({
                 "meta": {
-                    "scope": {"fingerprint": machine_fingerprint},
-                    "key": license_key
+                    "key": license_key,
+                    "scope": {
+                        "fingerprint": machine_fingerprint
+                    }
                 }
             })
-        ).json()
+        )
 
+        validation = res.json()
         if "errors" in validation:
             errs = validation["errors"]
-
             return False, "license validation failed: {}".format(
                 ','.join(map(lambda e: "{} - {}".format(e["title"], e["detail"]).lower(), errs))
             )
 
-        # If the license is valid for the current machine, that means it has
-        # already been activated. We can return early.
         if validation["meta"]["valid"]:
             return True, "license has already been activated on this machine"
 
@@ -122,13 +163,11 @@ class KeygenClient(object):
 
         # If we've gotten this far, then our license has not been activated yet,
         # so we should go ahead and activate the current machine.
-        activation = requests.post(
-            "https://api.keygen.sh/v1/accounts/{}/machines".format(os.environ['KEYGEN_ACCOUNT_ID']),
-            headers={
-                "Authorization": "License {}".format(license_key),
-                "Content-Type": "application/vnd.api+json",
-                "Accept": "application/vnd.api+json"
-            },
+        headers = {**self.__default_headers}
+        headers['Authorization'] = "License " + license_key
+        res = requests.post(
+            self.__base_url + "/machines",
+            headers=headers,
             data=json.dumps({
                 "data": {
                     "type": "machines",
@@ -142,16 +181,28 @@ class KeygenClient(object):
                     }
                 }
             })
-        ).json()
+        )
 
+        activation = res.json()
         # If we get back an error, our activation failed.
         if "errors" in activation:
             errs = activation["errors"]
-
             return False, "license activation failed: {}".format(
                 ','.join(map(lambda e: "{} - {}".format(e["title"], e["detail"]).lower(), errs))
             )
 
         return True, "license activated"
 
-    # Run from the command line:
+    def setup_and_validate_license(self):
+        user_id, msg = self.__create_user()
+        if user_id is None:
+            click.echo(msg)
+            return
+
+        license_key, msg = self.__create_license(user_id)
+        if license_key is None:
+            click.echo(msg)
+            return
+
+        status, msg = self.__activate_license(license_key)
+        return status, msg
