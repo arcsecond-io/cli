@@ -6,27 +6,19 @@ class State(object):
     Its properties will be transferred to the Config object which will manage
     the persistence of the various parameters.
     """
-    def __init__(self,
-                 is_using_cli=True,
-                 verbose=0,
-                 api_name='main',
-                 subdomain=''):
+
+    def __init__(self, is_using_cli=True, verbose=0, api_name='main'):
         self.is_using_cli = is_using_cli
         self.verbose = verbose
         self.api_name = api_name
-        self.subdomain = subdomain
 
     def update(self, **kwargs):
         self.is_using_cli = kwargs.get('is_using_cli', self.is_using_cli)
         self.verbose = kwargs.get('verbose', self.verbose)
         self.api_name = kwargs.get('api_name', self.api_name)
-        self.subdomain = kwargs.get('subdomain', self.subdomain)
 
     def make_new_silent(self):
-        return State(is_using_cli=self.is_using_cli,
-                     verbose=0,
-                     api_name=self.api_name,
-                     subdomain=self.subdomain)
+        return State(is_using_cli=self.is_using_cli, verbose=0, api_name=self.api_name)
 
 
 def verbose_option_constructor(f):
@@ -55,17 +47,6 @@ def api_option_constructor(f):
                         callback=callback)(f)
 
 
-def organisation_option_constructor(f):
-    def callback(ctx, param, value):
-        state = ctx.ensure_object(State)
-        state.organisation = value
-        return value
-
-    return click.option('--organisation',
-                        help='Perform action as an organisation member. Requires to login as such first.',
-                        callback=callback)(f)
-
-
 def basic_options(f):
     f = verbose_option_constructor(f)
     f = api_option_constructor(f)
@@ -75,7 +56,6 @@ def basic_options(f):
 def organisation_options(f):
     f = basic_options(f)
     f = api_option_constructor(f)
-    f = organisation_option_constructor(f)
     return f
 
 

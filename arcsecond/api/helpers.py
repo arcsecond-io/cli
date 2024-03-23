@@ -3,7 +3,6 @@ import os
 import click
 
 from arcsecond.options import State
-from .constants import ECHO_PREFIX
 from .error import ArcsecondInputValueError
 
 
@@ -11,7 +10,7 @@ def get_state(state=None, **kwargs):
     state = state or State(is_using_cli=False)
     state.update(**kwargs)
     if state.verbose and state.is_using_cli:
-        click.echo(f'{ECHO_PREFIX}{state.api_name}{ECHO_PREFIX}')
+        click.echo(f'{state.api_name}')
     return state
 
 
