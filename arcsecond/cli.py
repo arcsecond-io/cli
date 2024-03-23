@@ -35,7 +35,7 @@ def version():
 @pass_state
 def register(state, username, email, password1, password2):
     """Register for a free personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI(state).register(username, email, password1, password2)
+    ArcsecondAPI(Config(state)).register(username, email, password1, password2)
 
 
 @main.command(help='Login to an Arcsecond account.')
@@ -50,7 +50,7 @@ def login(state, username, password):
     msg = 'Logging in will fetch and store your full-access API key in ~/config/arcsecond/config.ini. '
     msg += 'Make sure you are on a secure computer.'
     if click.confirm(msg, default=True):
-        ArcsecondAPI(state).login(username, password)
+        ArcsecondAPI(Config(state)).login(username, password)
     else:
         click.echo('Stopping without logging in.')
 
@@ -64,7 +64,7 @@ def api(state, name=None, fqdn=None):
     if name is None:
         name = 'main'
     state.api_name = name
-    _api = ArcsecondAPI(state)
+    _api = ArcsecondAPI(Config(state))
     if fqdn is None:
         click.echo(f"name: {name}, fqdn: {_api.get_api_name()}")
     else:

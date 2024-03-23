@@ -1,4 +1,3 @@
-import os
 import shutil
 from configparser import ConfigParser
 from pathlib import Path
@@ -9,8 +8,10 @@ from .constants import ARCSECOND_API_URL_PROD
 
 
 class Config(object):
-    def __init__(self, state: State):
-        self.__state = state
+    def __init__(self, state: State = None, subdomain: str = '', test: bool = False):
+        self.__state = state or State()
+        self.__subdomain = subdomain
+        self.__test = test
         self.__config = ConfigParser()
         self.__config.read(str(Config.__config_file_path()))
         self.__section = self.__config[self.api_name] \
@@ -65,16 +66,12 @@ class Config(object):
         return self.__section.get(key, None) if self.__section else None
 
     @property
+    def verbose(self) -> Optional[bool]:
+        return self.__state.verbose
+
+    @property
     def api_name(self) -> Optional[str]:
         return self.__state.api_name
-
-    @property
-    def subdomain(self) -> Optional[str]:
-        return self.__state.subdomain
-
-    @property
-    def verbose(self) -> Optional[str]:
-        return self.__state.verbose
 
     @property
     def api_server(self) -> Optional[str]:
@@ -82,6 +79,10 @@ class Config(object):
         if self.api_name == 'main' and (result is None or result == ''):
             result = ARCSECOND_API_URL_PROD
         return result
+
+    @property
+    def subdomain(self) -> str:
+        return self.__subdomain
 
     @property
     def username(self) -> Optional[str]:
@@ -117,6 +118,14 @@ class Config(object):
             section[k] = v
         self.__save()
 
+    def save_memberships(self, memberships: list) -> None:
+        for membership in memberships:
+            key = membership.get('organisation')
+            if isinstance(key, dict):
+                key = key.get('subdomain')
+            value = membership.get('role')
+            self.save(**{key: value})
+
     def save_access_key(self, access_key: str) -> None:
         self.save(access_key=access_key)
 
@@ -124,5 +133,4 @@ class Config(object):
         self.save(upload_key=upload_key)
 
     def save_shared_key(self, shared_key: str, subdomain: str) -> None:
-        subdomain = subdomain or self.__state.subdomain
         self.__section['shared:' + subdomain] = shared_key
