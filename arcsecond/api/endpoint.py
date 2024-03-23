@@ -56,14 +56,10 @@ class APIEndPoint(object):
         return self._perform_request(self._detail_url(id_name_uuid), 'delete', None)
 
     def _perform_request(self, url, method_name, payload):
-        headers = self._check_and_set_auth_key(self.__headers or {}, url)
-        if payload:
-            # Filtering None values out of payload.
-            payload = {k: v for k, v in payload.items() if v is not None}
-
         if self.__config.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
 
+        headers = self._check_and_set_auth_key(self.__headers or {}, url)
         method = getattr(requests, method_name.lower())
         response = method(url, json=payload, headers=headers, timeout=60)
 
