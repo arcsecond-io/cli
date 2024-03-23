@@ -111,7 +111,7 @@ class Config(object):
             self.__save()
 
     def save(self, **kwargs) -> None:
-        section_name = kwargs.pop('section', None)
+        section_name = kwargs.pop('section', '')
         section = self.__config[section_name] if section_name else self.__section
         for k, v in kwargs.items():
             section[k] = v
