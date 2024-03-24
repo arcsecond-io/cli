@@ -41,8 +41,12 @@ class ArcsecondAPIEndpoint(object):
     def list(self, **filters):
         return self._perform_request(self._list_url(**filters), 'get')
 
-    def read(self, id_name_uuid):
-        return self._perform_request(self._detail_url(id_name_uuid), 'get')
+    def read(self, id_name_uuid, headers=None):
+        return self._perform_request(self._detail_url(id_name_uuid),
+                                     'get',
+                                     json=None,
+                                     data=None,
+                                     headers=headers)
 
     def create(self, json=None, data=None, headers=None):
         print(json, data, headers)

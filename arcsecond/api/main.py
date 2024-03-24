@@ -33,20 +33,25 @@ class ArcsecondAPI(object):
         self.datafiles = ArcsecondAPIEndpoint(self.config, 'datafiles', self.subdomain)
 
     def register(self, username, email, password1, password2):
-        result, error = AuthAPIEndPoint('auth', self.config).register(username, email, password1, password2)
+        # never subdomain here
+        result, error = AuthAPIEndPoint(self.config, 'auth') \
+            .register(username, email, password1, password2)
+
         if error and self.config.verbose:
             click.echo(click.style(error, fg='red'))
         return result, error
 
     def login(self, username, password, **kwargs):
-        result, error = AuthAPIEndPoint('auth', self.config).login(username, password)
+        # never subdomain here
+        result, error = AuthAPIEndPoint(self.config, 'auth') \
+            .login(username, password)
+
         if error:
             click.echo(click.style(error, fg='red'))
             return
 
         auth_token = result['token']
-        self.profiles.use_headers({'Authorization': 'Token ' + auth_token})
-        profile, profile_error = self.profiles.read(username)
+        profile, profile_error = self.profiles.read(username, headers={'Authorization': 'Token ' + auth_token})
         if profile_error:
             click.echo(click.style(profile_error, fg='red'))
             return
@@ -56,10 +61,9 @@ class ArcsecondAPI(object):
         # Save memberships for future use (in Oort for instance).
         self.config.save_memberships(profile.get('memberships'))
 
-        endpoint = APIEndPoint('profiles', self.config, 'uploadkey' if kwargs.get('upload_key', False) else 'apikey')
-        endpoint.use_headers({'Authorization': 'Token ' + auth_token})
-
-        key_data, key_error = endpoint.read(self.config.username)
+        subresource = 'uploadkey' if kwargs.get('upload_key', False) else 'apikey'
+        endpoint = ArcsecondAPIEndpoint(self.config, 'profiles', subresource=subresource)  # never subdomain here
+        key_data, key_error = endpoint.read(self.config.username, headers={'Authorization': 'Token ' + auth_token})
         if key_error:
             click.echo(click.style(key_error, fg='red'))
 
@@ -69,38 +73,3 @@ class ArcsecondAPI(object):
 
         if self.config.verbose:
             click.echo(f'Successful {key_name} key retrieval.')
-
-    def fetch_full_profile(self):
-        return self.profiles.read(self.config.username)
-
-    @classmethod
-    def is_logged_in(cls, state: Optional[State] = None) -> bool:
-        return Config(state).is_logged_in
-
-    @classmethod
-    def get_username(cls, state: Optional[State] = None) -> str:
-        return Config(state).username
-
-    @classmethod
-    def get_api_name(cls, state: Optional[State] = None) -> str:
-        return Config(state).api_server or ''
-
-    @classmethod
-    def set_api_name(cls, address: str, state: Optional[State] = None) -> None:
-        Config(state).save(api_server=address)
-
-    @classmethod
-    def get_access_key(cls, state: Optional[State] = None) -> str:
-        return Config(state).access_key
-
-    @classmethod
-    def get_upload_key(cls, state: Optional[State] = None) -> str:
-        return Config(state).upload_key
-
-    @classmethod
-    def clear_access_key(cls, state: Optional[State] = None) -> None:
-        Config(state).clear_access_key()
-
-    @classmethod
-    def clear_upload_key(cls, state: Optional[State] = None) -> None:
-        Config(state).clear_upload_key()
