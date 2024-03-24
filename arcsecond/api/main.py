@@ -53,7 +53,7 @@ class ArcsecondAPI(object):
 
         # Update username with that of returned profile in case we logged in with email address.
         self.config.save(username=profile.get('username', username))
-        # Save memberships for furture use.
+        # Save memberships for future use (in Oort for instance).
         self.config.save_memberships(profile.get('memberships'))
 
         endpoint = APIEndPoint('profiles', self.config, 'uploadkey' if kwargs.get('upload_key', False) else 'apikey')
