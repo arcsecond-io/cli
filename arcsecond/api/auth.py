@@ -1,10 +1,9 @@
-from .config import Config
 from .constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
-from .endpoint import APIEndPoint
+from .endpoint import ArcsecondAPIEndpoint
 from .error import ArcsecondError
 
 
-class AuthAPIEndPoint(APIEndPoint):
+class AuthAPIEndPoint(ArcsecondAPIEndpoint):
     def login(self, username, password):
         if not username:
             raise ArcsecondError("Invalid 'username' parameter {}.".format(username))
