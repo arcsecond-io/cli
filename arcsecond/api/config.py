@@ -7,15 +7,13 @@ from arcsecond.options import State
 from .constants import ARCSECOND_API_URL_PROD
 
 
-class Config(object):
-    def __init__(self, state: State = None, subdomain: str = '', test: bool = False):
+class ArcsecondConfig(object):
+    def __init__(self, state: State = None):
         self.__state = state or State()
-        self.__subdomain = subdomain
-        self.__test = test
         self.__config = ConfigParser()
-        self.__config.read(str(Config.__config_file_path()))
-        self.__section = self.__config[self.api_name] \
-            if self.api_name in self.__config.sections() \
+        self.__config.read(str(ArcsecondConfig.__config_file_path()))
+        self.__section = self.__config[self.__state.api_name] \
+            if self.__state.api_name in self.__config.sections() \
             else None
 
     @classmethod
@@ -29,21 +27,21 @@ class Config(object):
 
     @classmethod
     def __config_file_path(cls) -> Path:
-        _config_dir_path = Config.__config_dir_path()
+        _config_dir_path = ArcsecondConfig.__config_dir_path()
         _config_file_path = _config_dir_path / 'config.ini'
-        if Config.__old_config_file_path().exists() and not _config_file_path.exists():
+        if ArcsecondConfig.__old_config_file_path().exists() and not _config_file_path.exists():
             _config_dir_path.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(Config.__old_config_file_path()), str(_config_file_path))
+            shutil.move(str(ArcsecondConfig.__old_config_file_path()), str(_config_file_path))
         return _config_file_path
 
     @classmethod
     def __config_file_exists(cls) -> bool:
-        path = Config.__config_file_path()
+        path = ArcsecondConfig.__config_file_path()
         return path.exists() and path.is_file()
 
     @property
     def file_path(self) -> str:
-        return str(Config.__config_file_path())
+        return str(ArcsecondConfig.__config_file_path())
 
     @property
     def is_logged_in(self) -> bool:
@@ -53,7 +51,7 @@ class Config(object):
             self.__section.get('upload_key') is not None
 
     def __save(self) -> None:
-        with open(Config.__config_file_path(), 'w') as f:
+        with open(ArcsecondConfig.__config_file_path(), 'w') as f:
             self.__config.write(f)
 
     def clear(self) -> None:
@@ -80,9 +78,10 @@ class Config(object):
             result = ARCSECOND_API_URL_PROD
         return result
 
-    @property
-    def subdomain(self) -> str:
-        return self.__subdomain
+    @api_server.setter
+    def api_server(self, value) -> None:
+        self.__section['api_server'] = value
+        self.__save()
 
     @property
     def username(self) -> Optional[str]:

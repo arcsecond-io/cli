@@ -3,7 +3,7 @@ from urllib.parse import urlencode
 import click
 import requests
 
-from arcsecond.api.config import Config
+from arcsecond.api.config import ArcsecondConfig
 from arcsecond.api.constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
 from arcsecond.api.error import ArcsecondError
 
@@ -11,10 +11,11 @@ SAFE_METHODS = ['GET', 'OPTIONS']
 WRITABLE_MEMBERSHIPS = ['superadmin', 'admin', 'member']
 
 
-class APIEndPoint(object):
-    def __init__(self, path: str, config: Config, subresource=''):
-        self.__path = path
+class ArcsecondAPIEndpoint(object):
+    def __init__(self, config: ArcsecondConfig, path: str, subdomain: str = '', subresource: str = ''):
         self.__config = config
+        self.__path = path
+        self.__subdomain = subdomain
         self.__subresource = subresource
         self.__headers = {}
 
@@ -26,7 +27,7 @@ class APIEndPoint(object):
         return self.__config.api_server
 
     def _build_url(self, *args, **filters):
-        fragments = [f for f in [self.__config.subdomain, ] + list(args) + [self.__subresource, ] if f and len(f) > 0]
+        fragments = [f for f in [self.__subdomain, ] + list(args) + [self.__subresource, ] if f and len(f) > 0]
         url = self._get_base_url() + '/' + '/'.join(fragments) + '/'
         query = '?' + urlencode(filters) if len(filters) > 0 else ''
         return url + query
@@ -37,31 +38,37 @@ class APIEndPoint(object):
     def _detail_url(self, uuid_or_id):
         return self._build_url(self.__path, str(uuid_or_id))
 
-    def use_headers(self, headers):
-        self.__headers = headers
-
     def list(self, **filters):
-        return self._perform_request(self._list_url(**filters), 'get', None)
-
-    def create(self, payload):
-        return self._perform_request(self._list_url(), 'post', payload)
+        return self._perform_request(self._list_url(**filters), 'get')
 
     def read(self, id_name_uuid):
-        return self._perform_request(self._detail_url(id_name_uuid), 'get', None)
+        return self._perform_request(self._detail_url(id_name_uuid), 'get')
 
-    def update(self, id_name_uuid, payload):
-        return self._perform_request(self._detail_url(id_name_uuid), 'patch', payload)
+    def create(self, json=None, data=None, headers=None):
+        print(json, data, headers)
+        return self._perform_request(self._list_url(),
+                                     'post',
+                                     json=json,
+                                     data=data,
+                                     headers=headers)
+
+    def update(self, id_name_uuid, json=None, data=None, headers=None):
+        return self._perform_request(self._detail_url(id_name_uuid),
+                                     'patch',
+                                     json=json,
+                                     data=data,
+                                     headers=headers)
 
     def delete(self, id_name_uuid):
-        return self._perform_request(self._detail_url(id_name_uuid), 'delete', None)
+        return self._perform_request(self._detail_url(id_name_uuid), 'delete')
 
-    def _perform_request(self, url, method_name, payload):
+    def _perform_request(self, url, method_name, json=None, data=None, headers=None):
         if self.__config.verbose:
             click.echo('Sending {} request to {}'.format(method_name, url))
 
-        headers = self._check_and_set_auth_key(self.__headers or {}, url)
+        headers = self._check_and_set_auth_key(headers or {}, url)
         method = getattr(requests, method_name.lower())
-        response = method(url, json=payload, headers=headers, timeout=60)
+        response = method(url, json=json, data=data, headers=headers, timeout=60)
 
         if isinstance(response, dict):
             # Responses of standard JSON payload requests are dict

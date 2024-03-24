@@ -1,7 +1,7 @@
 import click
 
 from . import __version__
-from .api import ArcsecondAPI, ArcsecondError, Config
+from .api import ArcsecondAPI, ArcsecondError, ArcsecondConfig
 from .options import State, basic_options
 
 pass_state = click.make_pass_decorator(State, ensure=True)
@@ -35,7 +35,7 @@ def version():
 @pass_state
 def register(state, username, email, password1, password2):
     """Register for a free personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI(Config(state)).register(username, email, password1, password2)
+    ArcsecondAPI(ArcsecondConfig(state)).register(username, email, password1, password2)
 
 
 @main.command(help='Login to an Arcsecond account.')
@@ -50,7 +50,7 @@ def login(state, username, password):
     msg = 'Logging in will fetch and store your full-access API key in ~/config/arcsecond/config.ini. '
     msg += 'Make sure you are on a secure computer.'
     if click.confirm(msg, default=True):
-        ArcsecondAPI(Config(state)).login(username, password)
+        ArcsecondAPI(ArcsecondConfig(state)).login(username, password)
     else:
         click.echo('Stopping without logging in.')
 
@@ -63,12 +63,15 @@ def api(state, name=None, fqdn=None):
     """Configure the API server address"""
     if name is None:
         name = 'main'
+    # The setter below is normally handled by the option --api, but here, the DX is different,
+    # because we manipulated the api and its address itself.
     state.api_name = name
-    _api = ArcsecondAPI(Config(state))
+    config = ArcsecondConfig(state)
     if fqdn is None:
-        click.echo(f"name: {name}, fqdn: {_api.get_api_name()}")
+        click.echo(f"name: {name}, fqdn: {config.api_server}")
     else:
-        _api.set_api_name(fqdn)
+        config.api_server = fqdn
+        click.echo(f"Set fqdn: {config.api_server} to API named {name}.")
 
 
 @main.command(help='Get your complete user profile.')
@@ -76,8 +79,8 @@ def api(state, name=None, fqdn=None):
 @pass_state
 def me(state):
     """Fetch your complete user profile."""
-    username = Config(state.config_section).username or None
+    username = ArcsecondConfig(state).username or None
     if not username:
         msg = f'Invalid/missing username: {username}. Make sure to login first: $ arcsecond login'
         raise ArcsecondError(msg)
-    ArcsecondAPI(Config(state)).profiles.read(username)
+    ArcsecondAPI(ArcsecondConfig(state)).profiles.read(username)

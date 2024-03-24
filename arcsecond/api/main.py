@@ -1,35 +1,36 @@
 # -*- coding: utf-8 -*-
 
-from typing import Optional
-
 import click
 
-from arcsecond.options import State
 from .auth import AuthAPIEndPoint
-from .config import Config
-from .endpoint import APIEndPoint
+from .config import ArcsecondConfig
+from .endpoint import ArcsecondAPIEndpoint
 
 __all__ = ["ArcsecondAPI", ]
 
 
 class ArcsecondAPI(object):
-    def __init__(self, config: Config):
+    def __init__(self, config: ArcsecondConfig, subdomain: str = ''):
         self.config = config
+        self.subdomain = subdomain
 
-        self.profiles = APIEndPoint('profiles', self.config)
-        self.profiles_sharedkeys = APIEndPoint('profiles', self.config, 'sharedkeys')
+        self.profiles = ArcsecondAPIEndpoint(self.config, 'profiles', self.subdomain)
+        self.profiles_sharedkeys = ArcsecondAPIEndpoint(self.config,
+                                                        'profiles',
+                                                        subdomain=self.subdomain,
+                                                        subresource='sharedkeys')
 
-        self.organisations = APIEndPoint('organisations', self.config)
-        self.members = APIEndPoint('members', self.config)
+        self.organisations = ArcsecondAPIEndpoint(self.config, 'organisations')  # never subdomain here
+        self.members = ArcsecondAPIEndpoint(self.config, 'members', self.subdomain)
 
-        self.observingsites = APIEndPoint('observingsites', self.config)
-        self.telescopes = APIEndPoint('telescopes', self.config)
-        self.nightlogs = APIEndPoint('nightlogs', self.config)
-        self.observations = APIEndPoint('observations', self.config)
-        self.calibrations = APIEndPoint('calibrations', self.config)
-        self.datapackages = APIEndPoint('datapackages', self.config)
-        self.datasets = APIEndPoint('datasets', self.config)
-        self.datafiles = APIEndPoint('datafiles', self.config)
+        self.observingsites = ArcsecondAPIEndpoint(self.config, 'observingsites', self.subdomain)
+        self.telescopes = ArcsecondAPIEndpoint(self.config, 'telescopes', self.subdomain)
+        self.nightlogs = ArcsecondAPIEndpoint(self.config, 'nightlogs', self.subdomain)
+        self.observations = ArcsecondAPIEndpoint(self.config, 'observations', self.subdomain)
+        self.calibrations = ArcsecondAPIEndpoint(self.config, 'calibrations', self.subdomain)
+        self.datapackages = ArcsecondAPIEndpoint(self.config, 'datapackages', self.subdomain)
+        self.datasets = ArcsecondAPIEndpoint(self.config, 'datasets', self.subdomain)
+        self.datafiles = ArcsecondAPIEndpoint(self.config, 'datafiles', self.subdomain)
 
     def register(self, username, email, password1, password2):
         result, error = AuthAPIEndPoint('auth', self.config).register(username, email, password1, password2)
