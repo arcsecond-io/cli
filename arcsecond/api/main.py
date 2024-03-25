@@ -15,10 +15,10 @@ class ArcsecondAPI(object):
         self.subdomain = subdomain
 
         self.profiles = ArcsecondAPIEndpoint(self.config, 'profiles', self.subdomain)
-        self.profiles_sharedkeys = ArcsecondAPIEndpoint(self.config,
-                                                        'profiles',
-                                                        subdomain=self.subdomain,
-                                                        subresource='sharedkeys')
+
+        self.sharedkeys = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='sharedkeys')
+        self.private_observingsites = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='observingsites')
+        self.private_telescopes = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='telescopes')
 
         self.organisations = ArcsecondAPIEndpoint(self.config, 'organisations')  # never subdomain here
         self.members = ArcsecondAPIEndpoint(self.config, 'members', self.subdomain)
@@ -28,6 +28,7 @@ class ArcsecondAPI(object):
         self.nightlogs = ArcsecondAPIEndpoint(self.config, 'nightlogs', self.subdomain)
         self.observations = ArcsecondAPIEndpoint(self.config, 'observations', self.subdomain)
         self.calibrations = ArcsecondAPIEndpoint(self.config, 'calibrations', self.subdomain)
+
         self.datapackages = ArcsecondAPIEndpoint(self.config, 'datapackages', self.subdomain)
         self.datasets = ArcsecondAPIEndpoint(self.config, 'datasets', self.subdomain)
         self.datafiles = ArcsecondAPIEndpoint(self.config, 'datafiles', self.subdomain)
@@ -39,6 +40,7 @@ class ArcsecondAPI(object):
 
         if error and self.config.verbose:
             click.echo(click.style(error, fg='red'))
+
         return result, error
 
     def login(self, username, password, **kwargs):
