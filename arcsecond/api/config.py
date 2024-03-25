@@ -11,7 +11,7 @@ class ArcsecondConfig(object):
     def __init__(self, state: State = None):
         self.__state = state or State()
         self.__config = ConfigParser()
-        self.__config.read(str(ArcsecondConfig.__config_file_path()))
+        self.__config.read(str(ArcsecondConfig.file_path()))
         self.__section = self.__config[self.__state.api_name] \
             if self.__state.api_name in self.__config.sections() \
             else None
@@ -21,27 +21,18 @@ class ArcsecondConfig(object):
         return (Path.home() / '.arcsecond.ini').expanduser()
 
     @classmethod
-    def __config_dir_path(cls):
+    def dir_path(cls):
         _config_root_path = Path.home() / '.config'
         return _config_root_path / 'arcsecond'
 
     @classmethod
-    def __config_file_path(cls) -> Path:
-        _config_dir_path = ArcsecondConfig.__config_dir_path()
+    def file_path(cls) -> Path:
+        _config_dir_path = ArcsecondConfig.dir_path()
         _config_file_path = _config_dir_path / 'config.ini'
         if ArcsecondConfig.__old_config_file_path().exists() and not _config_file_path.exists():
             _config_dir_path.mkdir(parents=True, exist_ok=True)
             shutil.move(str(ArcsecondConfig.__old_config_file_path()), str(_config_file_path))
         return _config_file_path
-
-    @classmethod
-    def __config_file_exists(cls) -> bool:
-        path = ArcsecondConfig.__config_file_path()
-        return path.exists() and path.is_file()
-
-    @property
-    def file_path(self) -> str:
-        return str(ArcsecondConfig.__config_file_path())
 
     @property
     def is_logged_in(self) -> bool:
@@ -51,10 +42,10 @@ class ArcsecondConfig(object):
             self.__section.get('upload_key') is not None
 
     def __save(self) -> None:
-        with open(ArcsecondConfig.__config_file_path(), 'w') as f:
+        with open(ArcsecondConfig.file_path(), 'w') as f:
             self.__config.write(f)
 
-    def clear(self) -> None:
+    def reset(self) -> None:
         if self.__section is not None:
             del self.__config[self.api_name]
             self.__section = None

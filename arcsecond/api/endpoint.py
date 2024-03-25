@@ -17,7 +17,6 @@ class ArcsecondAPIEndpoint(object):
         self.__path = path
         self.__subdomain = subdomain
         self.__subresource = subresource
-        self.__headers = {}
 
     @property
     def path(self):
@@ -49,7 +48,6 @@ class ArcsecondAPIEndpoint(object):
                                      headers=headers)
 
     def create(self, json=None, data=None, headers=None):
-        print(json, data, headers)
         return self._perform_request(self._list_url(),
                                      'post',
                                      json=json,
@@ -68,7 +66,7 @@ class ArcsecondAPIEndpoint(object):
 
     def _perform_request(self, url, method_name, json=None, data=None, headers=None):
         if self.__config.verbose:
-            click.echo('Sending {} request to {}'.format(method_name, url))
+            click.echo(f'Sending {method_name} request to {url}')
 
         headers = self._check_and_set_auth_key(headers or {}, url)
         method = getattr(requests, method_name.lower())
@@ -86,20 +84,18 @@ class ArcsecondAPIEndpoint(object):
             return None, ArcsecondError()
 
     def _check_and_set_auth_key(self, headers, url):
+        # No token header for login and register
         if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():
             return headers
+
+        if self.__config.verbose:
+            click.echo('Checking local API|Upload key... ', nl=False)
 
         # Choose the strongest key first
         auth_key = self.__config.access_key or self.__config.upload_key
 
-        if auth_key is None:
-            if self.__config.verbose:
-                click.echo('Checking local API|Upload key... ', nl=False)
-
-            # Choose the strongest key first
-            auth_key = self.__config.access_key or self.__config.upload_key
-            if not auth_key:
-                raise ArcsecondError('Missing auth keys (API or Upload). You must login first: $ arcsecond login')
+        if not auth_key:
+            raise ArcsecondError('Missing auth keys (API or Upload). You must login first: $ arcsecond login')
 
         headers['X-Arcsecond-API-Authorization'] = 'Key ' + auth_key
 
@@ -108,10 +104,3 @@ class ArcsecondAPIEndpoint(object):
             click.echo(f'\'X-Arcsecond-API-Authorization\' = \'Key {key_str}\'')
 
         return headers
-
-    def _echo_spinner_request_result(self, error, response):
-        click.echo()
-        if error:
-            click.echo('Request failed.')
-        elif response:
-            click.echo('Request successful.')
