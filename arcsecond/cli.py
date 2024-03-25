@@ -1,3 +1,5 @@
+import json
+
 import click
 
 from . import __version__
@@ -83,4 +85,8 @@ def me(state):
     if not username:
         msg = f'Invalid/missing username: {username}. Make sure to login first: $ arcsecond login'
         raise ArcsecondError(msg)
-    ArcsecondAPI(ArcsecondConfig(state)).profiles.read(username)
+    response, error = ArcsecondAPI(ArcsecondConfig(state)).profiles.read(username)
+    if error:
+        print(str(error))
+    else:
+        print(json.dumps(response, indent=2))
