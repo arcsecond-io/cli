@@ -3,7 +3,7 @@ from .endpoint import ArcsecondAPIEndpoint
 from .error import ArcsecondError
 
 
-class AuthAPIEndPoint(ArcsecondAPIEndpoint):
+class AuthAPIEndpoint(ArcsecondAPIEndpoint):
     def login(self, username, password):
         if not username:
             raise ArcsecondError("Invalid 'username' parameter {}.".format(username))

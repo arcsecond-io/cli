@@ -2,7 +2,7 @@
 
 import click
 
-from .auth import AuthAPIEndPoint
+from .auth import AuthAPIEndpoint
 from .config import ArcsecondConfig
 from .endpoint import ArcsecondAPIEndpoint
 
@@ -34,7 +34,7 @@ class ArcsecondAPI(object):
 
     def register(self, username, email, password1, password2):
         # never subdomain here
-        result, error = AuthAPIEndPoint(self.config, 'auth') \
+        result, error = AuthAPIEndpoint(self.config, 'auth') \
             .register(username, email, password1, password2)
 
         if error and self.config.verbose:
@@ -43,7 +43,7 @@ class ArcsecondAPI(object):
 
     def login(self, username, password, **kwargs):
         # never subdomain here
-        result, error = AuthAPIEndPoint(self.config, 'auth') \
+        result, error = AuthAPIEndpoint(self.config, 'auth') \
             .login(username, password)
 
         if error:
