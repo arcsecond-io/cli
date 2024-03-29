@@ -2,12 +2,9 @@ import json
 
 import httpretty
 
-from arcsecond import cli
+from arcsecond import cli, ArcsecondConfig
 from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
-from arcsecond.config import (config_file_clear_section,
-                              config_file_save_api_key,
-                              config_file_save_api_server,
-                              config_file_save_organisation_membership)
+from arcsecond.options import State
 
 TEST_LOGIN_USERNAME = 'robot1'
 TEST_LOGIN_PASSWORD = 'robotpass'
@@ -43,7 +40,8 @@ def make_profile_json(subdomain, role):
 
 
 def prepare_successful_login(subdomain='robotland', role='member'):
-    config_file_save_api_server(ARCSECOND_API_URL_DEV, section='test')
+    config = ArcsecondConfig(State(api_name='test'))
+    config.api_server = ARCSECOND_API_URL_DEV
     httpretty.register_uri(
         httpretty.POST,
         ARCSECOND_API_URL_DEV + API_AUTH_PATH_LOGIN,
@@ -77,16 +75,16 @@ def make_successful_login(runner, subdomain='robotland', role='member'):
 
 
 def save_test_credentials(username, memberships=None):
-    if memberships is None:
-        memberships = dict()
-    config_file_save_api_key(TEST_API_KEY, username, section='test')
-    for k, v in memberships.items():
-        config_file_save_organisation_membership(k, v, 'test')
+    config = ArcsecondConfig(State(api_name='test'))
+    config.save(username=username)
+    config.save_access_key(TEST_API_KEY)
+    if memberships:
+        config.save_memberships(memberships)
 
 
 def clear_test_credentials():
-    config_file_clear_section('test')
-    config_file_save_api_server(ARCSECOND_API_URL_DEV, section='test')
+    config = ArcsecondConfig(State(api_name='test'))
+    config.reset()
 
 
 def mock_url_path(method, path, body='', query='', status=200):

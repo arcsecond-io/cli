@@ -12,9 +12,9 @@ class ArcsecondConfig(object):
         self.__state = state or State()
         self.__config = ConfigParser()
         self.__config.read(str(ArcsecondConfig.file_path()))
-        self.__section = self.__config[self.__state.api_name] \
-            if self.__state.api_name in self.__config.sections() \
-            else None
+        if self.__state.api_name not in self.__config.sections():
+            self.__config.add_section(self.__state.api_name)
+        self.__section = self.__config[self.__state.api_name]
 
     @classmethod
     def __old_config_file_path(cls):
@@ -51,8 +51,8 @@ class ArcsecondConfig(object):
             self.__section = None
         self.__save()
 
-    def __read_key(self, key: str) -> Optional[str]:
-        return self.__section.get(key, None) if self.__section else None
+    def __read_key(self, key: str) -> str:
+        return self.__section.get(key, '') if self.__section else ''
 
     @property
     def verbose(self) -> Optional[bool]:
@@ -75,20 +75,19 @@ class ArcsecondConfig(object):
         self.__save()
 
     @property
-    def username(self) -> Optional[str]:
+    def username(self) -> str:
         return self.__read_key('username')
 
     @property
-    def access_key(self) -> Optional[str]:
+    def access_key(self) -> str:
         return self.__read_key('access_key') or self.__read_key('api_key')
 
     @property
-    def upload_key(self) -> Optional[str]:
+    def upload_key(self) -> str:
         return self.__read_key('upload_key')
 
-    def read_key(self, key_name: str, section_name: str = '') -> Optional[str]:
-        section = self.__config[section_name] if section_name else self.__section
-        return section[key_name] if key_name in section else None
+    def read_key(self, key_name: str) -> str:
+        return self.__section[key_name] if key_name in self.__section else None
 
     def clear_access_key(self) -> None:
         return self.__clear_key('access_key')
@@ -102,11 +101,17 @@ class ArcsecondConfig(object):
             self.__save()
 
     def save(self, **kwargs) -> None:
-        section_name = kwargs.pop('section', '')
-        section = self.__config[section_name] if section_name else self.__section
         for k, v in kwargs.items():
-            section[k] = v
+            self.__section[k] = v
         self.__save()
+
+    @property
+    def memberships(self):
+        results = {}
+        for k, v in self.__section.items():
+            if k.startswith('membership__'):
+                results[k.split('membership__')[-1]] = v
+        return results
 
     def save_memberships(self, memberships: list) -> None:
         for membership in memberships:
@@ -114,7 +119,7 @@ class ArcsecondConfig(object):
             if isinstance(key, dict):
                 key = key.get('subdomain')
             value = membership.get('role')
-            self.save(**{key: value})
+            self.save(**{'membership__' + key: value})
 
     def save_access_key(self, access_key: str) -> None:
         self.save(access_key=access_key)
