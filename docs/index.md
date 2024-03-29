@@ -19,15 +19,15 @@ footer: MIT Licensed | Copyright © 2018-present Arcsecond.io (F52 Tech).
 Arcsecond.io is the Astronomical Observations Platform.
 
 It is a unique and comprehensive cloud platform covering the complete observation's lifecycle,
-for botj individual astronomers and observatories, with a consistent set of capabilities:
+for both individual astronomers and observatories, with a consistent set of capabilities:
 
-(Note: the description below corresponds to the coming version V5 of Arcsecond planned for the
-Northern Summer Solstice '24).
+(Note: the description below corresponds to the coming version V5 of Arcsecond planned for the next Solstice '24
+in June).
 
-- Explore: Use Night Explorer to easily identify which target are best suited for which night
-- Plan: Use our new Night Plans to carefully craft your future observing nights
-- Observe: record your observing nights with Night Logs, and attach data to each observation.
-- Store: choose the industry-grade AWS-backed secured cloud storage of Arcsecond, or attach external ones.
-- Distribute: easily package your observations into downloadable files for sharing with peers or visiting observers.
+- Explore: Use **Night Explorer** (a.k.a. iObserve) to easily identify which target are best suited for which night.
+- Plan: Use our new **Night Plans** to carefully craft your future observing nights.
+- Observe: Record your observing nights with **Night Logs**, and attach data to each observation.
+- Store: Choose the industry-grade AWS-backed secured **Cloud Storage** of Arcsecond, or attach external ones.
+- Distribute: Easily create **Data Packages** of your observations for sharing with peers or visiting observers.
 
 Arcsecond is made by an astronomer for astronomers.

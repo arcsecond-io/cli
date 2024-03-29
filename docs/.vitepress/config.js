@@ -5,7 +5,7 @@ module.exports = {
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Install & Setup', link: '/install/' },
+      { text: 'Install & Setup', link: '/install' },
       { text: 'Arcsecond Docs', link: 'https://docs.arcsecond.io' }
     ]
   }
