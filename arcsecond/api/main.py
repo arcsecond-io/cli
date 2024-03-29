@@ -2,8 +2,8 @@
 
 import click
 
-from .auth import AuthAPIEndpoint
 from .config import ArcsecondConfig
+from .constants import API_AUTH_PATH_VERIFY
 from .endpoint import ArcsecondAPIEndpoint
 
 __all__ = ["ArcsecondAPI", ]
@@ -33,55 +33,20 @@ class ArcsecondAPI(object):
         self.datasets = ArcsecondAPIEndpoint(self.config, 'datasets', self.subdomain)
         self.datafiles = ArcsecondAPIEndpoint(self.config, 'datafiles', self.subdomain)
 
-    def register(self, username, email, password1, password2):
-        # never subdomain here
-        result, error = AuthAPIEndpoint(self.config, 'auth') \
-            .register(username, email, password1, password2)
+    def login(self, username, access_key=None, upload_key=None):
+        assert access_key or upload_key
 
-        if error and self.config.verbose:
-            click.echo(click.style(error, fg='red'))
-
-        return result, error
-
-    def login(self, username, password, **kwargs):
-        # never subdomain here
-        result, error = AuthAPIEndpoint(self.config, 'auth') \
-            .login(username, password)
-
+        endpoint = ArcsecondAPIEndpoint(self.config, API_AUTH_PATH_VERIFY)
+        result, error = endpoint.create({'username': username, 'key': access_key or upload_key})
         if error:
             click.echo(click.style(error, fg='red'))
-            return
+            return None, error
 
-        auth_token = result['token']
-        profile, profile_error = self.profiles.read(username, headers={'Authorization': 'Token ' + auth_token})
-        if profile_error:
-            click.echo(click.style(profile_error, fg='red'))
-            return
+        key_name = 'access_key' if access_key else 'upload_key'
+        key_value = access_key if access_key else upload_key
+        self.config.save(**{key_name: key_value})
 
-        # Update username with that of returned profile in case we logged in with email address.
-        self.config.save(username=profile.get('username', username))
-        # Save memberships for future use (in Oort for instance).
-        self.config.save_memberships(profile.get('memberships'))
+        if self.config.verbose:
+            click.echo('Login successful (Access Key has been saved).')
 
-        if kwargs.get('api_key', False) or kwargs.get('access_key', False):
-            endpoint = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='apikey')  # never subdomain here
-            key_data, key_error = endpoint.read(self.config.username, headers={'Authorization': 'Token ' + auth_token})
-            if key_error:
-                click.echo(click.style(key_error, fg='red'))
-                return
-
-            self.config.save(**{'api_key': key_data.get('api_key', '') or key_data.get('access_key', '')})
-            self.config.save(**{'access_key': key_data.get('api_key', '') or key_data.get('access_key', '')})
-            if self.config.verbose:
-                click.echo(f'Successful access_key retrieval.')
-
-        if kwargs.get('upload_key', False):
-            endpoint = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='uploadkey')  # never subdomain here
-            key_data, key_error = endpoint.read(self.config.username, headers={'Authorization': 'Token ' + auth_token})
-            if key_error:
-                click.echo(click.style(key_error, fg='red'))
-                return
-
-            self.config.save(**{'upload_key': key_data.get('upload_key', '')})
-            if self.config.verbose:
-                click.echo(f'Successful upload_key retrieval.')
+        return True, None

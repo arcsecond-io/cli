@@ -4,7 +4,7 @@ import click
 import requests
 
 from arcsecond.api.config import ArcsecondConfig
-from arcsecond.api.constants import API_AUTH_PATH_LOGIN, API_AUTH_PATH_REGISTER
+from arcsecond.api.constants import API_AUTH_PATH_VERIFY
 from arcsecond.api.error import ArcsecondError
 
 SAFE_METHODS = ['GET', 'OPTIONS']
@@ -27,7 +27,8 @@ class ArcsecondAPIEndpoint(object):
 
     def _build_url(self, *args, **filters):
         fragments = [f for f in [self.__subdomain, ] + list(args) + [self.__subresource, ] if f and len(f) > 0]
-        url = self._get_base_url() + '/' + '/'.join(fragments) + '/'
+        url = self._get_base_url() + '/'.join(fragments)
+        if url[-1] != '/': url += '/'
         query = '?' + urlencode(filters) if len(filters) > 0 else ''
         return url + query
 
@@ -85,7 +86,7 @@ class ArcsecondAPIEndpoint(object):
 
     def _check_and_set_auth_key(self, headers, url):
         # No token header for login and register
-        if API_AUTH_PATH_REGISTER in url or API_AUTH_PATH_LOGIN in url or 'Authorization' in headers.keys():
+        if API_AUTH_PATH_VERIFY in url or 'Authorization' in headers.keys():
             return headers
 
         if self.__config.verbose:

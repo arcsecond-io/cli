@@ -28,33 +28,18 @@ def version():
     click.echo(__version__)
 
 
-@main.command(short_help='Register a free Arcsecond.io account.')
-@click.option('--username', required=True, nargs=1, prompt=True)
-@click.option('--email', required=True, nargs=1, prompt=True)
-@click.option('--password1', required=True, nargs=1, prompt=True, hide_input=True)
-@click.option('--password2', required=True, nargs=1, prompt=True, hide_input=True)
-@basic_options
-@pass_state
-def register(state, username, email, password1, password2):
-    """Register for a free personal Arcsecond.io account, and retrieve the associated API key."""
-    ArcsecondAPI(ArcsecondConfig(state)).register(username, email, password1, password2)
-
-
-@main.command(help='Login to an Arcsecond account.')
+@main.command(help='Login to your Arcsecond account.')
 @click.option('--username', required=True, nargs=1, prompt=True,
               help='Account username (without @). Primary email address is also allowed.')
-@click.option('--password', required=True, nargs=1, prompt=True, hide_input=True,
-              help='Account password. It will be transmitted encrypted.')
+@click.option('--access_key', required=True, nargs=1, prompt=True, hide_input=True,
+              help='Your access key (a.k.a. API key). Visit your settings page to copy and paste it here.')
 @basic_options
 @pass_state
-def login(state, username, password):
+def login(state, username, access_key):
     """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
-    msg = 'Logging in will fetch and store your full-access API key in ~/config/arcsecond/config.ini. '
-    msg += 'Make sure you are on a secure computer.'
-    if click.confirm(msg, default=True):
-        ArcsecondAPI(ArcsecondConfig(state)).login(username, password)
-    else:
-        click.echo('Stopping without logging in.')
+    result, error = ArcsecondAPI(ArcsecondConfig(state)).login(username, access_key=access_key)
+    if error:
+        click.echo(str(error))
 
 
 @main.command(help='Get or set the API server address (fully qualified domain name).')
@@ -87,6 +72,6 @@ def me(state):
         raise ArcsecondError(msg)
     response, error = ArcsecondAPI(ArcsecondConfig(state)).profiles.read(username)
     if error:
-        print(str(error))
+        click.echo(str(error))
     else:
-        print(json.dumps(response, indent=2))
+        click.echo(json.dumps(response, indent=2))

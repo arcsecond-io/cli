@@ -3,11 +3,10 @@ import json
 import httpretty
 
 from arcsecond import cli, ArcsecondConfig
-from arcsecond.api.constants import API_AUTH_PATH_LOGIN, ARCSECOND_API_URL_DEV
+from arcsecond.api.constants import API_AUTH_PATH_VERIFY, ARCSECOND_API_URL_DEV
 from arcsecond.options import State
 
 TEST_LOGIN_USERNAME = 'robot1'
-TEST_LOGIN_PASSWORD = 'robotpass'
 TEST_API_KEY = '4c4458935e2b9e21b4ef5f4c8e53213e'
 TEST_UPLOAD_KEY = 'b4ef5f4c8e53213e935e2b9e24c44581'
 
@@ -44,28 +43,28 @@ def prepare_successful_login(subdomain='robotland', role='member'):
     config.api_server = ARCSECOND_API_URL_DEV
     httpretty.register_uri(
         httpretty.POST,
-        ARCSECOND_API_URL_DEV + API_AUTH_PATH_LOGIN,
-        status=200,
-        body='{ "token": "935e2b9e24c44581b4ef5f4c8e53213e" }'
+        ARCSECOND_API_URL_DEV + API_AUTH_PATH_VERIFY,
+        status=204,
+        body='{ "key": "' + TEST_API_KEY + '", "username": "' + TEST_LOGIN_USERNAME + '" }'
     )
-    httpretty.register_uri(
-        httpretty.GET,
-        ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/',
-        status=200,
-        body=make_profile_json(subdomain, role)
-    )
-    httpretty.register_uri(
-        httpretty.GET,
-        ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/apikey/',
-        status=200,
-        body='{ "access_key": "' + TEST_API_KEY + '" }'
-    )
-    httpretty.register_uri(
-        httpretty.GET,
-        ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/uploadkey/',
-        status=200,
-        body='{ "upload_key": "' + TEST_UPLOAD_KEY + '" }'
-    )
+    # httpretty.register_uri(
+    #     httpretty.GET,
+    #     ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/',
+    #     status=200,
+    #     body=make_profile_json(subdomain, role)
+    # )
+    # httpretty.register_uri(
+    #     httpretty.GET,
+    #     ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/apikey/',
+    #     status=200,
+    #     body='{ "access_key": "' + TEST_API_KEY + '" }'
+    # )
+    # httpretty.register_uri(
+    #     httpretty.GET,
+    #     ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/uploadkey/',
+    #     status=200,
+    #     body='{ "upload_key": "' + TEST_UPLOAD_KEY + '" }'
+    # )
 
 
 def make_successful_login(runner, subdomain='robotland', role='member'):

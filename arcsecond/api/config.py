@@ -59,6 +59,10 @@ class ArcsecondConfig(object):
         return self.__state.verbose
 
     @property
+    def is_using_cli(self) -> Optional[bool]:
+        return self.__state.is_using_cli
+
+    @property
     def api_name(self) -> Optional[str]:
         return self.__state.api_name
 
