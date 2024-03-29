@@ -63,15 +63,25 @@ class ArcsecondAPI(object):
         # Save memberships for future use (in Oort for instance).
         self.config.save_memberships(profile.get('memberships'))
 
-        subresource = 'uploadkey' if kwargs.get('upload_key', False) else 'apikey'
-        endpoint = ArcsecondAPIEndpoint(self.config, 'profiles', subresource=subresource)  # never subdomain here
-        key_data, key_error = endpoint.read(self.config.username, headers={'Authorization': 'Token ' + auth_token})
-        if key_error:
-            click.echo(click.style(key_error, fg='red'))
+        if kwargs.get('api_key', False) or kwargs.get('access_key', False):
+            endpoint = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='apikey')  # never subdomain here
+            key_data, key_error = endpoint.read(self.config.username, headers={'Authorization': 'Token ' + auth_token})
+            if key_error:
+                click.echo(click.style(key_error, fg='red'))
+                return
 
-        key_name = 'upload_key' if kwargs.get('upload_key', False) else 'access_key'
-        key_value_name = 'upload_key' if kwargs.get('upload_key', False) else 'api_key'  # will change to access_key
-        self.config.save(**{key_name: key_data.get(key_value_name, '')})
+            self.config.save(**{'api_key': key_data.get('api_key', '') or key_data.get('access_key', '')})
+            self.config.save(**{'access_key': key_data.get('api_key', '') or key_data.get('access_key', '')})
+            if self.config.verbose:
+                click.echo(f'Successful access_key retrieval.')
 
-        if self.config.verbose:
-            click.echo(f'Successful {key_name} key retrieval.')
+        if kwargs.get('upload_key', False):
+            endpoint = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='uploadkey')  # never subdomain here
+            key_data, key_error = endpoint.read(self.config.username, headers={'Authorization': 'Token ' + auth_token})
+            if key_error:
+                click.echo(click.style(key_error, fg='red'))
+                return
+
+            self.config.save(**{'upload_key': key_data.get('upload_key', '')})
+            if self.config.verbose:
+                click.echo(f'Successful upload_key retrieval.')
