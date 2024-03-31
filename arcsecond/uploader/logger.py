@@ -6,14 +6,14 @@ from pathlib import Path
 
 def get_oort_logger(debug=False) -> Logger:
     suffix = '-tests' if os.environ.get('OORT_TESTS') == '1' else ''
-    logger = getLogger('oort-cloud' + suffix)
+    logger = getLogger('arcsecond' + suffix)
     logger.setLevel(DEBUG if debug else INFO)
 
     if len(logger.handlers) == 0:
         formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
         if os.environ.get('OORT_TESTS') != '1':
-            log_file_path = Path(f'oort_{datetime.now().replace(microsecond=0).isoformat()}.log')
+            log_file_path = Path(f'arcsecond_upload_{datetime.now().replace(microsecond=0).isoformat()}.log')
             file_handler = FileHandler(log_file_path)
             file_handler.setLevel(DEBUG if debug else INFO)
             file_handler.setFormatter(formatter)
