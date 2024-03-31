@@ -9,10 +9,9 @@ from .logger import get_oort_logger
 from .uploader import FileUploader
 from .utils import is_file_hidden
 
-logger = get_oort_logger('walker')
-
 
 def __walk_first_pass(context: Context, root_path: Path):
+    logger = get_oort_logger()
     log_prefix = '[Walker - 1/2]'
     logger.info(f"{log_prefix} Making a first pass to collect info on files...")
     if context.config.api_name != 'dev':
@@ -37,6 +36,7 @@ def __walk_first_pass(context: Context, root_path: Path):
 
 
 def __walk_second_pass(context: Context, root_path: Path, file_paths: list):
+    logger = get_oort_logger()
     log_prefix = '[Walker - 2/2]'
     logger.info(f"{log_prefix} Starting second pass to upload files...")
     if context.config.api_name != 'dev':
@@ -65,6 +65,7 @@ def __walk_second_pass(context: Context, root_path: Path, file_paths: list):
 
 
 def walk(context: Context, folder_string: str):
+    logger = get_oort_logger()
     log_prefix = '[Walker]'
     root_path = Path(folder_string).resolve()
     if root_path.is_file():  # Just in case we pass a file...
