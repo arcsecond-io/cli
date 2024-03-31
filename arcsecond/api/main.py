@@ -14,24 +14,24 @@ class ArcsecondAPI(object):
         self.config = config
         self.subdomain = subdomain
 
-        self.profiles = ArcsecondAPIEndpoint(self.config, '/profiles', self.subdomain)
+        self.profiles = ArcsecondAPIEndpoint(self.config, 'profiles', self.subdomain)
 
-        self.sharedkeys = ArcsecondAPIEndpoint(self.config, '/profiles', subresource='sharedkeys')
-        self.private_observingsites = ArcsecondAPIEndpoint(self.config, '/profiles', subresource='observingsites')
-        self.private_telescopes = ArcsecondAPIEndpoint(self.config, '/profiles', subresource='telescopes')
+        self.sharedkeys = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='sharedkeys')
+        self.private_observingsites = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='observingsites')
+        self.private_telescopes = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='telescopes')
 
-        self.organisations = ArcsecondAPIEndpoint(self.config, '/organisations')  # never subdomain here
-        self.members = ArcsecondAPIEndpoint(self.config, '/members', self.subdomain)
+        self.organisations = ArcsecondAPIEndpoint(self.config, 'organisations')  # never subdomain here
+        self.members = ArcsecondAPIEndpoint(self.config, 'members', self.subdomain)
 
-        self.observingsites = ArcsecondAPIEndpoint(self.config, '/observingsites', self.subdomain)
-        self.telescopes = ArcsecondAPIEndpoint(self.config, '/telescopes', self.subdomain)
-        self.nightlogs = ArcsecondAPIEndpoint(self.config, '/nightlogs', self.subdomain)
-        self.observations = ArcsecondAPIEndpoint(self.config, '/observations', self.subdomain)
-        self.calibrations = ArcsecondAPIEndpoint(self.config, '/calibrations', self.subdomain)
+        self.observingsites = ArcsecondAPIEndpoint(self.config, 'observingsites', self.subdomain)
+        self.telescopes = ArcsecondAPIEndpoint(self.config, 'telescopes', self.subdomain)
+        self.nightlogs = ArcsecondAPIEndpoint(self.config, 'nightlogs', self.subdomain)
+        self.observations = ArcsecondAPIEndpoint(self.config, 'observations', self.subdomain)
+        self.calibrations = ArcsecondAPIEndpoint(self.config, 'calibrations', self.subdomain)
 
-        self.datapackages = ArcsecondAPIEndpoint(self.config, '/datapackages', self.subdomain)
-        self.datasets = ArcsecondAPIEndpoint(self.config, '/datasets', self.subdomain)
-        self.datafiles = ArcsecondAPIEndpoint(self.config, '/datafiles', self.subdomain)
+        self.datapackages = ArcsecondAPIEndpoint(self.config, 'datapackages', self.subdomain)
+        self.datasets = ArcsecondAPIEndpoint(self.config, 'datasets', self.subdomain)
+        self.datafiles = ArcsecondAPIEndpoint(self.config, 'datafiles', self.subdomain)
 
     def login(self, username, access_key=None, upload_key=None):
         assert access_key or upload_key

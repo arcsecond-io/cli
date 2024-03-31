@@ -2,7 +2,8 @@ import uuid
 
 import click
 
-from arcsecond import ArcsecondAPI, ArcsecondConfig
+from arcsecond.api.constants import API_AUTH_PATH_VERIFY_PORTAL
+from arcsecond import ArcsecondAPI, ArcsecondConfig, ArcsecondAPIEndpoint
 from .errors import (
     UnknownOrganisationError,
     InvalidAstronomerError,
@@ -71,8 +72,11 @@ class Context(object):
             raise UnknownOrganisationError(self._subdomain, str(error))
 
     def _validate_astronomer_role_in_remote_organisation(self):
-        role = self._config.read_key(self._subdomain)
-        if not role or role not in ['member', 'admin', 'superadmin']:
+        endpoint = ArcsecondAPIEndpoint(self.config, API_AUTH_PATH_VERIFY_PORTAL)
+        result, error = endpoint.create({'username': self._config.username,
+                                         'key': self._config.access_key or self._config.upload_key,
+                                         'organisation': self._subdomain})
+        if error:
             raise InvalidOrgMembershipError(self._subdomain)
 
     def update_dataset(self, dataset: dict):
@@ -94,14 +98,3 @@ class Context(object):
     @property
     def organisation_subdomain(self):
         return self._organisation.get('subdomain', '') if self._organisation else ''
-
-    # def __print_organisation_telescopes(org_subdomain: str, api: str = 'main'):
-    #     click.echo(f" • Here is a list of existing telescopes for organisation '{org_subdomain}':")
-    #     kwargs = build_endpoint_kwargs(api, org_subdomain)
-    #     telescope_list, error = ArcsecondAPI.telescopes(**kwargs).list()
-    #     for telescope in telescope_list:
-    #         s = f" 🔭 {telescope['name']}"
-    #         if telescope.get('alias', ''):
-    #             s += f" a.k.a. {telescope['alias']}"
-    #         s += f" ({telescope['uuid']})"
-    #         click.echo(s)
