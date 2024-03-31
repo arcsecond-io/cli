@@ -8,4 +8,4 @@ __all__ = ["ArcsecondAPI",
            "ArcsecondConfig",
            "ArcsecondAPIEndpoint"]
 
-__version__ = '3.0.1'
+__version__ = '3.0.2'
