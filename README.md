@@ -1,4 +1,4 @@
-[![Upload Python Package to Pypi](https://github.com/arcsecond-io/cli/actions/workflows/pythonpublish.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/pythonpublish.yml) [![Run Tests and Linting](https://github.com/arcsecond-io/cli/actions/workflows/pythonpackage.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/pythonpackage.yml) [![Deploy Docs](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml) [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
+[![Deploy Docs](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml) [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
 
 # Arcsecond CLI
 
