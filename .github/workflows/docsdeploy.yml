@@ -6,13 +6,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Setup node
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v4
       with:
-        node-version: '16.x'
+        node-version: '20.x'
     - name: Cache node modules
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       with:
         path: ~/.npm
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -22,7 +22,7 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.READ_PACKAGE_TOKEN }}
         CI: true
-        node-version: '16.x'
+        node-version: '20.x'
         cache: 'npm'
     - name: Deploy docs
       env:
