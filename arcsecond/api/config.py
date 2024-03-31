@@ -12,9 +12,10 @@ class ArcsecondConfig(object):
         self.__state = state or State()
         self.__config = ConfigParser()
         self.__config.read(str(ArcsecondConfig.file_path()))
-        if self.__state.api_name not in self.__config.sections():
-            self.__config.add_section(self.__state.api_name)
-        self.__section = self.__config[self.__state.api_name]
+        api_name = self.__state.api_name or 'main'
+        if api_name not in self.__config.sections():
+            self.__config.add_section(api_name)
+        self.__section = self.__config[api_name]
 
     @classmethod
     def __old_config_file_path(cls):
