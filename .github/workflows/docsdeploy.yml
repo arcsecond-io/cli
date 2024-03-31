@@ -18,7 +18,7 @@ jobs:
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
-    - run: npm ci --no-optional
+    - run: npm ci
       env:
         NODE_AUTH_TOKEN: ${{ secrets.READ_PACKAGE_TOKEN }}
         CI: true
