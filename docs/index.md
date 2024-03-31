@@ -51,7 +51,7 @@ create one). In your Settings page in https://www.arcsecond.io you will
 find your Access Key and your Upload Key. They give a different access
 level to your resources.
 
-Use the Access Key to have a complete access to your resources. **Use
+Use the Access Key to have complete access to your resources. **Use
 your Access Key only on trusted computers.**. If you simply want to
 use the CLI for uploading files, use the Upload Key, which has just enough
 permissions to upload data to your account, or your observatory portals.
