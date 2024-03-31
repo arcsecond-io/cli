@@ -5,6 +5,10 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondError, ArcsecondConfig
 from .options import State, basic_options
+from .uploader.context import Context
+from .uploader.errors import ArcsecondError
+from .uploader.utils import display_command_summary
+from .uploader.walker import walk
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
@@ -31,15 +35,39 @@ def version():
 @main.command(help='Login to your Arcsecond account.')
 @click.option('--username', required=True, nargs=1, prompt=True,
               help='Account username (without @). Primary email address is also allowed.')
-@click.option('--access_key', required=True, nargs=1, prompt=True, hide_input=True,
-              help='Your access key (a.k.a. API key). Visit your settings page to copy and paste it here.')
+@click.option('--access_key', required=False, nargs=1, prompt=True,
+              help='Your access key (a.k.a. API key). Visit your settings page to copy and paste it here. One of Access or Upload key must be provided.')
+@click.option('--upload_key', required=False, nargs=1, prompt=True,
+              help='Your upload key. Visit your settings page to copy and paste it here. One of Access or Upload key must be provided.')
 @basic_options
 @pass_state
-def login(state, username, access_key):
-    """Login to your personal Arcsecond.io account, and retrieve the associated API key."""
-    result, error = ArcsecondAPI(ArcsecondConfig(state)).login(username, access_key=access_key)
+def login(state, username, access_key, upload_key):
+    """Login to your personal Arcsecond.io account.
+
+    You must provide either your Access Key, or your Upload Key.
+    By doing so, you choose the level of access you want to store
+    on this computer. The Access Key give a full API access to your
+    data. The Upload Key gives just enough permissions to upload data.
+
+    Both keys can be retrieved from your personal Settings page on
+    https://www.arcsecond.io
+
+    Beware that the Key you provide will be stored locally on the file:
+    ~/.config/arcsecond/config.ini
+    """
+    if not access_key and not upload_key:
+        raise ArcsecondError('You must provide at least one of Access or Upload key.')
+
+    if access_key and upload_key:
+        raise ArcsecondError('You must provide only one of Access or Upload key.')
+
+    config = ArcsecondConfig(state)
+    _, error = ArcsecondAPI(config).login(username, access_key=access_key, upload_key=upload_key)
     if error:
         click.echo(str(error))
+    else:
+        username = config.username
+        click.echo(f' • Successfully logged in as @{username} (APIs: {state.api_name}).')
 
 
 @main.command(help='Get or set the API server address (fully qualified domain name).')
@@ -50,15 +78,17 @@ def api(state, name=None, fqdn=None):
     """Configure the API server address"""
     if name is None:
         name = 'main'
+
     # The setter below is normally handled by the option --api, but here, the DX is different,
-    # because we manipulated the api and its address itself.
+    # because we manipulate the api and its address itself.
     state.api_name = name
     config = ArcsecondConfig(state)
+
     if fqdn is None:
-        click.echo(f"name: {name}, fqdn: {config.api_server}")
+        click.echo(f" • name: {name}, fqdn: {config.api_server}")
     else:
         config.api_server = fqdn
-        click.echo(f"Set fqdn: {config.api_server} to API named {name}.")
+        click.echo(f" • Set fqdn: {config.api_server} to API named {name}.")
 
 
 @main.command(help='Get your complete user profile.')
@@ -75,3 +105,69 @@ def me(state):
         click.echo(str(error))
     else:
         click.echo(json.dumps(response, indent=2))
+
+
+@main.command(help="Display the list of (portal) datasets.")
+@click.option('-p', '--portal',
+              required=False, nargs=1,
+              help="The portal subdomain, if uploading for an Observatory Portal.")
+@basic_options
+@pass_state
+def datasets(state, portal=None):
+    org_subdomain = portal or ''
+    if org_subdomain:
+        click.echo(f" • Fetching datasets for portal '{org_subdomain}'...")
+    else:
+        click.echo(" • Fetching datasets...")
+
+    dataset_list, error = ArcsecondAPI(ArcsecondConfig(state)).datasets.list()
+    if error is not None:
+        raise ArcsecondError(str(error))
+
+    if isinstance(dataset_list, dict) and 'results' in dataset_list.keys():
+        dataset_list = dataset_list['results']
+
+    click.echo(f" • Found {len(dataset_list)} dataset{'s' if len(dataset_list) > 1 else ''}.")
+    for dataset_dict in dataset_list:
+        s = f" 💾 \"{dataset_dict['name']}\" "
+        s += f"(uuid: {dataset_dict['uuid']}) "
+        # s += f"[ObservingSite UUID: {telescope_dict['observing_site']}]"
+        click.echo(s)
+
+
+@main.command(help='Upload the content of a folder.')
+@click.argument('folder', required=True, nargs=1)
+@click.option('-d', '--dataset',
+              required=True, nargs=1, type=click.STRING,
+              help="The UUID or name of the dataset to put data in. If new, it will be created.")
+@click.option('-p', '--portal',
+              required=False, nargs=1,
+              help="The portal subdomain, if uploading for an Observatory Portal.")
+@basic_options
+@pass_state
+def upload(state, folder, dataset=None, portal=None):
+    """
+    Upload the content of a folder.
+
+    You will be prompted for confirmation before the whole walking process actually
+    start.
+
+    Every DataFile must belong to a Dataset. If you provide a Dataset UUID, Oort will
+    append files to the dataset. If you provide a Dataset *name*, Oort will try to find
+    an existing Dataset with that name. If none could be found, Oort will create one,
+    and put files in it.
+
+    You can use `arcsecond datasets [OPTIONS]` to get a list of your existing datasets
+    (with their UUID).
+
+    Arcsecond will then start walking through the folder tree and uploads regular files
+    (hidden and empty files will be skipped).
+    """
+    config = ArcsecondConfig(state)
+    context = Context(config, dataset_uuid_or_name=dataset, subdomain=portal)
+    context.validate()
+
+    display_command_summary(context, [folder, ])
+    ok = input('\n   ----> OK? (Press Enter) ')
+    if ok.strip() == '':
+        walk(context, folder)
