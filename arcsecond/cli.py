@@ -60,9 +60,6 @@ def login(state, username, type, key):
     _, error = ArcsecondAPI(config).login(username, **{key_name: key})
     if error:
         click.echo(str(error))
-    else:
-        username = config.username
-        click.echo(f' • Successfully logged in as @{username} (APIs: {state.api_name}).')
 
 
 @main.command(help='Get or set the API server address (fully qualified domain name).')
