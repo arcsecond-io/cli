@@ -1,4 +1,4 @@
-from arcsecond.api import ArcsecondError
+from arcsecond.errors import ArcsecondError
 
 
 class UploadRemoteFileCheckError(ArcsecondError):

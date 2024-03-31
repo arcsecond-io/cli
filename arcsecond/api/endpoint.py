@@ -5,7 +5,7 @@ import requests
 
 from arcsecond.api.config import ArcsecondConfig
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY
-from arcsecond.api.errors import ArcsecondError
+from arcsecond.errors import ArcsecondError
 
 SAFE_METHODS = ['GET', 'OPTIONS']
 WRITABLE_MEMBERSHIPS = ['superadmin', 'admin', 'member']

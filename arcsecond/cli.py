@@ -3,7 +3,8 @@ import json
 import click
 
 from . import __version__
-from .api import ArcsecondAPI, ArcsecondError, ArcsecondConfig
+from .api import ArcsecondAPI, ArcsecondConfig
+from .errors import ArcsecondError
 from .options import State, basic_options
 from .uploader.context import Context
 from .uploader.errors import ArcsecondError
