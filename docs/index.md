@@ -1,16 +1,13 @@
 ---
-home: true
-heroImage: /img/logo-circle.png
-heroAlt: Arcsecond Logo
-heroText: Arcsecond CLI
-tagline: The command-line utility / Python module to access the resources of Arcsecond.io.
-actionText: Install & Setup
-actionLink: /install/
-features:
-  - title: Command-Line
-    details: All the public and private Arcsecond.io resources right into your terminal.
-  - title: Python Module
-    details: All the Arcsecond.io resources inside your Python code, to integrate with your systems.
+layout: home
+title: Arcsecond CLI
+description: Arcsecond CLI
+hero:
+  name: Arcsecond CLI
+  tagline: The command-line utility / Python module to access the resources of Arcsecond.io, and easily upload your data to Arcsecond Cloud Storage.
+  image:
+    src: /img/logo-circle.png
+    alt: Arcsecond CLI
 footer: MIT Licensed | Copyright © 2018-present Arcsecond.io (F52 Tech).
 ---
 
