@@ -33,6 +33,9 @@ class ArcsecondConfig(object):
         if ArcsecondConfig.__old_config_file_path().exists() and not _config_file_path.exists():
             _config_dir_path.mkdir(parents=True, exist_ok=True)
             shutil.move(str(ArcsecondConfig.__old_config_file_path()), str(_config_file_path))
+        elif not _config_file_path.exists():
+            _config_file_path.parents[0].mkdir(parents=True, exist_ok=True)
+            _config_file_path.touch()
         return _config_file_path
 
     @property
@@ -65,7 +68,10 @@ class ArcsecondConfig(object):
 
     @property
     def api_name(self) -> Optional[str]:
-        return self.__state.api_name
+        result = self.__state.api_name
+        if not result:
+            result = 'main'
+        return result
 
     @property
     def api_server(self) -> Optional[str]:
