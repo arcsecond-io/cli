@@ -28,7 +28,9 @@ def __walk_first_pass(context: Context, root_path: Path):
             continue
 
         index += 1
-        click.echo(f"\n{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)")
+        msg = f"{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%) "
+        msg += f"{file_path.name}"
+        click.echo(msg)
         file_paths.append(file_path)
 
     logger.info(f"{log_prefix} Finished collecting file info inside folder {str(root_path)}.")
