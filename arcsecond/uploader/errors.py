@@ -1,7 +1,11 @@
 from arcsecond.errors import ArcsecondError
 
 
-class UploadRemoteFileCheckError(ArcsecondError):
+class UploadRemoteFileError(ArcsecondError):
+    pass
+
+
+class UploadRemoteFileTagsError(ArcsecondError):
     pass
 
 
