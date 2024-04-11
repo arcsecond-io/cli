@@ -87,9 +87,3 @@ def walk(context: Context, folder_string: str):
         msg = f"{log_prefix} No new file paths to upload.\n\n"
         logger.info(msg)
 
-# if __name__ == '__main__':
-#     root_path = sys.argv[1]
-#     username, upload_key, subdomain, role, telescope, debug_str = sys.argv[2].split(",")
-#     debug = (debug_str == 'True')
-#     identity = Identity(username, upload_key, subdomain, role, telescope, debug)
-#     walk(root_path, identity, debug)
