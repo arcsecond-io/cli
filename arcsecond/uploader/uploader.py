@@ -9,7 +9,7 @@ from arcsecond import ArcsecondAPI
 from arcsecond import __version__
 from .constants import Status, Substatus
 from .context import Context
-from .errors import UploadRemoteDatasetCheckError, UploadRemoteFileCheckError
+from .errors import UploadRemoteDatasetCheckError, UploadRemoteFileError
 from .logger import get_oort_logger
 
 
@@ -30,7 +30,7 @@ class FileUploader(object):
 
     @property
     def log_prefix(self) -> str:
-        return f'[FileUploader: {str(self._file_path.relative_to(self._root_path))}]'
+        return f'[{str(self._file_path.relative_to(self._root_path))}]'
 
     def _prepare_dataset(self):
         if self._context.dataset_uuid:
@@ -73,7 +73,7 @@ class FileUploader(object):
         self._datafile, error = self._api.datafiles.create(data=m, headers={"Content-Type": m.content_type})
         if error:
             self._status = [Status.ERROR, Substatus.ERROR, None]
-            raise UploadRemoteFileCheckError(str(error))
+            raise UploadRemoteFileError(str(error))
 
         ended = datetime.now()
         duration = (ended - self._started).total_seconds()
@@ -91,7 +91,7 @@ class FileUploader(object):
         response, error = self._api.datafiles.update(self._datafile.get('pk'), json={'tags': tags})
         if error:
             self._status = [Status.ERROR, Substatus.ERROR, None]
-            raise UploadRemoteFileCheckError(str(error))
+            raise UploadRemoteFileError(str(error))
 
     def upload_file(self):
         self._status = [Status.PREPARING, Substatus.CHECKING, None]
