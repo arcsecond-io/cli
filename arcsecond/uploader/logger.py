@@ -5,8 +5,8 @@ from pathlib import Path
 
 
 def get_oort_logger(debug=False) -> Logger:
-    suffix = '-tests' if os.environ.get('OORT_TESTS') == '1' else ''
-    logger = getLogger('arcsecond' + suffix)
+    suffix = '(test)' if os.environ.get('OORT_TESTS') == '1' else ''
+    logger = getLogger(suffix)
     logger.setLevel(DEBUG if debug else INFO)
 
     if len(logger.handlers) == 0:
