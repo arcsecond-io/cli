@@ -73,7 +73,7 @@ def walk(context: Context, folder_string: str):
     if root_path.is_file():  # Just in case we pass a file...
         root_path = root_path.parent
 
-    logger.info(f"{log_prefix} Starting upload walk through {root_path} and its subfolders...")
+    logger.info(f"{log_prefix} Starting to walk through {root_path} and its subfolders...")
 
     file_paths = __walk_first_pass(context, root_path)
     if len(file_paths) > 0:
