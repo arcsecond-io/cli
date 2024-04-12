@@ -98,8 +98,8 @@ def walk(context: Context, folder_string: str):
         return
 
     uploads = __walk_second_pass(context, root_path, file_paths)
-    msg = f"{log_prefix} uploads successes: {len(uploads['succeeded'])}, "
-    msg += f"skipped: {len(uploads['skipped'])}, failures:{len(uploads['failed'])} failed.\n"
+    msg = f"{log_prefix} uploads succeeded: {len(uploads['succeeded'])}, "
+    msg += f"skipped: {len(uploads['skipped'])}, failed:{len(uploads['failed'])} failed.\n"
     logger.info(msg)
 
     if len(uploads['skipped']) > 0:
