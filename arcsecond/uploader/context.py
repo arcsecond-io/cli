@@ -5,7 +5,6 @@ import click
 from arcsecond import ArcsecondAPI, ArcsecondConfig, ArcsecondAPIEndpoint
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY_PORTAL
 from .errors import (
-    ArcsecondError,
     UnknownOrganisationError,
     InvalidAstronomerError,
     InvalidWatchOptionsError,
@@ -79,14 +78,6 @@ class Context(object):
                                          'organisation': self._subdomain})
         if error:
             raise InvalidOrgMembershipError(self._subdomain)
-
-    def fetch_dataset_filenames(self):
-        if not self.dataset_uuid:
-            return []
-        results, error = self._api.datafiles.list({'dataset': self.dataset_uuid})
-        if error:
-            raise ArcsecondError(str(error))
-        return [df.name for df in results]
 
     def update_dataset(self, dataset: dict):
         assert dataset != None

@@ -1,4 +1,5 @@
 import time
+from collections import Counter
 from pathlib import Path
 
 import click
@@ -8,6 +9,11 @@ from .context import Context
 from .logger import get_oort_logger
 from .uploader import FileUploader
 from .utils import is_file_hidden
+
+
+def __get_duplicates(values):
+    dups = Counter(values) - Counter(set(values))
+    return list(dups.keys())
 
 
 def __walk_first_pass(context: Context, root_path: Path):
@@ -44,8 +50,7 @@ def __walk_second_pass(context: Context, root_path: Path, file_paths: list):
     if context.config.api_name != 'dev':
         time.sleep(3)
 
-    failed_uploads = []
-    success_uploads = []
+    uploads = {'succeeded': [], 'skipped': [], 'failed': []}
     total_file_count = len(file_paths)
 
     index = 0
@@ -56,14 +61,16 @@ def __walk_second_pass(context: Context, root_path: Path, file_paths: list):
         uploader = FileUploader(context, root_path, file_path, display_progress=True)
         status, substatus, error = uploader.upload_file()
         if status == Status.OK:
-            success_uploads.append(str(file_path))
+            uploads['succeeded'].append(str(file_path))
+        elif status == Status.SKIPPED:
+            uploads['skipped'].append((str(file_path), substatus, error))
         else:
-            failed_uploads.append((str(file_path), substatus, error))
+            uploads['failed'].append((str(file_path), substatus, error))
 
     msg = f"{log_prefix}\n\nFinished upload walk inside folder {root_path} "
     logger.info(msg)
 
-    return success_uploads, failed_uploads
+    return uploads
 
 
 def walk(context: Context, folder_string: str):
@@ -76,16 +83,31 @@ def walk(context: Context, folder_string: str):
     logger.info(f"{log_prefix} Starting to walk through {root_path} and its subfolders...")
 
     file_paths = __walk_first_pass(context, root_path)
-    if len(file_paths) > 0:
-        success_uploads, failed_uploads = __walk_second_pass(context, root_path, file_paths)
-        msg = f"{log_prefix} {len(success_uploads)} successful uploads and {len(failed_uploads)} failed.\n\n"
+    if len(file_paths) == 0:
+        msg = f"{log_prefix} No file paths to upload. Exiting.\n\n"
         logger.info(msg)
+        return
 
-        if len(failed_uploads) > 0:
-            logger.error(f'{log_prefix} Here are the failed uploads:')
-            for path, substatus, error in failed_uploads:
-                logger.error(f'{path} ({substatus}) {error}')
-    else:
-        msg = f"{log_prefix} No new file paths to upload.\n\n"
-        logger.info(msg)
+    all_local_filenames = [path.name for path in file_paths]
+    duplicates = __get_duplicates(all_local_filenames)
+    if len(duplicates) > 0:
+        msg = f"{log_prefix} The following files have duplicate names (not allowed in the same dataset): "
+        msg += f"{', '.join(duplicates)}"
+        logger.error(msg)
+        logger.error(f"Exiting.")
+        return
 
+    uploads = __walk_second_pass(context, root_path, file_paths)
+    msg = f"{log_prefix} uploads successes: {len(uploads['succeeded'])}, "
+    msg += f"skipped: {len(uploads['skipped'])}, failures:{len(uploads['failed'])} failed.\n"
+    logger.info(msg)
+
+    if len(uploads['skipped']) > 0:
+        logger.error(f'{log_prefix} Here are the skipped uploads:')
+        for path, substatus, error in uploads['skipped']:
+            logger.warning(f'{path} ({substatus})')
+
+    if len(uploads['failed']) > 0:
+        logger.error(f'{log_prefix} Here are the failed uploads:')
+        for path, substatus, error in uploads['failed']:
+            logger.error(f'{path} ({substatus}) {error}')

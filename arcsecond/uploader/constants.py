@@ -44,6 +44,7 @@ class Status(Enum):
     UPLOADING = 'Uploading'
     FINISHING = 'Finishing'
     OK = 'OK'
+    SKIPPED = 'Skipped'
     ERROR = 'Error'
 
 
