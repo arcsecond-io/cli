@@ -82,9 +82,9 @@ class ArcsecondAPIEndpoint(object):
             if 200 <= response.status_code < 300:
                 return response.json() if response.text else {}, None
             else:
-                return None, response.text
+                return None, ArcsecondError(response.text, response.status_code)
         else:
-            return None, ArcsecondError()
+            return None, ArcsecondError(response.text, response.status_code)
 
     def _check_and_set_auth_key(self, headers, url):
         # No token header for login and register
