@@ -1,9 +1,11 @@
+import hashlib
 import os
 import socket
 import time
 from datetime import datetime
 from pathlib import Path
 
+import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from arcsecond import ArcsecondAPI
@@ -18,6 +20,8 @@ from .errors import (
     UploadRemoteDatasetPreparationError
 )
 from .logger import get_logger
+
+SIZE_10MB = 10485760
 
 
 class FileUploader(object):
@@ -101,14 +105,54 @@ class FileUploader(object):
         return m
 
     def _perform_upload(self):
-        self._logger.info(f'{self.log_prefix} Start uploading...')
-        self._status = [Status.UPLOADING, Substatus.UPLOADING, None]
-
+        self._logger.info(f'{self.log_prefix} Start uploading {self._file_size} bytes...')
         self._started = datetime.now()
-        self._logger.info(f'{self.log_prefix} Starting upload to Arcsecond ({self._file_size} bytes)')
+        self._status = [Status.UPLOADING, Substatus.UPLOADING, None]
+        if self._file_size <= SIZE_10MB:  # 10MB in binary = 10 * pow(2, 20) = 10 * pow(1024, 2)
+            return self._perform_regular_upload()
+        else:
+            return self._perform_chunked_upload()
 
+    def _perform_regular_upload(self):
         data = self.__get_upload_data()
         self._datafile, error = self._api.datafiles.create(data=data, headers={"Content-Type": data.content_type})
+        self._finish_upload(error)
+
+    def _perform_chunked_upload(self):
+        self._hash_md5 = hashlib.md5()
+
+        # def chunks(file_name, size=SIZE_10MB):
+        #     with open(file_name, 'rb') as f:
+        #         while content := f.read(size):
+        #             self._hash_md5.update(content)
+        #             yield content
+
+        upload_url = self._api.datafilechunks.get_list_url()
+        print(upload_url)
+        headers = self._api.datafiles._check_and_set_auth_key({}, upload_url)
+        offset = 0
+        with open(self._file_path, 'rb') as f:
+            while offset < self._file_size:
+                chunk = f.read(SIZE_10MB)
+                self._hash_md5.update(chunk)
+                print('OFFSET', offset)
+                headers["Content-Range"] = f"bytes {offset}-{offset + SIZE_10MB - 1}/{self._file_size}"
+                response = requests.put(
+                    upload_url,
+                    headers=headers,
+                    data={"filename": self._file_path.name, 'dataset': self._context.dataset_uuid},
+                    files={'file': chunk},
+                )
+                print(response)
+                upload_url = response.json().get('url')
+                offset = response.json().get('offset')
+
+        print('MD5', self._hash_md5.hexdigest())
+        response = requests.post(upload_url, data={"md5": self._hash_md5.hexdigest()})
+        self._datafile, error = self._api.datafiles._process_response / (response)
+        self._finish_upload(error)
+
+    def _finish_upload(self, error):
         if not error:
             seconds = (datetime.now() - self._started).total_seconds()
             self._logger.info(f'{self.log_prefix} Upload duration is {seconds} seconds.')
