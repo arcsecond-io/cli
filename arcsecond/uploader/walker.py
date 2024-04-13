@@ -1,4 +1,3 @@
-import time
 from collections import Counter
 from pathlib import Path
 
@@ -20,9 +19,6 @@ def __walk_first_pass(context: Context, root_path: Path):
     logger = get_oort_logger()
     log_prefix = '[Walker - 1/2]'
     logger.info(f"{log_prefix} Making a first pass to collect info on files...")
-    if context.config.api_name != 'dev':
-        # For user experience, and let him/her read the above message.
-        time.sleep(3)
 
     total_file_count = sum(1 for f in root_path.glob('**/*') if f.is_file() and not is_file_hidden(f))
 
@@ -47,8 +43,6 @@ def __walk_second_pass(context: Context, root_path: Path, file_paths: list):
     logger = get_oort_logger()
     log_prefix = '[Walker - 2/2]'
     logger.info(f"{log_prefix} Starting second pass to upload files...")
-    if context.config.api_name != 'dev':
-        time.sleep(3)
 
     uploads = {'succeeded': [], 'skipped': [], 'failed': []}
     total_file_count = len(file_paths)
@@ -56,7 +50,7 @@ def __walk_second_pass(context: Context, root_path: Path, file_paths: list):
     index = 0
     for file_path in file_paths:
         index += 1
-        click.echo(f"\n{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)\n")
+        click.echo(f"{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)")
 
         uploader = FileUploader(context, root_path, file_path, display_progress=True)
         status, substatus, error = uploader.upload_file()
