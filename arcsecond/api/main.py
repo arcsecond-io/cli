@@ -32,6 +32,7 @@ class ArcsecondAPI(object):
         self.datapackages = ArcsecondAPIEndpoint(self.config, 'datapackages', self.subdomain)
         self.datasets = ArcsecondAPIEndpoint(self.config, 'datasets', self.subdomain)
         self.datafiles = ArcsecondAPIEndpoint(self.config, 'datafiles', self.subdomain)
+        self.datafilechunks = ArcsecondAPIEndpoint(self.config, 'datafilechunks', self.subdomain)
 
     def login(self, username, access_key=None, upload_key=None):
         assert access_key or upload_key

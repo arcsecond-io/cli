@@ -34,38 +34,38 @@ class ArcsecondAPIEndpoint(object):
         query = '?' + urlencode(filters) if len(filters) > 0 else ''
         return url + query
 
-    def _list_url(self, **filters):
+    def get_list_url(self, **filters):
         return self._build_url(self.__path, **filters)
 
-    def _detail_url(self, uuid_or_id):
+    def get_detail_url(self, uuid_or_id):
         return self._build_url(self.__path, str(uuid_or_id))
 
     def list(self, **filters):
-        return self._perform_request(self._list_url(**filters), 'get')
+        return self._perform_request(self.get_list_url(**filters), 'get')
 
     def read(self, id_name_uuid, headers=None):
-        return self._perform_request(self._detail_url(id_name_uuid),
+        return self._perform_request(self.get_detail_url(id_name_uuid),
                                      'get',
                                      json=None,
                                      data=None,
                                      headers=headers)
 
     def create(self, json=None, data=None, headers=None):
-        return self._perform_request(self._list_url(),
+        return self._perform_request(self.get_list_url(),
                                      'post',
                                      json=json,
                                      data=data,
                                      headers=headers)
 
     def update(self, id_name_uuid, json=None, data=None, headers=None):
-        return self._perform_request(self._detail_url(id_name_uuid),
+        return self._perform_request(self.get_detail_url(id_name_uuid),
                                      'patch',
                                      json=json,
                                      data=data,
                                      headers=headers)
 
     def delete(self, id_name_uuid):
-        return self._perform_request(self._detail_url(id_name_uuid), 'delete')
+        return self._perform_request(self.get_detail_url(id_name_uuid), 'delete')
 
     def _perform_request(self, url, method_name, json=None, data=None, headers=None):
         if self.__config.verbose:
@@ -73,8 +73,10 @@ class ArcsecondAPIEndpoint(object):
 
         headers = self._check_and_set_auth_key(headers or {}, url)
         method = getattr(requests, method_name.lower())
-        response = method(url, json=json, data=data, headers=headers, timeout=60)
+        response = method(url, json=json, data=data, headers=headers, timeout=180)
+        return self._process_response(response)
 
+    def _process_response(self, response):
         if isinstance(response, dict):
             # Responses of standard JSON payload requests are dict
             return response, None
