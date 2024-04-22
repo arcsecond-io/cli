@@ -133,7 +133,7 @@ def datasets(state, portal=None):
               required=True, nargs=1, type=click.STRING,
               help="The UUID or name of the dataset to put data in. If new, it will be created.")
 @click.option('-p', '--portal',
-              required=False, nargs=1,
+              required=False, nargs=1, type=click.STRING,
               help="The portal subdomain, if uploading for an Observatory Portal.")
 @basic_options
 @pass_state
