@@ -105,7 +105,7 @@ The `upload` command will summarise its settings and ask for confirmation
 before proceeding. It is a small step to ensure that no mistake have been
 made before starting upload.
 
-Use: `oort datasets` to get a list of datasets already available.
+Use: `arcsecond datasets` to get a list of datasets already available.
 
 ## Arcsecond.io ?
 

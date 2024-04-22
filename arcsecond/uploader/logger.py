@@ -4,7 +4,7 @@ from logging import DEBUG, FileHandler, Formatter, INFO, Logger, StreamHandler, 
 from pathlib import Path
 
 
-def get_oort_logger(debug=False) -> Logger:
+def get_logger(debug=False) -> Logger:
     suffix = ' (test)' if os.environ.get('OORT_TESTS') == '1' else ''
     logger = getLogger('arcsecond' + suffix)
     logger.setLevel(DEBUG if debug else INFO)

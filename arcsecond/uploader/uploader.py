@@ -10,7 +10,7 @@ from arcsecond import __version__
 from .constants import Status, Substatus
 from .context import Context
 from .errors import UploadRemoteDatasetCheckError, UploadRemoteFileError, UploadRemoteFileTagsError
-from .logger import get_oort_logger
+from .logger import get_logger
 
 
 class FileUploader(object):
@@ -20,7 +20,7 @@ class FileUploader(object):
         self._file_path = file_path
         self._display_progress = display_progress
 
-        self._logger = get_oort_logger(debug=True)
+        self._logger = get_logger(debug=True)
         self._started = None
         self._progress = 0
         self._is_test_context = bool(os.environ.get('OORT_TESTS') == '1')
@@ -101,14 +101,14 @@ class FileUploader(object):
         self._logger.info(f'{self.log_prefix} Updating file tags....')
         self._status = [Status.FINISHING, Substatus.TAGGING, None]
 
-        tag_root = f'oort|root|{str(self._root_path)}'
-        tag_origin = f'oort|origin|{socket.gethostname()}'
-        tag_uploader = f'oort|uploader|{self._context.config.username}'
-        tag_oort = f'oort|version|{__version__}'
+        tag_root = f'arcsecond|root|{str(self._root_path)}'
+        tag_origin = f'arcsecond|origin|{socket.gethostname()}'
+        tag_uploader = f'arcsecond|uploader|{self._context.config.username}'
+        tag_version = f'arcsecond|version|{__version__}'
 
         # Tags being a list, they cannot be part of the MultipartEncoder.fields because they will
         # be interpreted as a file field tuple/list.
-        tags = [tag_root, tag_origin, tag_uploader, tag_oort]
+        tags = [tag_root, tag_origin, tag_uploader, tag_version]
         response, error = self._api.datafiles.update(self._datafile.get('pk'), json={'tags': tags})
         if error:
             self._status = [Status.ERROR, Substatus.ERROR, None]
