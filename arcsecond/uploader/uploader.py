@@ -41,18 +41,29 @@ class FileUploader(object):
         self._status = [Status.PREPARING, Substatus.CHECKING, None]
 
         if self._context.dataset_uuid:
-            response, error = self._api.datasets.read(self._context.dataset_uuid)
+            # Valid Dataset UUID. Dataset exists remotely. -> Read or update with Telescope.
+            if self._context._should_update_dataset_with_telescope:
+                payload = {'telescope': self._context.telescope_uuid}
+                response, error = self._api.datasets.update(self._context.dataset_uuid, payload)
+            else:
+                response, error = self._api.datasets.read(self._context.dataset_uuid)
+
             if error:
                 raise UploadRemoteDatasetCheckError(str(error))
+
             self._context.update_dataset(response)
             self._logger.info(f'{self.log_prefix} Dataset preparation done.')
 
         elif self._context.dataset_name:
-            # Dataset UUID is empty, and CLI validators have already checked this dataset doesn't exist.
-            # Simply create dataset.
-            response, error = self._api.datasets.create({'name': self._context.dataset_name})
+            # No valid Dataset UUID, only a name. Dataset does not exist remotely. Create it (possibly with Telescope).
+            payload = {'name': self._context.dataset_name}
+            if self._context._should_update_dataset_with_telescope:
+                payload.update(telescope=self._context.telescope_uuid)
+
+            response, error = self._api.datasets.create(payload)
             if error:
                 raise UploadRemoteDatasetCheckError(str(error))
+
             self._context.update_dataset(response)
             self._logger.info(f'{self.log_prefix} Dataset preparation done.')
 
@@ -105,10 +116,14 @@ class FileUploader(object):
         tag_origin = f'arcsecond|origin|{socket.gethostname()}'
         tag_uploader = f'arcsecond|uploader|{self._context.config.username}'
         tag_version = f'arcsecond|version|{__version__}'
+        tags = [tag_root, tag_origin, tag_uploader, tag_version]
+
+        if self._context.telescope_uuid:
+            tag_telescope = f'arcsecond|telescope|{self._context.telescope_uuid}'
+            tags.append(tag_telescope)
 
         # Tags being a list, they cannot be part of the MultipartEncoder.fields because they will
         # be interpreted as a file field tuple/list.
-        tags = [tag_root, tag_origin, tag_uploader, tag_version]
         response, error = self._api.datafiles.update(self._datafile.get('pk'), json={'tags': tags})
         if error:
             self._status = [Status.ERROR, Substatus.ERROR, None]
