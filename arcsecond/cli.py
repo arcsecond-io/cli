@@ -5,7 +5,7 @@ import click
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondConfig
 from .options import State, basic_options
-from .uploader.context import Context
+from .uploader.context import UploadContext
 from .uploader.errors import ArcsecondError
 from .uploader.utils import display_command_summary
 from .uploader.walker import walk
@@ -159,7 +159,7 @@ def upload(state, folder, dataset=None, telescope=None, portal=None):
     (hidden and empty files will be skipped).
     """
     config = ArcsecondConfig(state)
-    context = Context(config, dataset_uuid_or_name=dataset, telescope_uuid=telescope, org_subdomain=portal)
+    context = UploadContext(config, dataset_uuid_or_name=dataset, telescope_uuid=telescope, org_subdomain=portal)
     context.validate()
 
     display_command_summary(context, [folder, ])

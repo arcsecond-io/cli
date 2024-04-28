@@ -4,7 +4,7 @@ from pathlib import Path
 import click
 
 from .constants import Status
-from .context import Context
+from .context import UploadContext
 from .logger import get_logger
 from .uploader import FileUploader
 from .utils import is_file_hidden
@@ -15,7 +15,7 @@ def __get_duplicates(values):
     return list(dups.keys())
 
 
-def __walk_first_pass(context: Context, root_path: Path):
+def __walk_first_pass(context: UploadContext, root_path: Path):
     logger = get_logger()
     log_prefix = '[Walker - 1/2]'
     logger.info(f"{log_prefix} Making a first pass to collect info on files...")
@@ -39,7 +39,7 @@ def __walk_first_pass(context: Context, root_path: Path):
     return file_paths
 
 
-def __walk_second_pass(context: Context, root_path: Path, file_paths: list):
+def __walk_second_pass(context: UploadContext, root_path: Path, file_paths: list):
     logger = get_logger()
     log_prefix = '[Walker - 2/2]'
     logger.info(f"{log_prefix} Starting second pass to upload files...")
@@ -67,7 +67,7 @@ def __walk_second_pass(context: Context, root_path: Path, file_paths: list):
     return uploads
 
 
-def walk(context: Context, folder_string: str):
+def walk(context: UploadContext, folder_string: str):
     logger = get_logger()
     log_prefix = '[Walker]'
     root_path = Path(folder_string).resolve()

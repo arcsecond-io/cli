@@ -17,7 +17,7 @@ from .errors import (
 )
 
 
-class Context(object):
+class UploadContext(object):
     def __init__(self, config: ArcsecondConfig,
                  dataset_uuid_or_name: str,
                  telescope_uuid: Optional[str] = None,

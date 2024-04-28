@@ -8,13 +8,13 @@ from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 from arcsecond import ArcsecondAPI
 from arcsecond import __version__
 from .constants import Status, Substatus
-from .context import Context
+from .context import UploadContext
 from .errors import UploadRemoteDatasetCheckError, UploadRemoteFileError, UploadRemoteFileTagsError
 from .logger import get_logger
 
 
 class FileUploader(object):
-    def __init__(self, context: Context, root_path: Path, file_path: Path, display_progress: bool = False):
+    def __init__(self, context: UploadContext, root_path: Path, file_path: Path, display_progress: bool = False):
         self._context = context
         self._root_path = root_path
         self._file_path = file_path

@@ -3,7 +3,7 @@ import pathlib
 
 import click
 
-from .context import Context
+from .context import UploadContext
 
 
 def is_file_hidden(path):
@@ -38,7 +38,7 @@ def __get_formatted_bytes_size(size):
     return f"{(size / math.pow(k, i)):.2f} {units[i]}"
 
 
-def display_command_summary(context: Context, folders: list):
+def display_command_summary(context: UploadContext, folders: list):
     click.echo("\n --- Upload summary --- ")
     click.echo(f" • Arcsecond username: @{context.config.username} (Upload key: {context.config.upload_key[:4]}••••)")
     if context.organisation_subdomain:
