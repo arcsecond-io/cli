@@ -53,10 +53,19 @@ def display_command_summary(context: Context, folders: list):
     elif not context.dataset_uuid and context.dataset_name:
         msg = f" • Data will be inserted into a new dataset named '{context.dataset_name}'."
     else:
+        # This is not supposed to happen anymore.
         msg = " • Using folder names for dataset names (one folder = one dataset)."
     click.echo(msg)
 
-    click.echo(f" • Using API server: {context.config.api_name}")
+    if context.telescope:
+        msg = f" • Dataset will be attached to the telescope named '{context.telescope.get('name')}' ({context.telescope.get('uuid')})."
+        click.echo(msg)
+    else:
+        if not context.dataset_uuid and context.dataset_name:
+            msg = " • Dataset will not be attached to any telescope. It can be changed later in the web."
+            click.echo(msg)
+
+    click.echo(f" • Using API server: '{context.config.api_name}' ({context.config.api_server})")
     click.echo(f" • Folder{'s' if len(folders) > 1 else ''}:")
     for folder in folders:
         folder_path = pathlib.Path(folder).expanduser().resolve()
