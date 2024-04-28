@@ -8,7 +8,7 @@ import re
 from setuptools import find_packages, setup
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
-with open('arcsecond/__init__.py', 'rb') as f:
+with open('arcsecond/__version__.py', 'rb') as f:
     __version__ = str(ast.literal_eval(_version_re.search(f.read().decode('utf-8')).group(1)))
 
 _directory = os.path.abspath(os.path.dirname(__file__))

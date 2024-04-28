@@ -67,7 +67,7 @@ def __walk_second_pass(context: UploadContext, root_path: Path, file_paths: list
     return uploads
 
 
-def walk(context: UploadContext, folder_string: str):
+def walk_folder_and_upload(context: UploadContext, folder_string: str):
     logger = get_logger()
     log_prefix = '[Walker]'
     root_path = Path(folder_string).resolve()

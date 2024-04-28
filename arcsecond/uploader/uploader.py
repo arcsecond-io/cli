@@ -6,7 +6,7 @@ from pathlib import Path
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from arcsecond import ArcsecondAPI
-from arcsecond import __version__
+from arcsecond.__version__ import __version__
 from .constants import Status, Substatus
 from .context import UploadContext
 from .errors import UploadRemoteDatasetCheckError, UploadRemoteFileError, UploadRemoteFileTagsError

@@ -8,7 +8,7 @@ from .options import State, basic_options
 from .uploader.context import UploadContext
 from .uploader.errors import ArcsecondError
 from .uploader.utils import display_command_summary
-from .uploader.walker import walk
+from .uploader.walker import walk_folder_and_upload
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
@@ -22,14 +22,14 @@ VERSION_HELP_STRING = "Show the CLI version and exit."
 @click.pass_context
 def main(ctx, version=False, v=False, h=False):
     if version or v:
-        click.echo(__version__)
+        click.echo(__version__.__version__)
     elif ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
 
 
 @main.command(help=VERSION_HELP_STRING)
 def version():
-    click.echo(__version__)
+    click.echo(__version__.__version__)
 
 
 @main.command(help='Login to your Arcsecond account.')
@@ -165,4 +165,4 @@ def upload(state, folder, dataset=None, telescope=None, portal=None):
     display_command_summary(context, [folder, ])
     ok = input('\n   ----> OK? (Press Enter) ')
     if ok.strip() == '':
-        walk(context, folder)
+        walk_folder_and_upload(context, folder)
