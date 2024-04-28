@@ -43,7 +43,7 @@ def display_command_summary(context: Context, folders: list):
     click.echo(f" • Arcsecond username: @{context.config.username} (Upload key: {context.config.upload_key[:4]}••••)")
     if context.organisation_subdomain:
         role = context.config.read_key(context.organisation_subdomain)
-        msg = f" • Uploading to Observatory Portal '{context.organisation_subdomain}' (as {role})."
+        msg = f" • Uploading to Observatory Portal '{context.organisation_subdomain}'."
     else:
         msg = " • Uploading to your *personal* account."
     click.echo(msg)
