@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 
 import click
 
@@ -10,22 +11,33 @@ from .errors import (
     InvalidWatchOptionsError,
     InvalidOrganisationDatasetError,
     InvalidDatasetError,
-    InvalidOrgMembershipError
+    InvalidOrgMembershipError,
+    InvalidOrganisationTelescopeError,
+    InvalidTelescopeError, InvalidTelescopeInDatasetError
 )
 
 
 class Context(object):
-    def __init__(self, config: ArcsecondConfig, dataset_uuid_or_name: str, subdomain: str):
+    def __init__(self, config: ArcsecondConfig,
+                 dataset_uuid_or_name: str,
+                 telescope_uuid: Optional[str] = None,
+                 org_subdomain: Optional[str] = None):
         self._config = config
-        self._dataset_uuid_or_name = dataset_uuid_or_name
-        self._subdomain = subdomain
+        self._dataset_uuid_or_name = str(dataset_uuid_or_name)
+        self._telescope_uuid = str(telescope_uuid)  # CLI returns a UUID instance if valid.
+        self._should_update_dataset_with_telescope = False
+        self._subdomain = org_subdomain
         self._dataset = None
+        self._telescope = None
         self._organisation = None
-        self._api = ArcsecondAPI(config, subdomain)
+        self._api = ArcsecondAPI(config, org_subdomain)
 
     def validate(self):
         self._validate_local_astronomer_credentials()
         self._validate_dataset_uuid()
+        if self._telescope_uuid:
+            self._validate_telescope_uuid()
+            self._validate_telescope_in_dataset()
         if self._subdomain:
             self._validate_remote_organisation()
             self._validate_astronomer_role_in_remote_organisation()
@@ -65,6 +77,34 @@ class Context(object):
             else:
                 raise InvalidDatasetError(str(self._dataset_uuid_or_name), str(error))
 
+    def _validate_telescope_uuid(self):
+        click.echo(f" • Looking for a telescope with UUID {self._telescope_uuid}...")
+        self._telescope, error = self._api.telescopes.read(self._telescope_uuid)
+
+        if error is not None:
+            if self._subdomain:
+                raise InvalidOrganisationTelescopeError(self._telescope_uuid,
+                                                        self._subdomain,
+                                                        str(error))
+            else:
+                raise InvalidTelescopeError(str(self._telescope_uuid), str(error))
+
+    def _validate_telescope_in_dataset(self):
+        if not self.dataset_uuid:
+            self._should_update_dataset_with_telescope = True
+            # We don't have an existing dataset. No need to validate anything.
+            return
+
+        dataset_telescope_uuid = self._dataset.get('telescope', None)
+        if dataset_telescope_uuid != self._telescope_uuid:
+            raise InvalidTelescopeInDatasetError(str(self._telescope_uuid), dataset_telescope_uuid, self.dataset_uuid)
+
+        elif dataset_telescope_uuid is None and self._telescope_uuid:
+            msg = f" • Dataset '{self.dataset_uuid}' has no telescope. "
+            msg += f"Telescope {self._telescope_uuid} will be attached to it."
+            click.echo(msg)
+            self._should_update_dataset_with_telescope = True
+
     def _validate_remote_organisation(self):
         click.echo(f" • Fetching details of organisation {self._subdomain}...")
         self._organisation, error = self._api.organisations.read(self._subdomain)
@@ -94,6 +134,14 @@ class Context(object):
     @property
     def dataset_name(self):
         return self._dataset.get('name', '')
+
+    @property
+    def telescope_uuid(self):
+        return self._telescope_uuid
+
+    @property
+    def telescope(self):
+        return self._telescope if self._telescope else None
 
     @property
     def organisation_subdomain(self):

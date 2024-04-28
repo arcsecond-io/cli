@@ -132,12 +132,15 @@ def datasets(state, portal=None):
 @click.option('-d', '--dataset',
               required=True, nargs=1, type=click.STRING,
               help="The UUID or name of the dataset to put data in. If new, it will be created.")
+@click.option('-t', '--telescope',
+              required=False, nargs=1, type=click.UUID,
+              help="The telescope UUID, to be attached to the dataset.")
 @click.option('-p', '--portal',
               required=False, nargs=1, type=click.STRING,
               help="The portal subdomain, if uploading for an Observatory Portal.")
 @basic_options
 @pass_state
-def upload(state, folder, dataset=None, portal=None):
+def upload(state, folder, dataset=None, telescope=None, portal=None):
     """
     Upload the content of a folder.
 
@@ -156,7 +159,7 @@ def upload(state, folder, dataset=None, portal=None):
     (hidden and empty files will be skipped).
     """
     config = ArcsecondConfig(state)
-    context = Context(config, dataset_uuid_or_name=dataset, subdomain=portal)
+    context = Context(config, dataset_uuid_or_name=dataset, telescope_uuid=telescope, org_subdomain=portal)
     context.validate()
 
     display_command_summary(context, [folder, ])
