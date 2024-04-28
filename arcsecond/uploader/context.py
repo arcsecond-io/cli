@@ -24,7 +24,7 @@ class Context(object):
                  org_subdomain: Optional[str] = None):
         self._config = config
         self._dataset_uuid_or_name = str(dataset_uuid_or_name)
-        self._telescope_uuid = str(telescope_uuid)  # CLI returns a UUID instance if valid.
+        self._telescope_uuid = str(telescope_uuid) if telescope_uuid else None  # CLI returns a UUID instance if valid.
         self._should_update_dataset_with_telescope = False
         self._subdomain = org_subdomain
         self._dataset = None
