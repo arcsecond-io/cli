@@ -77,6 +77,8 @@ the cli.
 
 ## Data Upload
 
+### Using the CLI
+
 The Arcsecond CLI makes it easy to upload files to your account or your observatory
 portals.
 
@@ -98,6 +100,9 @@ There are five `OPTIONS`:
   argument can either be a name or a UUID. If it is a name, Oort will try to
   find it. If none is found, Oort will create it. If it is a UUID, Oort will
   look for it. If none is found, Oort will raise an error.
+* `-t <telescope uuid>` (or `--telescope <telescope uuid>`) to tell the CLI to 
+  attach the dataset to a specific telescope (recommended). If none provided,
+  a telescope can be chosen in the 'Datasets' webpage.
 * `-p <subdomain>` (or `--portal <subdomain>`) to tell the CLI to send
   files to a portal.
 
@@ -106,6 +111,32 @@ before proceeding. It is a small step to ensure that no mistake have been
 made before starting upload.
 
 Use: `arcsecond datasets` to get a list of datasets already available.
+
+### Using Python code
+
+```python
+from pathlib import Path
+from arcsecond import ArcsecondConfig, UploadContext, FileUploader, walk_folder_and_upload
+
+config = ArcsecondConfig() # it will read your config file.
+context = UploadContext(config, 
+                        dataset_uuid_or_name="<dataset uuid or name>", 
+                        telescope_uuid="<telescope uuid or None>", 
+                        org_subdomain="<portal subdomain or None>")
+context.validate() # important step to perform before uploading.
+
+# For uploading, there are two possibilities:
+
+# 1. provide a folder, and let Arcsecond walk accross its content:
+walk_folder_and_upload(context, "/folder/path/")
+
+# 2. do it manually (no check for hidden files, and no estimation of sizes etc). 
+root_path = Path('/folder/path')
+for file_path in root_path.glob('**/*'):
+    uploader = FileUploader(context, root_path, file_path, display_progress=True)
+    status, substatus, error = uploader.upload_file()
+```
+
 
 ## Arcsecond.io ?
 
