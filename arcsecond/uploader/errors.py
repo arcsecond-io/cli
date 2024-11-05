@@ -99,3 +99,11 @@ class InvalidOrganisationTelescopeError(ArcsecondError):
         if error_string:
             msg += f'\n{error_string}'
         super().__init__(msg)
+
+
+class MissingTelescopeError(ArcsecondError):
+    def __init__(self, dataset_uuid_or_name, error_string=''):
+        msg = f'Missing Telescope for dataset with UUID/name {dataset_uuid_or_name}.'
+        if error_string:
+            msg += f'\n{error_string}'
+        super().__init__(msg)
