@@ -133,7 +133,7 @@ class UploadContext(object):
 
     @property
     def telescope_uuid(self):
-        return self._telescope_uuid
+        return self._telescope.get('uuid', '')
 
     @property
     def telescope(self):
