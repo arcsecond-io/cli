@@ -51,7 +51,6 @@ class FileUploader(object):
             if error:
                 raise UploadRemoteDatasetCheckError(str(error))
 
-            self._context.update_dataset(response)
             self._logger.info(f'{self.log_prefix} Dataset preparation done.')
 
         elif self._context.dataset_name:
@@ -64,7 +63,6 @@ class FileUploader(object):
             if error:
                 raise UploadRemoteDatasetCheckError(str(error))
 
-            self._context.update_dataset(response)
             self._logger.info(f'{self.log_prefix} Dataset preparation done.')
 
         else:
