@@ -13,18 +13,21 @@ from .errors import (
     InvalidDatasetError,
     InvalidOrgMembershipError,
     InvalidOrganisationTelescopeError,
-    InvalidTelescopeError, InvalidTelescopeInDatasetError
+    InvalidTelescopeError,
+    InvalidTelescopeInDatasetError,
+    MissingTelescopeError
 )
 
 
 class UploadContext(object):
     def __init__(self, config: ArcsecondConfig,
-                 dataset_uuid_or_name: str,
-                 telescope_uuid: Optional[str] = None,
+                 input_dataset_uuid_or_name: str,
+                 input_telescope_uuid: Optional[str] = None,
                  org_subdomain: Optional[str] = None):
         self._config = config
-        self._dataset_uuid_or_name = str(dataset_uuid_or_name)
-        self._telescope_uuid = str(telescope_uuid) if telescope_uuid else None  # CLI returns a UUID instance if valid.
+        self._input_dataset_uuid_or_name = str(input_dataset_uuid_or_name)
+        # CLI returns a UUID instance if valid UUID, hence the str() call.
+        self._input_telescope_uuid = str(input_telescope_uuid) if input_telescope_uuid else None
         self._should_update_dataset_with_telescope = False
         self._subdomain = org_subdomain
         self._dataset = None
@@ -34,10 +37,11 @@ class UploadContext(object):
 
     def validate(self):
         self._validate_local_astronomer_credentials()
-        self._validate_dataset_uuid()
-        if self._telescope_uuid:
-            self._validate_telescope_uuid()
-            self._validate_telescope_in_dataset()
+        self._validate_input_dataset_uuid_or_name()
+        if self._input_telescope_uuid:
+            self._validate_input_telescope_uuid()
+        # Forcing Telescope validation and association with Dataset.
+        self._validate_telescope_in_dataset()
         if self._subdomain:
             self._validate_remote_organisation()
             self._validate_astronomer_role_in_remote_organisation()
@@ -51,59 +55,82 @@ class UploadContext(object):
         if not upload_key:
             raise InvalidWatchOptionsError('Missing upload_key.')
 
-    def _validate_dataset_uuid(self):
+    def _validate_input_dataset_uuid_or_name(self):
         try:
-            uuid.UUID(self._dataset_uuid_or_name)
+            uuid.UUID(self._input_dataset_uuid_or_name)
         except ValueError:
-            click.echo(f" • Looking for a dataset with name {self._dataset_uuid_or_name}...")
-            datasets_list, error = self._api.datasets.list(**{'name': self._dataset_uuid_or_name})
+            click.echo(f" • Looking for a dataset with name {self._input_dataset_uuid_or_name}...")
+            datasets_list, error = self._api.datasets.list(**{'name': self._input_dataset_uuid_or_name})
             if len(datasets_list) == 0:
-                click.echo(f" • No dataset with name {self._dataset_uuid_or_name} found. It will be created.")
-                self._dataset = {'name': self._dataset_uuid_or_name}
+                click.echo(f" • No dataset with name {self._input_dataset_uuid_or_name} found. It will be created.")
+                self._dataset = {'name': self._input_dataset_uuid_or_name}
             elif len(datasets_list) == 1:
-                click.echo(f" • One dataset with name {self._dataset_uuid_or_name}. Data will be appended to it.")
+                click.echo(f" • One dataset with name {self._input_dataset_uuid_or_name}. Data will be appended to it.")
                 self._dataset = datasets_list[0]
             else:
-                error = f"Multiple datasets with name {self._dataset_uuid_or_name} found. Be more specific."
+                error = f"Multiple datasets with name {self._input_dataset_uuid_or_name} found. Be more specific."
         else:
-            click.echo(f" • Fetching details of dataset {self._dataset_uuid_or_name}...")
-            self._dataset, error = self._api.datasets.read(str(self._dataset_uuid_or_name))
+            click.echo(f" • Fetching details of dataset {self._input_dataset_uuid_or_name}...")
+            self._dataset, error = self._api.datasets.read(str(self._input_dataset_uuid_or_name))
 
         if error is not None:
             if self._subdomain:
-                raise InvalidOrganisationDatasetError(str(self._dataset_uuid_or_name),
+                raise InvalidOrganisationDatasetError(str(self._input_dataset_uuid_or_name),
                                                       self._subdomain,
                                                       str(error))
             else:
-                raise InvalidDatasetError(str(self._dataset_uuid_or_name), str(error))
+                raise InvalidDatasetError(str(self._input_dataset_uuid_or_name), str(error))
 
-    def _validate_telescope_uuid(self):
-        click.echo(f" • Looking for a telescope with UUID {self._telescope_uuid}...")
-        self._telescope, error = self._api.telescopes.read(self._telescope_uuid)
+    def _validate_input_telescope_uuid(self):
+        click.echo(f" • Looking for a telescope with UUID {self._input_telescope_uuid}...")
+        self._telescope, error = self._api.telescopes.read(self._input_telescope_uuid)
 
         if error is not None:
             if self._subdomain:
-                raise InvalidOrganisationTelescopeError(self._telescope_uuid,
+                raise InvalidOrganisationTelescopeError(self._input_telescope_uuid,
                                                         self._subdomain,
                                                         str(error))
             else:
-                raise InvalidTelescopeError(str(self._telescope_uuid), str(error))
+                raise InvalidTelescopeError(str(self._input_telescope_uuid), str(error))
+
+    def _raise_missing_telescope_in_new_dataset(self):
+        """The self.dataset_uuid is None, hence we have only a name, hence it is a new Dataset.
+        Hence, we need a telescope, but none is provided."""
+        error = "For new Datasets, we need a valid Telescope."
+        raise MissingTelescopeError(self._input_dataset_uuid_or_name, error)
+
+    def _raise_missing_telescope_in_existing_dataset(self):
+        """The self.dataset_uuid is not None, hence we need a Telescope to be attached to it already."""
+        error = "For existing Datasets, we need a valid Telescope. "
+        error += "Open Dataset page to select a telescope, or provide one here with -t parameter."
+        raise MissingTelescopeError(self._input_dataset_uuid_or_name, error)
 
     def _validate_telescope_in_dataset(self):
-        if not self.dataset_uuid:
-            self._should_update_dataset_with_telescope = True
-            # We don't have an existing dataset. No need to validate anything.
-            return
+        if not self.dataset_uuid and not self.telescope_uuid:
+            self._raise_missing_telescope_in_new_dataset()
 
-        dataset_telescope_uuid = self._dataset.get('telescope', None)
-        if dataset_telescope_uuid != self._telescope_uuid:
-            raise InvalidTelescopeInDatasetError(str(self._telescope_uuid), dataset_telescope_uuid, self.dataset_uuid)
-
-        elif dataset_telescope_uuid is None and self._telescope_uuid:
-            msg = f" • Dataset '{self.dataset_uuid}' has no telescope. "
-            msg += f"Telescope {self._telescope_uuid} will be attached to it."
-            click.echo(msg)
+        elif not self.dataset_uuid and self.telescope_uuid:
             self._should_update_dataset_with_telescope = True
+            # We don't have an existing dataset, but we have a valid Telescope. No need to go further.
+
+        elif self.dataset_uuid and not self.telescope_uuid:
+            dataset_telescope_uuid = self._dataset.get('telescope', None)
+            # If we have already a telescope, this is OK and no need to go further.
+            if dataset_telescope_uuid is None:
+                self._raise_missing_telescope_in_existing_dataset()
+
+        elif self.dataset_uuid and self.telescope_uuid:
+            dataset_telescope_uuid = self._dataset.get('telescope', None)
+            if dataset_telescope_uuid is None:
+                msg = f" • Dataset '{self.dataset_uuid}' has no attached Telescope yet. "
+                msg += f"Telescope with UUID {self.telescope_uuid} will be attached to it upon upload."
+                click.echo(msg)
+                self._should_update_dataset_with_telescope = True
+
+            elif dataset_telescope_uuid is not None and dataset_telescope_uuid != self.telescope_uuid:
+                raise InvalidTelescopeInDatasetError(str(self._input_telescope_uuid),
+                                                     dataset_telescope_uuid,
+                                                     self.dataset_uuid)
 
     def _validate_remote_organisation(self):
         click.echo(f" • Fetching details of organisation {self._subdomain}...")
