@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "arcsecond"
+version = "3.3.0"
+authors = [
+    { name = "Cedric Foellmi", email = "acedric@arcsecond.io" },
+]
+description = "CLI for arcsecond.io"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: MIT License',
+    "Operating System :: OS Independent",
+    'Programming Language :: Python :: 3',
+    'Topic :: Software Development :: Libraries :: Python Modules'
+]
+dependencies = [
+    'click',
+    'requests',
+    'requests_toolbelt',
+    'configparser',
+    'progress'
+]
+
+[project.scripts]
+arcsecond = "arcsecond.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/arcsecond-io/cli"
+Issues = "https://github.com/arcsecond-io/cli/issues"
+Documentation = "https://docs.arcsecond.io"
