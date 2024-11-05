@@ -119,10 +119,6 @@ class UploadContext(object):
         if error:
             raise InvalidOrgMembershipError(self._subdomain)
 
-    def update_dataset(self, dataset: dict):
-        assert dataset != None
-        self._dataset = dataset
-
     @property
     def config(self):
         return self._config
