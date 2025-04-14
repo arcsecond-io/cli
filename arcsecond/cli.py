@@ -159,7 +159,10 @@ def upload(state, folder, dataset=None, telescope=None, portal=None):
     (hidden and empty files will be skipped).
     """
     config = ArcsecondConfig(state)
-    context = UploadContext(config, dataset_uuid_or_name=dataset, telescope_uuid=telescope, org_subdomain=portal)
+    context = UploadContext(config,
+                            input_dataset_uuid_or_name=dataset,
+                            input_telescope_uuid=telescope,
+                            org_subdomain=portal)
     context.validate()
 
     display_command_summary(context, [folder, ])
