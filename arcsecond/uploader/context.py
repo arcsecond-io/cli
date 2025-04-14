@@ -152,15 +152,15 @@ class UploadContext(object):
 
     @property
     def dataset_uuid(self):
-        return self._dataset.get('uuid', '')
+        return self._dataset.get('uuid', '') if self._dataset else ''
 
     @property
     def dataset_name(self):
-        return self._dataset.get('name', '')
+        return self._dataset.get('name', '') if self._dataset else ''
 
     @property
     def telescope_uuid(self):
-        return self._telescope.get('uuid', '')
+        return self._telescope.get('uuid', '') if self._telescope else ''
 
     @property
     def telescope(self):
