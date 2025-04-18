@@ -51,9 +51,9 @@ def run_arcsecond(state, do_try=True, skip_setup=False):
         docker.pull_all_arcsecond_docker_images()
     docker.setup_network()
     docker.run_db_container(restart=False)
-    docker.run_mb_container(restart=False)
+    docker.run_broker_container(restart=False)
     docker.run_api_container(config, restart=False, do_try=do_try)
-    docker.run_www_container(restart=True)
+    docker.run_web_container(restart=True)
 
 
 def stop_arcsecond():

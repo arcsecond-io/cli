@@ -73,8 +73,8 @@ def run_db_container(restart=True):
     subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:5432"])
 
 
-def run_mb_container(restart=True):
-    image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['mb']
+def run_broker_container(restart=True):
+    image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['broker']
     if is_docker_container_running(container_name) and not restart:
         return
 
@@ -153,8 +153,8 @@ def run_api_container(config, restart=True, do_try=True):
     subprocess.check_call(["wait-for-it", "-q", "-t", "30", "-s", "localhost:8080"])
 
 
-def run_www_container(restart=True):
-    image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['www']
+def run_web_container(restart=True):
+    image_name, container_name, service_name = DOCKER_IMAGE_CONTAINERS_NAMES['web']
     if is_docker_container_running(container_name) and not restart:
         return
 

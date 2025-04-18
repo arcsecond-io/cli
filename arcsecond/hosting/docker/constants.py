@@ -1,12 +1,12 @@
 # Note that container names are resolved as-is in a bridge custom network.
 
 DOCKER_IMAGE_CONTAINERS_NAMES = {
-    'www': ('arcsecond-www:latest', 'arcsecond-www', 'Webapp'),
-    'api': ('arcsecond-api:latest', 'arcsecond-api', 'APIs'),
-    'tq': ('arcsecond-api:latest', 'arcsecond-tq', 'Task Queue'),
-    'bt': ('arcsecond-api:latest', 'arcsecond-bt', 'Beat'),
-    'db': ('postgres:14', 'arcsecond-db', 'Database'),  # database
-    'mb': ('rabbitmq:3.9', 'arcsecond-mb', 'Message Broker'),  # message broker
+    'web': ('arcsecond-www:latest', 'arcsecond-www', 'Webapp frontend'),
+    'api': ('arcsecond-api:latest', 'arcsecond-api', 'APIs backend'),
+    'worker': ('arcsecond-api:latest', 'arcsecond-worker', 'Background task worker'),
+    'beat': ('arcsecond-api:latest', 'arcsecond-beat', 'Background task beat'),
+    'db': ('postgres:16', 'arcsecond-db', 'Database'),
+    'broker': ('rabbitmq:3.9', 'arcsecond-broker', 'Message Broker')
 }
 
 DOCKER_NETWORK_NAME = 'arcsecond-net'
