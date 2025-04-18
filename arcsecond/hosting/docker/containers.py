@@ -8,8 +8,12 @@ from docker.errors import APIError, NotFound
 
 from .constants import DOCKER_IMAGE_CONTAINERS_NAMES, DOCKER_NETWORK_NAME
 from .images import has_docker_image
-from .utils import __perform_container_bookkeeping, is_docker_container_running, setup_docker_host_on_macos, \
+from .utils import (
+    __perform_container_bookkeeping,
+    is_docker_container_running,
+    setup_docker_host_on_macos,
     __get_docker_container_status
+)
 
 
 def setup_network():
