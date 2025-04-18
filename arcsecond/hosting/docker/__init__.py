@@ -1,4 +1,3 @@
-from .checks import is_docker_available, setup_docker_host_on_macos
 from .containers import (
     run_db_container,
     run_www_container,
@@ -14,3 +13,4 @@ from .images import (
     update_docker_image,
     pull_all_arcsecond_docker_images
 )
+from .utils import is_docker_available, setup_docker_host_on_macos
