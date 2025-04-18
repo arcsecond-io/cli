@@ -155,8 +155,13 @@ def upload(state, folder, dataset=None, telescope=None, portal=None):
     You can use `arcsecond datasets [OPTIONS]` to get a list of your existing datasets
     (with their UUID).
 
-    Arcsecond will then start walking through the folder tree and uploads regular files
-    (hidden and empty files will be skipped).
+    Every Dataset must be attached to a Telescope. This is necessary to retrieve geographical
+    coordinates, hence compute local dates, and simply organise datasets. You can use the command
+    `arcsecond telescopes [-p subdomain]` to obtain the list of telescopes attached to your
+    account or portal.
+
+    Upon validation, Arcsecond will then start walking through the folder tree and uploads regular
+     files (hidden and empty files will always be skipped).
     """
     config = ArcsecondConfig(state)
     context = UploadContext(config,
