@@ -14,11 +14,21 @@ from .logger import get_logger
 
 
 class FileUploader(object):
-    def __init__(self, context: UploadContext, root_path: Path, file_path: Path, display_progress: bool = False):
+    def __init__(self,
+                 context: UploadContext,
+                 root_path: Path,
+                 file_path: Path,
+                 is_raw: bool,
+                 custom_tags=None,
+                 display_progress: bool = False):
         self._context = context
         self._root_path = root_path
         self._file_path = file_path
+        self._is_raw = is_raw
+        self._custom_tags = custom_tags
         self._display_progress = display_progress
+
+        self.__validate_custom_tags()
 
         self._logger = get_logger(debug=True)
         self._started = None
@@ -27,6 +37,16 @@ class FileUploader(object):
         self._status = [Status.NEW, Substatus.PENDING, None]
 
         self._api = ArcsecondAPI(self._context.config, self._context.organisation_subdomain)
+
+    def __validate_custom_tags(self):
+        if self._custom_tags is None:
+            return
+        if not isinstance(self._custom_tags, list):
+            raise TypeError('custom_tags must be a list')
+        if not all([isinstance(t, str) for t in self._custom_tags]):
+            raise TypeError('all custom_tags must be strings')
+        if any([t.startswith('arcsecond') for t in self._custom_tags]):
+            raise TypeError('none of custom_tags must start with "arcsecond"')
 
     @property
     def log_prefix(self) -> str:
@@ -120,9 +140,19 @@ class FileUploader(object):
             tag_telescope = f'arcsecond|telescope|{self._context.telescope_uuid}'
             tags.append(tag_telescope)
 
+        if self._custom_tags is not None:
+            tags.extend(self._custom_tags)
+
+        payload = {
+            'tags': tags,
+            'is_raw': self._is_raw,
+            'fsname': socket.gethostname(),
+            'fspath': str(self._root_path)
+        }
+
         # Tags being a list, they cannot be part of the MultipartEncoder.fields because they will
         # be interpreted as a file field tuple/list.
-        response, error = self._api.datafiles.update(self._datafile.get('pk'), json={'tags': tags})
+        response, error = self._api.datafiles.update(self._datafile.get('pk'), json=payload)
         if error:
             self._status = [Status.ERROR, Substatus.ERROR, None]
             raise UploadRemoteFileTagsError(str(error))
