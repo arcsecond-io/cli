@@ -14,11 +14,13 @@ from .constants import BANNER, PREFIX
 from .setup import setup_hosting_variables
 
 __version__ = '0.1.0 (Alpha) - Please, send feedback to cedric@arcsecond.io'
+warning = '---> ARCSECOND SELF-HOSTING IS IN ALPHA STATE. USE AT YOUR OWN RISK. <---'
 
 
 def run_arcsecond(state, do_try=True, skip_setup=False):
     click.echo(BANNER)
     click.echo('\n' + PREFIX + __version__)
+    click.echo('\n' + PREFIX + warning)
     click.echo("\n" + PREFIX + "Checking prerequisites...")
     if not docker.is_docker_available():
         return
@@ -55,10 +57,13 @@ def run_arcsecond(state, do_try=True, skip_setup=False):
 
 
 def stop_arcsecond():
+    click.echo(PREFIX + 'Stopping Arcsecond...')
     if sys.platform == 'darwin':
         docker.setup_docker_host_on_macos()
     docker.stop_all_containers()
+    click.echo(PREFIX + 'Arcsecond stopped.')
 
 
 def print_arcsecond_status():
+    click.echo(PREFIX + 'Checking Arcsecond status...')
     click.echo(docker.get_all_containers_status_string())
