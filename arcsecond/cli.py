@@ -133,7 +133,7 @@ def datasets(state, portal=None):
               required=True, nargs=1, type=click.STRING,
               help="The UUID or name of the dataset to put data in. If new, it will be created.")
 @click.option('-t', '--telescope',
-              required=False, nargs=1, type=click.UUID,
+              required=True, nargs=1, type=click.UUID,
               help="The telescope UUID, to be attached to the dataset.")
 @click.option('-p', '--portal',
               required=False, nargs=1, type=click.STRING,
