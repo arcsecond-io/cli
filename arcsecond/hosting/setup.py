@@ -5,7 +5,7 @@ import secrets
 
 import click
 
-from arcsecond import Config
+from arcsecond import ArcsecondConfig
 
 email_regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
 
@@ -51,7 +51,7 @@ def _validate_email_admin(value):
     return value
 
 
-def setup_hosting_variables(config: Config, do_try=True):
+def setup_hosting_variables(config: ArcsecondConfig, do_try=True):
     click.echo("\nWelcome to the setup of self-hosting Arcsecond.")
     section = 'hosting:try' if do_try else 'hosting'
 

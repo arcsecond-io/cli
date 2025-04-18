@@ -2,7 +2,7 @@ import sys
 
 import click
 
-from arcsecond import Config, ArcsecondAPI
+from arcsecond import ArcsecondConfig, ArcsecondAPI
 from arcsecond.hosting import docker
 from arcsecond.hosting import keygen
 from .checks import (
@@ -36,7 +36,7 @@ def run_arcsecond(state, do_try=True, skip_setup=False):
         click.echo(str(error))
         return
 
-    config = Config(state)
+    config = ArcsecondConfig(state)
     klient = keygen.KeygenClient(config, do_try, profile)
     status, msg = klient.setup_and_validate_license()
     click.echo(PREFIX + msg)

@@ -3,7 +3,7 @@ import click
 
 class State(object):
     """Object to collect the state of CLI commands.
-    Its properties will be transferred to the Config object which will manage
+    Its properties will be transferred to the ArcsecondConfig object which will manage
     the persistence of the various parameters.
     """
 

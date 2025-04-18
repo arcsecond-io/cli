@@ -1,12 +1,12 @@
 import click
 import requests
 
-from arcsecond import ArcsecondAPI, Config
+from arcsecond import ArcsecondAPI, ArcsecondConfig
 from .constants import PREFIX_SUB, PREFIX, PREFIX_SUB_FAIL
 
 
 def is_arcsecond_api_reachable(state) -> bool:
-    api_server = Config(state).api_server
+    api_server = ArcsecondConfig(state).api_server
     click.echo(PREFIX + 'Check if Arcsecond is reachable...')
     try:
         response = requests.get(api_server)
