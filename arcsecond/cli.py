@@ -112,7 +112,7 @@ def datasets(state, portal=None):
     else:
         click.echo(" • Fetching datasets...")
 
-    dataset_list, error = ArcsecondAPI(ArcsecondConfig(state)).datasets.list()
+    dataset_list, error = ArcsecondAPI(ArcsecondConfig(state), org_subdomain).datasets.list()
     if error is not None:
         raise ArcsecondError(str(error))
 
