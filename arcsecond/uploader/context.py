@@ -25,8 +25,8 @@ class UploadContext(object):
                  input_telescope_uuid: Optional[str] = None,
                  org_subdomain: Optional[str] = None):
         self._config = config
-        self._input_dataset_uuid_or_name = str(input_dataset_uuid_or_name)
         # CLI returns a UUID instance if valid UUID, hence the str() call.
+        self._input_dataset_uuid_or_name = str(input_dataset_uuid_or_name)
         self._input_telescope_uuid = str(input_telescope_uuid) if input_telescope_uuid else None
         self._should_update_dataset_with_telescope = False
         self._subdomain = org_subdomain
