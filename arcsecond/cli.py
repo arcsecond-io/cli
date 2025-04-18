@@ -147,9 +147,9 @@ def upload(state, folder, dataset=None, telescope=None, portal=None):
     You will be prompted for confirmation before the whole walking process actually
     start.
 
-    Every DataFile must belong to a Dataset. If you provide a Dataset UUID, Oort will
-    append files to the dataset. If you provide a Dataset *name*, Oort will try to find
-    an existing Dataset with that name. If none could be found, Oort will create one,
+    Every DataFile must belong to a Dataset. If you provide a Dataset UUID, Arcsecond will
+    append files to the dataset. If you provide a Dataset *name*, Arcsecond will try to find
+    an existing Dataset with that name. If none could be found, Arcsecond will create one,
     and put files in it.
 
     You can use `arcsecond datasets [OPTIONS]` to get a list of your existing datasets
