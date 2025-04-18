@@ -127,6 +127,34 @@ def datasets(state, portal=None):
         click.echo(s)
 
 
+@main.command(help="Display the list of (portal) telescopes.")
+@click.option('-p', '--portal',
+              required=False, nargs=1,
+              help="The portal subdomain, if uploading for an Observatory Portal.")
+@basic_options
+@pass_state
+def telescopes(state, portal=None):
+    org_subdomain = portal or ''
+    if org_subdomain:
+        click.echo(f" • Fetching telescopes for portal '{org_subdomain}'...")
+    else:
+        click.echo(" • Fetching telescopes...")
+
+    telescope_list, error = ArcsecondAPI(ArcsecondConfig(state), org_subdomain).telescopes.list()
+    if error is not None:
+        raise ArcsecondError(str(error))
+
+    if isinstance(telescope_list, dict) and 'results' in telescope_list.keys():
+        telescope_list = telescope_list['results']
+
+    click.echo(f" • Found {len(telescope_list)} telescope{'s' if len(telescope_list) > 1 else ''}.")
+    for telescope_dict in telescope_list:
+        s = f" 💾 \"{telescope_dict['name']}\" "
+        s += f"(uuid: {telescope_dict['uuid']}) "
+        s += f"[ObservingSite UUID: {telescope_dict['observing_site']}]"
+        click.echo(s)
+
+
 @main.command(help='Upload the content of a folder.')
 @click.argument('folder', required=True, nargs=1)
 @click.option('-d', '--dataset',
