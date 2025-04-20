@@ -64,8 +64,6 @@ services:
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-worker.sh
     depends_on:
-      backend:
-        condition: service_healthy
       db:
         condition: service_started
       broker:
@@ -81,8 +79,8 @@ services:
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-beat.sh
     depends_on:
-      backend:
-        condition: service_healthy
+      db:
+        condition: service_started
       broker:
         condition: service_started
     env_file:
