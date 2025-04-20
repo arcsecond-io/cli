@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16
+    container_name: arcsecond-db
+    environment:
+      POSTGRES_DB: ${APP_DB_NAME}
+      POSTGRES_USER: ${APP_DB_USER}
+      POSTGRES_PASSWORD: ${APP_DB_PASS}
+    ports:
+      - "5432:5432"
+    volumes:
+      - arcsecond_postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - arcsecond-net
+
+  backend:
+    image: arcsecond-api:latest
+    container_name: arcsecond-api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    networks:
+      - arcsecond-net
+
+volumes:
+  arcsecond_postgres_data:
+
+networks:
+  arcsecond-net:
