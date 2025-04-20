@@ -1,14 +1,18 @@
 services:
   nginx-proxy:
     image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    restart: unless-stopped
     ports:
       - '80:80'
+      - '443:443'
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
 
   db:
     image: postgres:16
     container_name: arcsecond-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${APP_DB_NAME}
       POSTGRES_USER: ${APP_DB_USER}
@@ -25,6 +29,7 @@ services:
   broker:
     image: redis:7.4
     container_name: arcsecond-broker
+    restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
@@ -33,14 +38,55 @@ services:
   backend:
     image: arcsecond-api:latest
     container_name: arcsecond-api
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-server.sh
     ports:
       - "8000:8000"
     depends_on:
       - db
+      - broker
     environment:
       - VIRTUAL_HOST=arcsecond-api.local
     env_file:
       - .env
+    networks:
+      - arcsecond-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/healthcheck/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  worker:
+    image: arcsecond-api:latest
+    container_name: arcsecond-worker
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-worker.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+      db:
+        condition: service_started
+      broker:
+        condition: service_started
+    env_file:
+      - .env
+    networks:
+      - arcsecond-net
+
+  beat:
+    image: arcsecond-api:latest
+    container_name: arcsecond-beat
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-beat.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+      broker:
+        condition: service_started
+    env_file:
+      - ./.env
     networks:
       - arcsecond-net
 
