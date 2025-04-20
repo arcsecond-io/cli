@@ -6,7 +6,7 @@ DOCKER_IMAGE_CONTAINERS_NAMES = {
     'worker': ('arcsecond-api:latest', 'arcsecond-worker', 'Background task worker'),
     'beat': ('arcsecond-api:latest', 'arcsecond-beat', 'Background task beat'),
     'db': ('postgres:16', 'arcsecond-db', 'Database'),
-    'broker': ('rabbitmq:3.9', 'arcsecond-broker', 'Message Broker')
+    'broker': ('redis:7.4', 'arcsecond-broker', 'Message Broker')
 }
 
 DOCKER_NETWORK_NAME = 'arcsecond-net'
