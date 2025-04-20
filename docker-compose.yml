@@ -22,6 +22,14 @@ services:
     networks:
       - arcsecond-net
 
+  broker:
+    image: redis:7.4
+    container_name: arcsecond-broker
+    ports:
+      - "6379:6379"
+    networks:
+      - arcsecond-net
+
   backend:
     image: arcsecond-api:latest
     container_name: arcsecond-api
