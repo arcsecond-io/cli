@@ -23,8 +23,6 @@ services:
       - arcsecond_postgres_data:/var/lib/postgresql/data
     env_file:
       - .env
-    networks:
-      - arcsecond-net
 
   broker:
     image: redis:7.4
@@ -32,8 +30,6 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
-    networks:
-      - arcsecond-net
 
   backend:
     image: arcsecond-api:latest
@@ -49,8 +45,6 @@ services:
       - VIRTUAL_HOST=arcsecond-api.local
     env_file:
       - .env
-    networks:
-      - arcsecond-net
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/healthcheck/" ]
       interval: 30s
@@ -70,8 +64,6 @@ services:
         condition: service_started
     env_file:
       - .env
-    networks:
-      - arcsecond-net
 
   beat:
     image: arcsecond-api:latest
@@ -85,11 +77,6 @@ services:
         condition: service_started
     env_file:
       - ./.env
-    networks:
-      - arcsecond-net
 
 volumes:
   arcsecond_postgres_data:
-
-networks:
-  arcsecond-net:
