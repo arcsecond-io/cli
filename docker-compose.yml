@@ -78,5 +78,14 @@ services:
     env_file:
       - ./.env
 
+  web:
+    image: arcsecond-web:latest
+    container_name: arcsecond-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    expose:
+      - "80:80"
+
 volumes:
   arcsecond_postgres_data:
