@@ -100,7 +100,7 @@ There are five `OPTIONS`:
   argument can either be a name or a UUID. If it is a name, Oort will try to
   find it. If none is found, Oort will create it. If it is a UUID, Oort will
   look for it. If none is found, Oort will raise an error.
-* `-t <telescope uuid>` (or `--telescope <telescope uuid>`) to tell the CLI to 
+* `-t <telescope uuid>` (or `--telescope <telescope uuid>`) to tell the CLI to
   attach the dataset to a specific telescope (recommended). If none provided,
   a telescope can be chosen in the 'Datasets' webpage.
 * `-p <subdomain>` (or `--portal <subdomain>`) to tell the CLI to send
@@ -133,10 +133,9 @@ walk_folder_and_upload(context, "/folder/path/")
 # 2. do it manually (no check for hidden files, and no estimation of sizes etc). 
 root_path = Path('/folder/path')
 for file_path in root_path.glob('**/*'):
-    uploader = FileUploader(context, root_path, file_path, display_progress=True)
+    uploader = FileUploader(context, root_path, file_path, is_raw=True|False, custom_tags=None, display_progress=True)
     status, substatus, error = uploader.upload_file()
 ```
-
 
 ## Arcsecond.io ?
 
