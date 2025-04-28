@@ -23,13 +23,17 @@ class UploadContext(object):
     def __init__(self, config: ArcsecondConfig,
                  input_dataset_uuid_or_name: str,
                  input_telescope_uuid: Optional[str] = None,
-                 org_subdomain: Optional[str] = None):
+                 org_subdomain: Optional[str] = None,
+                 is_raw: bool = True,
+                 custom_tags=None):
         self._config = config
         # CLI returns a UUID instance if valid UUID, hence the str() call.
         self._input_dataset_uuid_or_name = str(input_dataset_uuid_or_name)
         self._input_telescope_uuid = str(input_telescope_uuid) if input_telescope_uuid else None
         self._should_update_dataset_with_telescope = False
         self._subdomain = org_subdomain
+        self._is_raw = is_raw
+        self._custom_tags = custom_tags
         self._dataset = None
         self._telescope = None
         self._organisation = None
@@ -169,3 +173,11 @@ class UploadContext(object):
     @property
     def organisation_subdomain(self):
         return self._organisation.get('subdomain', '') if self._organisation else ''
+
+    @property
+    def is_raw(self):
+        return self._is_raw
+
+    @property
+    def custom_tags(self):
+        return self._custom_tags

@@ -164,12 +164,18 @@ def telescopes(state, portal=None):
 @click.option('-t', '--telescope',
               required=True, nargs=1, type=click.UUID,
               help="The telescope UUID, to be attached to the dataset.")
+@click.option('--raw',
+              required=True, nargs=1, type=click.BOOL,
+              help="A flag indicating the data is raw or not. Default True.")
+@click.option('--tags',
+              required=False, nargs=1,
+              help="An optional list of custom tags to be attached to every filed.")
 @click.option('-p', '--portal',
               required=False, nargs=1, type=click.STRING,
               help="The portal subdomain, if uploading for an Observatory Portal.")
 @basic_options
 @pass_state
-def upload(state, folder, dataset=None, telescope=None, portal=None):
+def upload(state, folder, raw=True, tags=None, dataset=None, telescope=None, portal=None):
     """
     Upload the content of a folder.
 
@@ -196,7 +202,9 @@ def upload(state, folder, dataset=None, telescope=None, portal=None):
     context = UploadContext(config,
                             input_dataset_uuid_or_name=dataset,
                             input_telescope_uuid=telescope,
-                            org_subdomain=portal)
+                            org_subdomain=portal,
+                            is_raw=raw,
+                            custom_tags=tags)
     context.validate()
 
     display_command_summary(context, [folder, ])

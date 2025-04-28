@@ -1,7 +1,7 @@
-import math
 import pathlib
 
 import click
+import math
 
 from .context import UploadContext
 
@@ -55,6 +55,15 @@ def display_command_summary(context: UploadContext, folders: list):
     else:
         # This is not supposed to happen anymore.
         msg = " • Using folder names for dataset names (one folder = one dataset)."
+    click.echo(msg)
+
+    msg = f" • Data is considered as {'raw' if context.is_raw else 'NOT raw'}."
+    click.echo(msg)
+
+    if context.custom_tags:
+        msg = f" • Data files will be tagged with the following custom tags: {context.custom_tags}."
+    else:
+        msg = " • Data files will receive no custom tags."
     click.echo(msg)
 
     if context.telescope:
