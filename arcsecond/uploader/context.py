@@ -24,7 +24,7 @@ class UploadContext(object):
                  input_dataset_uuid_or_name: str,
                  input_telescope_uuid: Optional[str] = None,
                  org_subdomain: Optional[str] = None,
-                 is_raw: bool = True,
+                 is_raw_data: bool = True,
                  custom_tags=None):
         self._config = config
         # CLI returns a UUID instance if valid UUID, hence the str() call.
