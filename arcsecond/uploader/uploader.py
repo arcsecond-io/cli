@@ -9,7 +9,8 @@ from arcsecond import ArcsecondAPI
 from arcsecond.__version__ import __version__
 from .constants import Status, Substatus
 from .context import UploadContext
-from .errors import UploadRemoteDatasetCheckError, UploadRemoteFileError, UploadRemoteFileTagsError
+from .errors import UploadRemoteDatasetCheckError, UploadRemoteFileError, UploadRemoteFileTagsError, \
+    UploadRemoteFileInvalidatedContextError
 from .logger import get_logger
 
 
@@ -144,6 +145,8 @@ class FileUploader(object):
 
     def upload_file(self):
         self._logger.info(f'{self.log_prefix} Opening upload sequence.')
+        if self._context.is_validated is False:
+            raise UploadRemoteFileInvalidatedContextError()
         self._prepare_dataset()
         self._perform_upload()
         if self._status[0] == Status.SKIPPED:

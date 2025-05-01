@@ -38,9 +38,14 @@ class UploadContext(object):
         self._telescope = None
         self._organisation = None
         self._api = ArcsecondAPI(config, org_subdomain)
+        self.__is_validated = False
+
+    @property
+    def is_validated(self):
+        return self.__is_validated
 
     def validate(self):
-        self._validate_custom_tags()
+        self._validate_custom_tags(self._custom_tags)
         self._validate_local_astronomer_credentials()
         self._validate_input_dataset_uuid_or_name()
         if self._input_telescope_uuid:
@@ -50,14 +55,16 @@ class UploadContext(object):
         if self._subdomain:
             self._validate_remote_organisation()
             self._validate_astronomer_role_in_remote_organisation()
-    def _validate_custom_tags(self):
-        if self._custom_tags is None:
+        self.__is_validated = True
+
+    def _validate_custom_tags(self, tags=None):
+        if tags is None:
             return
-        if not isinstance(self._custom_tags, list):
+        if not isinstance(tags, list):
             raise TypeError('custom_tags must be a list')
-        if not all([isinstance(t, str) for t in self._custom_tags]):
+        if not all([isinstance(t, str) for t in tags]):
             raise TypeError('all custom_tags must be strings')
-        if any([t.startswith('arcsecond') for t in self._custom_tags]):
+        if any([t.startswith('arcsecond') for t in tags]):
             raise TypeError('none of custom_tags must start with "arcsecond"')
 
     def _validate_local_astronomer_credentials(self):
