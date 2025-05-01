@@ -47,9 +47,9 @@ class FileUploader(object):
             # Valid Dataset UUID. Dataset exists remotely. -> Read or update with Telescope.
             if self._context._should_update_dataset_with_telescope:
                 payload = {'telescope': self._context.telescope_uuid}
-                response, error = self._api.datasets.update(self._context.dataset_uuid, payload)
+                data, error = self._api.datasets.update(self._context.dataset_uuid, payload)
             else:
-                response, error = self._api.datasets.read(self._context.dataset_uuid)
+                data, error = self._api.datasets.read(self._context.dataset_uuid)
 
             if error:
                 raise UploadRemoteDatasetCheckError(str(error))
@@ -62,7 +62,7 @@ class FileUploader(object):
             if self._context._should_update_dataset_with_telescope:
                 payload.update(telescope=self._context.telescope_uuid)
 
-            response, error = self._api.datasets.create(payload)
+            data, error = self._api.datasets.create(payload)
             if error:
                 raise UploadRemoteDatasetCheckError(str(error))
 
@@ -135,7 +135,7 @@ class FileUploader(object):
 
         # Tags being a list, they cannot be part of the MultipartEncoder.fields because they will
         # be interpreted as a file field tuple/list.
-        response, error = self._api.datafiles.update(self._datafile.get('pk'), json=payload)
+        data, error = self._api.datafiles.update(self._datafile.get('pk'), json=payload)
         if error:
             self._status = [Status.ERROR, Substatus.ERROR, None]
             raise UploadRemoteFileTagsError(str(error))
