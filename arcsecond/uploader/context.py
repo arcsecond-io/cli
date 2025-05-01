@@ -179,6 +179,9 @@ class UploadContext(object):
     def dataset_name(self):
         return self._dataset.get('name', '') if self._dataset else ''
 
+    def update_dataset(self, dataset):
+        self._dataset = dataset
+
     @property
     def telescope_uuid(self):
         return self._telescope.get('uuid', '') if self._telescope else ''
