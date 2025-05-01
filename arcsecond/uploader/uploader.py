@@ -1,5 +1,6 @@
 import os
 import socket
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -9,8 +10,13 @@ from arcsecond import ArcsecondAPI
 from arcsecond.__version__ import __version__
 from .constants import Status, Substatus
 from .context import UploadContext
-from .errors import UploadRemoteDatasetCheckError, UploadRemoteFileError, UploadRemoteFileTagsError, \
-    UploadRemoteFileInvalidatedContextError
+from .errors import (
+    UploadRemoteDatasetCheckError,
+    UploadRemoteFileError,
+    UploadRemoteFileMetadataError,
+    UploadRemoteFileInvalidatedContextError,
+    UploadRemoteDatasetPreparationError
+)
 from .logger import get_logger
 
 
@@ -53,7 +59,8 @@ class FileUploader(object):
                 data, error = self._api.datasets.read(self._context.dataset_uuid)
 
             if error:
-                raise UploadRemoteDatasetCheckError(str(error))
+                self._logger.info(f'{self.log_prefix} Dataset preparation failed..')
+                raise UploadRemoteDatasetPreparationError(str(error))
 
             self._logger.info(f'{self.log_prefix} Dataset preparation done.')
 
@@ -65,7 +72,8 @@ class FileUploader(object):
 
             data, error = self._api.datasets.create(payload)
             if error:
-                raise UploadRemoteDatasetCheckError(str(error))
+                self._logger.info(f'{self.log_prefix} Dataset preparation failed..')
+                raise UploadRemoteDatasetPreparationError(str(error))
             else:
                 self._context.update_dataset(data)
 
@@ -110,6 +118,7 @@ class FileUploader(object):
             self._status = [Status.SKIPPED, Substatus.ALREADY_SYNCED, None]
         else:
             self._status = [Status.ERROR, Substatus.ERROR, None]
+            self._logger.info(f'{self.log_prefix} Upload of file {self._file_path} failed.')
             raise UploadRemoteFileError(f"{str(error.status)} - {str(error)}")
 
     def _update_file_metadata(self, is_raw=None, custom_tags=None):
@@ -147,7 +156,8 @@ class FileUploader(object):
         data, error = self._api.datafiles.update(self._datafile.get('pk'), json=payload)
         if error:
             self._status = [Status.ERROR, Substatus.ERROR, None]
-            raise UploadRemoteFileTagsError(str(error))
+            self._logger.info(f'{self.log_prefix} Update of metadata failed.')
+            raise UploadRemoteFileMetadataError(str(error))
         else:
             self._status = [Status.OK, Substatus.DONE, None]
 
@@ -155,12 +165,33 @@ class FileUploader(object):
         self._logger.info(f'{self.log_prefix} Opening upload sequence.')
         if self._context.is_validated is False:
             raise UploadRemoteFileInvalidatedContextError()
-        self._prepare_dataset()
-        self._perform_upload()
+
+        try:
+            self._prepare_dataset()
+        except UploadRemoteDatasetPreparationError:
+            # Just try again. Note, only `UploadRemoteDatasetPreparationError` is caught,
+            # and not `UploadRemoteDatasetCheckError`.
+            time.sleep(1)
+            self._prepare_dataset()
+
+        try:
+            self._perform_upload()
+        except UploadRemoteFileError:
+            # Just try again
+            time.sleep(1)
+            self._perform_upload()
+
         if self._status[0] == Status.SKIPPED:
             self._logger.info(f'{self.log_prefix} Upload skipped.')
         else:
             self._logger.info(f'{self.log_prefix} Upload done.')
-            self._update_file_metadata(is_raw=is_raw, custom_tags=custom_tags)
+
+            try:
+                self._update_file_metadata(is_raw=is_raw, custom_tags=custom_tags)
+            except UploadRemoteFileMetadataError:
+                # Just try again
+                time.sleep(1)
+                self._update_file_metadata(is_raw=is_raw, custom_tags=custom_tags)
+
         self._logger.info(f'{self.log_prefix} Closing upload sequence.')
         return self._status
