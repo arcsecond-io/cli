@@ -112,7 +112,7 @@ class FileUploader(object):
             self._status = [Status.ERROR, Substatus.ERROR, None]
             raise UploadRemoteFileError(f"{str(error.status)} - {str(error)}")
 
-    def _update_tags(self):
+    def _update_file_metadata(self, is_raw=None, custom_tags=None):
         self._logger.info(f'{self.log_prefix} Updating file tags....')
         self._status = [Status.FINISHING, Substatus.TAGGING, None]
 
@@ -126,12 +126,18 @@ class FileUploader(object):
             tag_telescope = f'arcsecond|telescope|{self._context.telescope_uuid}'
             tags.append(tag_telescope)
 
-        if self._custom_tags is not None:
-            tags.extend(self._custom_tags)
+        if custom_tags is not None:
+            # Just in case...
+            self._context._validate_custom_tags(custom_tags)
+            tags.extend(custom_tags)
+        elif self._context.custom_tags is not None:
+            tags.extend(self._context.custom_tags)
+
+        is_raw_flag = is_raw if is_raw is not None else self._context.is_raw_data
 
         payload = {
             'tags': tags,
-            'is_raw': self._is_raw,
+            'is_raw': is_raw_flag,
             'fsname': socket.gethostname(),
             'fspath': str(self._root_path)
         }
@@ -145,7 +151,7 @@ class FileUploader(object):
         else:
             self._status = [Status.OK, Substatus.DONE, None]
 
-    def upload_file(self):
+    def upload_file(self, is_raw=None, custom_tags=None):
         self._logger.info(f'{self.log_prefix} Opening upload sequence.')
         if self._context.is_validated is False:
             raise UploadRemoteFileInvalidatedContextError()
@@ -155,6 +161,6 @@ class FileUploader(object):
             self._logger.info(f'{self.log_prefix} Upload skipped.')
         else:
             self._logger.info(f'{self.log_prefix} Upload done.')
-            self._update_tags()
+            self._update_file_metadata(is_raw=is_raw, custom_tags=custom_tags)
         self._logger.info(f'{self.log_prefix} Closing upload sequence.')
         return self._status
