@@ -182,6 +182,10 @@ def upload(state, folder, raw=True, tags=None, dataset=None, telescope=None, por
     You will be prompted for confirmation before the whole walking process actually
     start.
 
+    Warning: this method allows to upload a folder with a **consistent** raw data flag as well
+    as common custom tags, both applied to every single file. If you want to upload a mixed-content
+    folder, you must write your own script.
+
     Every DataFile must belong to a Dataset. If you provide a Dataset UUID, Arcsecond will
     append files to the dataset. If you provide a Dataset *name*, Arcsecond will try to find
     an existing Dataset with that name. If none could be found, Arcsecond will create one,
