@@ -40,6 +40,7 @@ class UploadContext(object):
         self._api = ArcsecondAPI(config, org_subdomain)
 
     def validate(self):
+        self._validate_custom_tags()
         self._validate_local_astronomer_credentials()
         self._validate_input_dataset_uuid_or_name()
         if self._input_telescope_uuid:
