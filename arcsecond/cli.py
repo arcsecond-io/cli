@@ -4,7 +4,6 @@ import click
 
 from . import __version__
 from .api import ArcsecondAPI, ArcsecondConfig
-from .hosting import run_arcsecond, stop_arcsecond, print_arcsecond_status
 from .options import State, basic_options
 from .uploader.context import UploadContext
 from .uploader.errors import ArcsecondError
@@ -13,7 +12,7 @@ from .uploader.walker import walk_folder_and_upload
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
-VERSION_HELP_STRING = "Show the CLI version and exit."
+VERSION_HELP_STRING = "Show the 'arcsecond' CLI version and exit."
 
 
 @click.group(invoke_without_command=True)
@@ -216,33 +215,3 @@ def upload(state, folder, raw=True, tags=None, dataset=None, telescope=None, por
     ok = input('\n   ----> OK? (Press Enter) ')
     if ok.strip() == '':
         walk_folder_and_upload(context, folder)
-
-
-######################## SELF-HOSTING ##################################################################################
-
-@main.command(name='try', help='Try a full-featured demo of a self-hosted Arcsecond instance.')
-@click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
-@basic_options
-@pass_state
-def do_try(state, skip_setup=False):
-    run_arcsecond(state, do_try=True, skip_setup=skip_setup)
-
-
-# @main.command(name='install', help='Install a true self-hosting Arcsecond instance.')
-# @click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
-# @basic_options
-# @pass_state
-# def do_install(state, skip_setup=False):
-#     run_arcsecond(state, do_try=False, skip_setup=skip_setup)
-
-
-@main.command(name='stop', help='Stop the running self-hosted Arcsecond instance.')
-@pass_state
-def do_stop(state):
-    stop_arcsecond()
-
-
-@main.command(name='status', help='Stop the running self-hosted Arcsecond instance.')
-@pass_state
-def do_get_status(state):
-    print_arcsecond_status()
