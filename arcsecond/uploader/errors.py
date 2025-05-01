@@ -5,6 +5,11 @@ class UploadRemoteFileError(ArcsecondError):
     pass
 
 
+class UploadRemoteFileInvalidatedContextError(ArcsecondError):
+    def __init__(self, msg=''):
+        super().__init__(f'The UploadContext must be validated first. Call `context.validate()`.')
+
+
 class UploadRemoteFileTagsError(ArcsecondError):
     pass
 
