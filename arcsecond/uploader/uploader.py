@@ -66,6 +66,8 @@ class FileUploader(object):
             data, error = self._api.datasets.create(payload)
             if error:
                 raise UploadRemoteDatasetCheckError(str(error))
+            else:
+                self._context.update_dataset(data)
 
             self._logger.info(f'{self.log_prefix} Dataset preparation done.')
 
