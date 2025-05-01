@@ -84,8 +84,8 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-    expose:
-      - "80:80"
+    ports:
+      - "5555:5555"
 
 volumes:
   arcsecond_postgres_data:
