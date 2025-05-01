@@ -32,7 +32,7 @@ class UploadContext(object):
         self._input_telescope_uuid = str(input_telescope_uuid) if input_telescope_uuid else None
         self._should_update_dataset_with_telescope = False
         self._subdomain = org_subdomain
-        self._is_raw = is_raw
+        self._is_raw_data = is_raw_data
         self._custom_tags = custom_tags
         self._dataset = None
         self._telescope = None
@@ -49,6 +49,15 @@ class UploadContext(object):
         if self._subdomain:
             self._validate_remote_organisation()
             self._validate_astronomer_role_in_remote_organisation()
+    def _validate_custom_tags(self):
+        if self._custom_tags is None:
+            return
+        if not isinstance(self._custom_tags, list):
+            raise TypeError('custom_tags must be a list')
+        if not all([isinstance(t, str) for t in self._custom_tags]):
+            raise TypeError('all custom_tags must be strings')
+        if any([t.startswith('arcsecond') for t in self._custom_tags]):
+            raise TypeError('none of custom_tags must start with "arcsecond"')
 
     def _validate_local_astronomer_credentials(self):
         username = self._config.username
@@ -175,8 +184,8 @@ class UploadContext(object):
         return self._organisation.get('subdomain', '') if self._organisation else ''
 
     @property
-    def is_raw(self):
-        return self._is_raw
+    def is_raw_data(self):
+        return self._is_raw_data
 
     @property
     def custom_tags(self):

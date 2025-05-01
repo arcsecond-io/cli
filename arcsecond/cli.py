@@ -203,8 +203,9 @@ def upload(state, folder, raw=True, tags=None, dataset=None, telescope=None, por
                             input_dataset_uuid_or_name=dataset,
                             input_telescope_uuid=telescope,
                             org_subdomain=portal,
-                            is_raw=raw,
+                            is_raw_data=raw,
                             custom_tags=tags)
+
     context.validate()
 
     display_command_summary(context, [folder, ])
