@@ -32,6 +32,11 @@ services:
 
   backend:
     image: arcsecond-api:latest
+    build:
+      context: ../arcsecond-back
+      dockerfile: ../arcsecond-back/.docker/Dockerfile
+      tags:
+        - arcsecond-api
     container_name: arcsecond-api
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-server.sh
