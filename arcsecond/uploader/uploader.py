@@ -122,7 +122,7 @@ class FileUploader(object):
             raise UploadRemoteFileError(f"{str(error.status)} - {str(error)}")
 
     def _update_file_metadata(self, is_raw=None, custom_tags=None):
-        self._logger.info(f'{self.log_prefix} Updating file tags....')
+        self._logger.info(f'{self.log_prefix} Updating file metadata....')
         self._status = [Status.FINISHING, Substatus.TAGGING, None]
 
         tag_root = f'arcsecond|root|{str(self._root_path)}'
