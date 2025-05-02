@@ -83,6 +83,7 @@ services:
         condition: service_started
     ports:
       - "5555:5555"
+      - "5577:5577"
 
 volumes:
   arcsecond_postgres_data:
