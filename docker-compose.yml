@@ -58,9 +58,7 @@ services:
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-worker.sh
     depends_on:
-      db:
-        condition: service_started
-      broker:
+      backend:
         condition: service_started
     env_file:
       - .env
@@ -71,9 +69,7 @@ services:
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-beat.sh
     depends_on:
-      db:
-        condition: service_started
-      broker:
+      backend:
         condition: service_started
     env_file:
       - ./.env
@@ -83,7 +79,8 @@ services:
     container_name: arcsecond-web
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     ports:
       - "5555:5555"
 
