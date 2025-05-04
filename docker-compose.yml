@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-server.sh
     ports:
-      - "8000:8000"
+      - "8800:8800"
     depends_on:
       - db
       - broker
