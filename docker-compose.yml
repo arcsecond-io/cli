@@ -81,6 +81,11 @@ services:
 
   web:
     image: arcsecond-web:latest
+    build:
+      context: ../arcsecond-front
+      dockerfile: ../arcsecond-front/.docker/Dockerfile
+      tags:
+        - arcsecond-web
     container_name: arcsecond-web
     restart: unless-stopped
     depends_on:
