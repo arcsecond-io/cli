@@ -1,13 +1,17 @@
-.PHONY: all clean
+.PHONY: all amd64 arm64 clean
 
-all: \
+all: amd64 arm64
+
+amd64: \
   arcsecond-api-linux-amd64.tar \
-  arcsecond-api-linux-arm64.tar \
   arcsecond-web-linux-amd64.tar \
-  arcsecond-web-linux-arm64.tar \
   arcsecond-redis-linux-amd64.tar \
+  arcsecond-postgres-linux-amd64.tar
+
+arm64: \
+  arcsecond-api-linux-arm64.tar \
+  arcsecond-web-linux-arm64.tar \
   arcsecond-redis-linux-arm64.tar \
-  arcsecond-postgres-linux-amd64.tar \
   arcsecond-postgres-linux-arm64.tar
 
 # arcsecond-api
@@ -79,4 +83,4 @@ arcsecond-postgres-linux-arm64.tar:
 	  .
 
 clean:
-	rm -f *.tar
+	rm -f arcsecond-*.tar
