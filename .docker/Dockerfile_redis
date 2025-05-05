@@ -1,0 +1,2 @@
+ARG BASE_IMAGE=redis:7.4
+FROM ${BASE_IMAGE}

@@ -1,0 +1,2 @@
+ARG BASE_IMAGE=postgres:16
+FROM ${BASE_IMAGE}
