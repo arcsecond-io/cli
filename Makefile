@@ -34,9 +34,11 @@ arcsecond-postgres-linux:
 	docker build --platform linux/$(ARCH) -t $(IMAGE_POSTGRES):16 -f $(DOCKERFILE_POSTGRES) .
 	docker save $(IMAGE_POSTGRES):16 -o $(IMAGE_POSTGRES)_16.tar
 
-.PHONY: all clean
+.PHONY: core aux clean
 
-all: arcsecond-api-linux arcsecond-web-linux arcsecond-redis-linux arcsecond-postgres-linux
+core: arcsecond-api-linux arcsecond-web-linux
+
+aux: arcsecond-redis-linux arcsecond-postgres-linux
 
 clean:
 	rm -f arcsecond-*.tar
