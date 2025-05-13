@@ -12,10 +12,6 @@ services:
     image: postgres:16
     container_name: arcsecond-db
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${APP_DB_NAME}
-      POSTGRES_USER: ${APP_DB_USER}
-      POSTGRES_PASSWORD: ${APP_DB_PASS}
     ports:
       - "5432:5432"
     volumes:
