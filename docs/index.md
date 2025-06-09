@@ -116,7 +116,7 @@ Use: `arcsecond datasets` to get a list of datasets already available.
 
 ```python
 from pathlib import Path
-from arcsecond import ArcsecondConfig, UploadContext, FileUploader, walk_folder_and_upload
+from arcsecond import ArcsecondConfig, UploadContext, DataFileUploader, walk_folder_and_upload
 
 config = ArcsecondConfig() # it will read your config file.
 context = UploadContext(config, 
@@ -133,8 +133,8 @@ walk_folder_and_upload(context, "/folder/path/")
 # 2. do it manually (no check for hidden files, and no estimation of sizes etc). 
 root_path = Path('/folder/path')
 for file_path in root_path.glob('**/*'):
-    uploader = FileUploader(context, root_path, file_path, is_raw=True|False, custom_tags=None, display_progress=True)
-    status, substatus, error = uploader.upload_file()
+    uploader = DataFileUploader(context, root_path, file_path, display_progress=True)
+    status, substatus, error = uploader.upload_file(is_raw=True|False, custom_tags=None|[])
 ```
 
 ## Arcsecond.io ?
