@@ -52,12 +52,7 @@ def __walk_second_pass(context: UploadContext, root_path: Path, file_paths: list
         index += 1
         click.echo(f"{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)")
 
-        uploader = FileUploader(context,
-                                root_path,
-                                file_path,
-                                is_raw=context.is_raw,
-                                custom_tags=context.custom_tags,
-                                display_progress=True)
+        uploader = FileUploader(context, root_path, file_path, display_progress=True)
         status, substatus, error = uploader.upload_file()
         if status == Status.OK:
             uploads['succeeded'].append(str(file_path))
