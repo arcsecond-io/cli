@@ -1,7 +1,7 @@
 from .context import UploadContext
-from .uploader import FileUploader
+from .uploader import DataFileUploader
 from .walker import walk_folder_and_upload
 
 __all__ = ["UploadContext",
-           "FileUploader",
+           "DataFileUploader",
            "walk_folder_and_upload"]

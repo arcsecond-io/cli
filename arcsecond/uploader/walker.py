@@ -6,7 +6,7 @@ import click
 from .constants import Status
 from .context import UploadContext
 from .logger import get_logger
-from .uploader import FileUploader
+from .uploader import DataFileUploader
 from .utils import is_file_hidden
 
 
@@ -52,7 +52,7 @@ def __walk_second_pass(context: UploadContext, root_path: Path, file_paths: list
         index += 1
         click.echo(f"{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)")
 
-        uploader = FileUploader(context, root_path, file_path, display_progress=True)
+        uploader = DataFileUploader(context, root_path, file_path, display_progress=True)
         status, substatus, error = uploader.upload_file()
         if status == Status.OK:
             uploads['succeeded'].append(str(file_path))

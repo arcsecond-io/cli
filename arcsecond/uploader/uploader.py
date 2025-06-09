@@ -20,7 +20,7 @@ from .errors import (
 from .logger import get_logger
 
 
-class FileUploader(object):
+class DataFileUploader(object):
     def __init__(self,
                  context: UploadContext,
                  root_path: Path,

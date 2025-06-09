@@ -1,6 +1,6 @@
 from .api import ArcsecondAPI, ArcsecondConfig, ArcsecondAPIEndpoint
 from .errors import ArcsecondError
-from .uploader import UploadContext, FileUploader, walk_folder_and_upload
+from .uploader import UploadContext, DataFileUploader, walk_folder_and_upload
 
 name = 'arcsecond'
 
@@ -9,5 +9,5 @@ __all__ = ["ArcsecondAPI",
            "ArcsecondConfig",
            "ArcsecondAPIEndpoint",
            "UploadContext",
-           "FileUploader",
+           "DataFileUploader",
            "walk_folder_and_upload"]
