@@ -32,7 +32,6 @@ dependencies = [
 
 [project.scripts]
 arcsecond = "arcsecond.cli:main"
-lasilla = "arcsecond.lasilla:main"
 
 [project.urls]
 Homepage = "https://github.com/arcsecond-io/cli"
