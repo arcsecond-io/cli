@@ -28,7 +28,7 @@ def is_user_logged_in(state) -> bool:
         click.echo(PREFIX_SUB_FAIL + 'You need to log in.')
         click.echo(PREFIX_SUB_FAIL + 'Use `arcsecond login` (or `arcsecond register` first, if needed).')
         return False
-    click.echo(PREFIX_SUB + 'Logged in with username \"@' + ArcsecondAPI.username(state) + "\"")
+    click.echo(PREFIX_SUB + 'Logged in with username \"@' + ArcsecondAPI.get_username(state) + "\"")
     return True
 
 

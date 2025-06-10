@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from typing import Optional
 
 import click
 
+from arcsecond.options import State
 from .config import ArcsecondConfig
 from .constants import API_AUTH_PATH_VERIFY
 from .endpoint import ArcsecondAPIEndpoint
@@ -51,3 +53,14 @@ class ArcsecondAPI(object):
             click.echo('Login successful (Access Key has been saved).')
 
         return True, None
+
+    def fetch_full_profile(self):
+        return self.profiles.read(self.config.username)
+
+    @classmethod
+    def is_logged_in(cls, state: Optional[State] = None) -> bool:
+        return ArcsecondConfig(state).is_logged_in
+
+    @classmethod
+    def get_username(cls, state: Optional[State] = None) -> str:
+        return ArcsecondConfig(state).username
