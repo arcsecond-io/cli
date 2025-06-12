@@ -12,7 +12,7 @@ class ArcsecondConfig(object):
         self.__state = state or State()
         self.__config = ConfigParser()
         self.__config.read(str(ArcsecondConfig.file_path()))
-        api_name = self.__state.api_name or 'main'
+        api_name = self.__state.api_name or 'cloud'
         if api_name not in self.__config.sections():
             self.__config.add_section(api_name)
         self.__section = self.__config[api_name]
@@ -70,13 +70,13 @@ class ArcsecondConfig(object):
     def api_name(self) -> Optional[str]:
         result = self.__state.api_name
         if not result:
-            result = 'main'
+            result = 'cloud'
         return result
 
     @property
     def api_server(self) -> Optional[str]:
         result = self.__read_key('api_server')
-        if self.api_name == 'main' and (result is None or result == ''):
+        if self.api_name == 'cloud' and (result is None or result == ''):
             result = ARCSECOND_API_URL_PROD
         return result
 

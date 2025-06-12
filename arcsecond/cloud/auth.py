@@ -46,7 +46,9 @@ def login(state, username, type, key):
 def api(state, name=None, fqdn=None):
     """Configure the API server address"""
     if name is None:
-        name = 'main'
+        name = 'cloud'
+    elif name == 'cloud':
+        raise ArcsecondError("You cannot change the FQDN of the 'cloud' API server.")
 
     # The setter below is normally handled by the option --api, but here, the DX is different,
     # because we manipulate the api and its address itself.
