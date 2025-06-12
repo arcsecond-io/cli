@@ -103,7 +103,7 @@ class ArcsecondConfig(object):
     def clear_access_key(self) -> None:
         return self.__clear_key('access_key')
 
-    def clear_upload_key(self, ) -> None:
+    def clear_upload_key(self) -> None:
         return self.__clear_key('upload_key')
 
     def __clear_key(self, key_name: str) -> None:
