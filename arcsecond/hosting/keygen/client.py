@@ -52,7 +52,7 @@ class KeygenClient(object):
 
         if res.status_code != 201:
             msg = 'We are unable to create user, yet we cannot find your user id.\n'
-            msg += 'Please, contact cedric@arcsecond.io to fix the situation.'
+            msg += 'Please, contact team@arcsecond.io to fix the situation.'
             return None, msg
 
         data = res.json().get('data')
