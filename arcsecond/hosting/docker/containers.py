@@ -121,10 +121,10 @@ def run_api_container(config, restart=True, do_try=True):
         'RABBITMQ_PASSWORD': 'arcsecond_docker',
         'RABBITMQ_VHOST': 'arcsecond_docker_vhost',
         'RABBITMQ_SERVER': DOCKER_IMAGE_CONTAINERS_NAMES['mb'][1] + ':5672',
-        'EMAIL_HOST': config.read_key('email_host', section_name=section),
-        'EMAIL_HOST_USER': config.read_key('email_host_user', section_name=section),
-        'EMAIL_HOST_PASSWORD': config.read_key('email_host_password', section_name=section),
-        'EMAIL_ADMIN': config.read_key('email_admin', section_name=section),
+        # 'EMAIL_HOST': config.read_key('email_host', section_name=section),
+        # 'EMAIL_HOST_USER': config.read_key('email_host_user', section_name=section),
+        # 'EMAIL_HOST_PASSWORD': config.read_key('email_host_password', section_name=section),
+        # 'EMAIL_ADMIN': config.read_key('email_admin', section_name=section),
         'FIELD_ENCRYPTION_KEY': config.read_key('field_encryption_key', section_name=section),
         # 'ARCSECOND_DATA_STORAGE': ''
     }
