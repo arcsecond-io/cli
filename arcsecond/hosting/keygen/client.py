@@ -197,12 +197,12 @@ class KeygenClient(object):
         user_id, msg = self.__create_user()
         if user_id is None:
             click.echo(msg)
-            return
+            return False, msg
 
         license_key, msg = self.__create_license(user_id)
         if license_key is None:
             click.echo(msg)
-            return
+            return False, msg
 
         status, msg = self.__activate_license(license_key)
         return status, msg
