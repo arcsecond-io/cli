@@ -1,8 +1,6 @@
 import click
 
-from arcsecond.cloud.auth import login, api, me
-from arcsecond.cloud.resources import datasets, telescopes
-from arcsecond.cloud.uploads import upload
+from arcsecond.cloud import login, api, me, datasets, telescopes, upload
 from . import __version__
 from .options import State
 
