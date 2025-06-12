@@ -47,3 +47,21 @@ def has_user_verified_email(state) -> bool:
             return False
     click.echo(PREFIX_SUB_FAIL + str(error))
     return False
+
+
+def fetch_profile_email(state) -> tuple[None, str] | tuple[dict, None]:
+    click.echo(PREFIX + 'Fetching your email from the cloud, to register your license...')
+    state.api_name = 'cloud'
+    email_dict, error = ArcsecondAPI(ArcsecondConfig(state)).fetch_email()
+    if error is not None:
+        click.echo(PREFIX_SUB_FAIL + str(error))
+        return None, str(error)
+    else:
+        user, full_hostname = email_dict.get('email', '?').split('@')
+        masked_user = user[0] + (len(user) - 2) * '*' + user[-1]
+        extension = full_hostname.split('.')[-1]
+        hostname = '.'.join(full_hostname.split('.')[:-1])
+        mask_hostname = hostname[0] + (len(hostname) - 2) * '*' + hostname[-1]
+        masked_email = masked_user + '@' + mask_hostname + '.' + extension
+        click.echo(PREFIX_SUB + f'Profile fetched, and email {masked_email} found.')
+        return email_dict.get('email', '?'), None

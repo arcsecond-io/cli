@@ -2,22 +2,25 @@ import sys
 
 import click
 
-from arcsecond import ArcsecondConfig, ArcsecondAPI
+from arcsecond.api import ArcsecondConfig
 from arcsecond.hosting import docker
-from arcsecond.hosting import keygen
-from .checks import (
-    is_arcsecond_api_reachable,
-    is_user_logged_in,
-    has_user_verified_email
-)
-from .constants import BANNER, PREFIX
-from .setup import setup_hosting_variables
+from arcsecond.options import State, basic_options
+from .checks import is_user_logged_in, has_user_verified_email, fetch_profile_email
+from .constants import BANNER, PREFIX, PREFIX_SUB, PREFIX_SUB_FAIL
+from .keygen import KeygenClient
 
-__version__ = '0.1.0 (Alpha) - Please, send feedback to cedric@arcsecond.io'
-warning = '---> ARCSECOND SELF-HOSTING IS IN ALPHA STATE. USE AT YOUR OWN RISK. <---'
+__version__ = '6.0.0-alpha.1 - Please, send feedback to cedric@arcsecond.io'
+warning = '---> ARCSECOND.LOCAL (SELF-HOSTING) IS IN ALPHA STATE. USE AT YOUR OWN RISK. <---'
+
+pass_state = click.make_pass_decorator(State, ensure=True)
 
 
-def run_arcsecond(state, do_try=True, skip_setup=False):
+@click.command(help='Install a self-hosted Arcsecond system.')
+@click.option('--do_try', required=False, nargs=1, prompt=False, default=True, type=click.BOOL)
+@click.option('--skip_setup', required=False, nargs=1, prompt=False, default=False, type=click.BOOL)
+@basic_options
+@pass_state
+def install(state, do_try=True, skip_setup=False):
     click.echo(BANNER)
     click.echo('\n' + PREFIX + __version__)
     click.echo('\n' + PREFIX + warning)
@@ -26,37 +29,38 @@ def run_arcsecond(state, do_try=True, skip_setup=False):
         return
     if sys.platform == 'darwin':
         docker.setup_docker_host_on_macos()
-    if not is_arcsecond_api_reachable(state):
-        return
     if not is_user_logged_in(state):
         return
     if do_try is False and not has_user_verified_email(state):
         return
 
-    profile, error = ArcsecondAPI(state).fetch_full_profile()
+    email, error = fetch_profile_email(state)
     if error is not None:
-        click.echo(str(error))
         return
 
     config = ArcsecondConfig(state)
-    klient = keygen.KeygenClient(config, do_try, profile)
-    status, msg = klient.setup_and_validate_license()
-    click.echo(PREFIX + msg)
-    if status is False:
+    klient = KeygenClient(config, do_try, email)
+    click.echo(PREFIX + "Setting up your license...")
+    is_license_ok, msg = klient.setup_and_validate_license()
+    if is_license_ok:
+        click.echo(PREFIX_SUB + msg)
+    else:
+        click.echo(PREFIX_SUB_FAIL + msg)
         return
 
-    if not skip_setup:
-        setup_hosting_variables(config, do_try=do_try)
-    if not docker.has_all_arcsecond_docker_images():
-        docker.pull_all_arcsecond_docker_images()
-    docker.setup_network()
-    docker.run_db_container(restart=False)
-    docker.run_broker_container(restart=False)
-    docker.run_api_container(config, restart=False, do_try=do_try)
-    docker.run_web_container(restart=True)
+    # if not skip_setup:
+    #     setup_hosting_variables(config, do_try=do_try)
+    # if not docker.has_all_arcsecond_docker_images():
+    #     docker.pull_all_arcsecond_docker_images()
+    #
+    # docker.setup_network()
+    # docker.run_db_container(restart=False)
+    # docker.run_broker_container(restart=False)
+    # docker.run_api_container(config, restart=False, do_try=do_try)
+    # docker.run_web_container(restart=True)
 
 
-def stop_arcsecond():
+def stop():
     click.echo(PREFIX + 'Stopping Arcsecond...')
     if sys.platform == 'darwin':
         docker.setup_docker_host_on_macos()
@@ -64,6 +68,6 @@ def stop_arcsecond():
     click.echo(PREFIX + 'Arcsecond stopped.')
 
 
-def print_arcsecond_status():
+def status():
     click.echo(PREFIX + 'Checking Arcsecond status...')
     click.echo(docker.get_all_containers_status_string())

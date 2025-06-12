@@ -18,6 +18,7 @@ class ArcsecondAPI(object):
 
         self.profiles = ArcsecondAPIEndpoint(self.config, 'profiles', self.subdomain)
 
+        self.email = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='email')
         self.sharedkeys = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='sharedkeys')
         self.private_observingsites = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='observingsites')
         self.private_telescopes = ArcsecondAPIEndpoint(self.config, 'profiles', subresource='telescopes')
@@ -53,6 +54,9 @@ class ArcsecondAPI(object):
             click.echo('Login successful (Access Key has been saved).')
 
         return True, None
+
+    def fetch_email(self):
+        return self.email.read(self.config.username)
 
     def fetch_full_profile(self):
         return self.profiles.read(self.config.username)

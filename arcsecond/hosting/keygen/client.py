@@ -8,31 +8,49 @@ from .utils import generate_password
 
 
 class KeygenClient(object):
-    def __init__(self, config, do_try, profile):
+    def __init__(self, config, do_try, email: str):
         self.__config = config
-        self.__section_name = 'keygen:try' if do_try else 'keygen'
-        self.__base_url = "https://api.keygen.sh/v1/accounts/arcsecond-io"
+        self.__base_url = "https://api.keygen.sh/v1/accounts/arcsecond"
         self.__default_headers = {
             "Content-Type": "application/vnd.api+json",
             "Accept": "application/vnd.api+json"
         }
-        self.__profile = profile
+        self.__do_try = do_try
+        self.__email = email
 
-    def __config_save(self, **kwargs):
-        kwargs.update(section=self.__section_name)
-        self.__config.save(**kwargs)
+    def __generate_user_token(self):
+        res = requests.post(
+            self.__base_url + "/tokens",
+            headers={ "Accept": "application/vnd.api+json" },
+            auth=(self.__email, self.__config.read_key('keygen_user_password'))
+        )
+        if res.status_code == 201:
+            user_token = res.json().get('data').get('attributes').get('token')
+            self.__config.save(keygen_user_token=user_token)
+            return user_token, 'OK'
+        else:
+            return None, 'Cannot create user token'
 
-    def __config_get(self, key):
-        return self.__config.read_key(key, self.__section_name)
+    def __read_user(self):
+        token, _ = self.__generate_user_token()
+        headers = {**self.__default_headers}
+        headers['Authorization'] = "Bearer " + token
+        res = requests.get(self.__base_url + "/users/" + self.__email, headers)
+        if res.status_code == 200:
+            user_id = res.json().get('data').get('id')
+            return user_id, 'OK'
+        else:
+            return None, 'User not found'
 
     def __create_user(self):
-        user_id = self.__config_get('user_id')
-        if user_id is not None:
-            return user_id, 'OK'
+        keygen_user_id = self.__config.read_key('keygen_user_id')
+        if keygen_user_id is not None:
+            return keygen_user_id, 'OK'
 
-        email = self.__profile.get('email')
-        password = generate_password()
-        self.__config_save(password=password, email=email)
+        keygen_user_password = self.__config.read_key('keygen_user_password')
+        if keygen_user_password is None:
+            keygen_user_password = generate_password()
+            self.__config.save(keygen_user_password=keygen_user_password)
 
         res = requests.post(
             self.__base_url + "/users",
@@ -41,62 +59,57 @@ class KeygenClient(object):
                 "data": {
                     "type": "users",
                     "attributes": {
-                        "firstName": self.__profile.get('first_name', 'Famous') or "Famous",
-                        "lastName": self.__profile.get('last_name', 'Astronomer') or "Astronomer",
-                        "email": email,
-                        "password": password
+                        "firstName": "Awesome",
+                        "lastName": "Astronomer",
+                        "email": self.__email,
+                        "password": keygen_user_password
                     }
                 }
             })
         )
 
-        if res.status_code != 201:
+        keygen_user_id = None
+        if res.status_code == 201:
+            keygen_user_id = res.json().get('data').get('id')
+        else:
+            errors = res.json().get('errors')
+            if len(errors) == 1 and errors[0].get('code') == 'EMAIL_TAKEN':
+                keygen_user_id, msg = self.__read_user()
+
+        if keygen_user_id is None:
             msg = 'We are unable to create user, yet we cannot find your user id.\n'
             msg += 'Please, contact team@arcsecond.io to fix the situation.'
             return None, msg
 
-        data = res.json().get('data')
-        user_id = data.get('id')
-        self.__config_save(user_id=user_id)
-
-        return user_id, 'OK'
-
-    def _generate_user_token(self):
-        email, password = self.__config_get('email'), self.__config_get('password')
-        res = requests.post(
-            self.__base_url + "/tokens",
-            headers={"Accept": "application/vnd.api+json"},
-            auth=(email, password)
-        )
-        data = res.json().get('data')
-        user_token = data.get('attributes').get('token')
-        self.__config_save(user_token=user_token)
-        return user_token, 'OK'
+        self.__config.save(keygen_user_id=keygen_user_id)
+        return keygen_user_id, 'OK'
 
     def __create_license(self, user_id):
-        license_key = self.__config_get('license_key')
+        license_key = self.__config.read_key('keygen_license_key')
         if license_key:
             return license_key, 'OK'
 
-        user_token, msg = self._generate_user_token()
-        res = requests.get(
-            self.__base_url + "/licenses?limit=1",
-            headers={
-                "Accept": "application/vnd.api+json",
-                "Authorization": "Bearer " + user_token
-            }
-        )
+        # Obtaining a user token
+        keygen_user_token = self.__config.read_key('keygen_user_token')
+        if keygen_user_token is None:
+            keygen_user_token, msg = self.__generate_user_token()
+            if keygen_user_token is None:
+                return None, 'Impossible to get user token.'
 
+        headers = {**self.__default_headers}
+        headers['Authorization'] = "Bearer " + keygen_user_token
+
+        # Checking for an existing license.
+        res = requests.get(self.__base_url + "/licenses?limit=1", headers=headers)
         data = res.json().get('data')
         if len(data) == 1:
             license_id = data[0].get('id')
             license_key = data[0].get('attributes').get('key')
-            self.__config_save(licence_id=license_id, license_key=license_key)
+            self.__config.save(keygen_licence_id=license_id, keygen_license_key=license_key)
             return license_key, 'OK'
 
-        policy_id = '8cecf79e-35b4-40fb-848b-31b0c19455ba'
-        headers = {**self.__default_headers}
-        headers['Authorization'] = "Bearer " + user_token
+        # We have no license, create one.
+        policy_id = '2b2194d4-282e-4e3e-a39d-d01385cdf73e'
         res = requests.post(
             self.__base_url + "/licenses",
             headers=headers,
@@ -119,7 +132,7 @@ class KeygenClient(object):
         data = res.json().get('data')
         license_id = data.get('id')
         license_key = data.get('attributes').get('key')
-        self.__config_save(licence_id=license_id, license_key=license_key)
+        self.__config.save(keygen_licence_id=license_id, keygen_license_key=license_key)
 
         return license_key, 'OK'
 
@@ -146,7 +159,7 @@ class KeygenClient(object):
             )
 
         if validation["meta"]["valid"]:
-            return True, "license has already been activated on this machine"
+            return True, "OK (license has already been activated on this machine)."
 
         # Otherwise, we need to determine why the current license is not valid,
         # because in our case it may be invalid because another machine has
@@ -187,11 +200,11 @@ class KeygenClient(object):
         # If we get back an error, our activation failed.
         if "errors" in activation:
             errs = activation["errors"]
-            return False, "license activation failed: {}".format(
+            return False, "Error: license activation failed: {}".format(
                 ','.join(map(lambda e: "{} - {}".format(e["title"], e["detail"]).lower(), errs))
             )
 
-        return True, "license activated"
+        return True, "OK (license activated)"
 
     def setup_and_validate_license(self):
         user_id, msg = self.__create_user()
@@ -205,4 +218,8 @@ class KeygenClient(object):
             return False, msg
 
         status, msg = self.__activate_license(license_key)
+        if not status:
+            click.echo(msg)
+            return False, msg
+
         return status, msg

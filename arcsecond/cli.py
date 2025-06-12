@@ -1,6 +1,7 @@
 import click
 
 from arcsecond.cloud import login, api, me, datasets, telescopes, upload
+from arcsecond.hosting import install
 from . import __version__
 from .options import State
 
@@ -43,3 +44,6 @@ main.add_command(telescopes)
 
 # Upload a folder of files to a given dataset.
 main.add_command(upload)
+
+# Allow to try arcsecond by installing a local version
+main.add_command(install)
