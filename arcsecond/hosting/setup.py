@@ -56,12 +56,12 @@ def setup_hosting_variables(config: ArcsecondConfig, do_try=True):
     section = 'hosting:try' if do_try else 'hosting'
 
     # Django SECRET_KEY variable.
-    if config.read_key('secret_key', section) is None:
+    if config.read_key('secret_key') is None:
         secret_key = _get_random_secret_key()
-        config.save(secret_key=secret_key, section=section)
-    if config.read_key('field_encryption_key', section) is None:
+        config.save(secret_key=secret_key)
+    if config.read_key('field_encryption_key') is None:
         field_encryption_key = base64.urlsafe_b64encode(os.urandom(32)).decode('utf8')
-        config.save(field_encryption_key=field_encryption_key, section=section)
+        config.save(field_encryption_key=field_encryption_key)
 
     click.echo("Note that you will need a recent version of Docker running on this machine for Arcsecond to run.")
     click.echo("A connexion to Internet is also required.")
