@@ -9,7 +9,7 @@ services:
 #      - /var/run/docker.sock:/tmp/docker.sock:ro
 
   db:
-    image: postgres:16
+    image: arcsecond-postgres-linux-arm64:16
     container_name: arcsecond-db
     restart: unless-stopped
     ports:
@@ -20,19 +20,20 @@ services:
       - .env
 
   broker:
-    image: redis:7.4
+    image: arcsecond-redis-linux-arm64:7.4
     container_name: arcsecond-broker
     restart: unless-stopped
     ports:
       - "6379:6379"
 
   backend:
-    image: arcsecond-api:latest
-    build:
-      context: ../arcsecond-back
-      dockerfile: ../arcsecond-back/.docker/Dockerfile
-      tags:
-        - arcsecond-api
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    platform: amd64
+#    build:
+#      context: ../arcsecond-back
+#      dockerfile: ../arcsecond-back/.docker/Dockerfile
+#      tags:
+#        - arcsecond-api
     container_name: arcsecond-api
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-server.sh
@@ -54,7 +55,8 @@ services:
       start_period: 20s
 
   worker:
-    image: arcsecond-api:latest
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    platform: amd64
     container_name: arcsecond-worker
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-worker.sh
@@ -65,7 +67,8 @@ services:
       - .env
 
   beat:
-    image: arcsecond-api:latest
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    platform: amd64
     container_name: arcsecond-beat
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-beat.sh
@@ -76,12 +79,13 @@ services:
       - ./.env
 
   web:
-    image: arcsecond-web:latest
-    build:
-      context: ../arcsecond-front
-      dockerfile: ../arcsecond-front/.docker/Dockerfile
-      tags:
-        - arcsecond-web
+    image: ghcr.io/arcsecond-io/arcsecond-web:latest
+    platform: amd64
+#    build:
+#      context: ../arcsecond-front
+#      dockerfile: ../arcsecond-front/.docker/Dockerfile
+#      tags:
+#        - arcsecond-web
     container_name: arcsecond-web
     restart: unless-stopped
     depends_on:
