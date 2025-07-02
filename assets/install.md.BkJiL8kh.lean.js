@@ -1,0 +1,1 @@
+import{_ as s,c as i,o as a,a2 as e}from"./chunks/framework.RzY3PHZ4.js";const u=JSON.parse('{"title":"","description":"","frontmatter":{"sidebar":true},"headers":[],"relativePath":"install.md","filePath":"install.md"}'),t={name:"install.md"},n=e("",20),l=[n];function p(h,o,r,c,d,k){return a(),i("div",null,l)}const y=s(t,[["render",p]]);export{u as __pageData,y as default};
