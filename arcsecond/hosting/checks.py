@@ -1,3 +1,5 @@
+from typing import Union
+
 import click
 import requests
 
@@ -49,7 +51,7 @@ def has_user_verified_email(state) -> bool:
     return False
 
 
-def fetch_profile_email(state) -> tuple[None, str] | tuple[dict, None]:
+def fetch_profile_email(state) -> Union[tuple[None, str], tuple[dict, None]]:
     click.echo(PREFIX + 'Fetching your email from the cloud, to register your license...')
     state.api_name = 'cloud'
     email_dict, error = ArcsecondAPI(ArcsecondConfig(state)).fetch_email()
