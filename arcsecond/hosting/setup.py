@@ -6,6 +6,7 @@ import secrets
 import click
 
 from arcsecond import ArcsecondConfig
+from .constants import PREFIX
 
 email_regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
 
@@ -52,8 +53,7 @@ def _validate_email_admin(value):
 
 
 def setup_hosting_variables(config: ArcsecondConfig, do_try=True):
-    click.echo("\nWelcome to the setup of self-hosting Arcsecond.")
-    section = 'hosting:try' if do_try else 'hosting'
+    click.echo(PREFIX + "Setting up mandatory variables...")
 
     # Django SECRET_KEY variable.
     if config.read_key('secret_key') is None:
@@ -62,9 +62,6 @@ def setup_hosting_variables(config: ArcsecondConfig, do_try=True):
     if config.read_key('field_encryption_key') is None:
         field_encryption_key = base64.urlsafe_b64encode(os.urandom(32)).decode('utf8')
         config.save(field_encryption_key=field_encryption_key)
-
-    click.echo("Note that you will need a recent version of Docker running on this machine for Arcsecond to run.")
-    click.echo("A connexion to Internet is also required.")
 
     # click.echo("\nPlease answer the following questions to setup your local installation.")
     # click.echo(f"Answers will be stored in {str(config.file_path)}. Keep this file safely and private.")
