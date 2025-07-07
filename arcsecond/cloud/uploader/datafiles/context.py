@@ -1,80 +1,39 @@
 import uuid
-from typing import Optional
 
 import click
 
-from arcsecond import ArcsecondAPI, ArcsecondConfig, ArcsecondAPIEndpoint
-from arcsecond.api.constants import API_AUTH_PATH_VERIFY_PORTAL
+from arcsecond.cloud.uploader.context import BaseUploadContext
 from .errors import (
-    UnknownOrganisationError,
-    InvalidAstronomerError,
-    InvalidWatchOptionsError,
     InvalidOrganisationDatasetError,
     InvalidDatasetError,
-    InvalidOrgMembershipError,
     InvalidOrganisationTelescopeError,
     InvalidTelescopeError,
-    InvalidTelescopeInDatasetError,
-    MissingTelescopeError
+    MissingTelescopeError,
+    InvalidTelescopeInDatasetError
 )
 
 
-class UploadContext(object):
-    def __init__(self, config: ArcsecondConfig,
-                 input_dataset_uuid_or_name: str,
-                 input_telescope_uuid: Optional[str] = None,
-                 org_subdomain: Optional[str] = None,
-                 is_raw_data: bool = True,
+class DatasetUploadContext(BaseUploadContext):
+    """Upload context for dataset-based uploads (original functionality)"""
+
+    def __init__(self, config,
+                 input_dataset_uuid_or_name,
+                 input_telescope_uuid=None,
+                 org_subdomain=None,
+                 is_raw_data=True,
                  custom_tags=None):
-        self._config = config
+        super().__init__(config, org_subdomain, custom_tags)
         # CLI returns a UUID instance if valid UUID, hence the str() call.
         self._input_dataset_uuid_or_name = str(input_dataset_uuid_or_name)
         self._input_telescope_uuid = str(input_telescope_uuid) if input_telescope_uuid else None
         self._should_update_dataset_with_telescope = False
-        self._subdomain = org_subdomain
         self._is_raw_data = is_raw_data
-        self._custom_tags = custom_tags
         self._dataset = None
         self._telescope = None
-        self._organisation = None
-        self._api = ArcsecondAPI(config, org_subdomain)
-        self.__is_validated = False
 
     @property
-    def is_validated(self):
-        return self.__is_validated
-
-    def validate(self):
-        self._validate_custom_tags(self._custom_tags)
-        self._validate_local_astronomer_credentials()
-        self._validate_input_dataset_uuid_or_name()
-        if self._input_telescope_uuid:
-            self._validate_input_telescope_uuid()
-        # Forcing Telescope validation and association with Dataset.
-        self._validate_telescope_in_dataset()
-        if self._subdomain:
-            self._validate_remote_organisation()
-            self._validate_astronomer_role_in_remote_organisation()
-        self.__is_validated = True
-
-    def _validate_custom_tags(self, tags=None):
-        if tags is None:
-            return
-        if not isinstance(tags, list):
-            raise TypeError('custom_tags must be a list')
-        if not all([isinstance(t, str) for t in tags]):
-            raise TypeError('all custom_tags must be strings')
-        if any([t.startswith('arcsecond') for t in tags]):
-            raise TypeError('none of custom_tags must start with "arcsecond"')
-
-    def _validate_local_astronomer_credentials(self):
-        username = self._config.username
-        if username is None:
-            raise InvalidAstronomerError('Missing username')
-
-        upload_key = self._config.upload_key
-        if not upload_key:
-            raise InvalidWatchOptionsError('Missing upload_key.')
+    def api_endpoint(self):
+        return self._api.datafiles
 
     def _validate_input_dataset_uuid_or_name(self):
         try:
@@ -153,23 +112,13 @@ class UploadContext(object):
                                                      dataset_telescope_uuid,
                                                      self.dataset_uuid)
 
-    def _validate_remote_organisation(self):
-        click.echo(f" • Fetching details of organisation {self._subdomain}...")
-        self._organisation, error = self._api.organisations.read(self._subdomain)
-        if error is not None:
-            raise UnknownOrganisationError(self._subdomain, str(error))
-
-    def _validate_astronomer_role_in_remote_organisation(self):
-        endpoint = ArcsecondAPIEndpoint(self.config, API_AUTH_PATH_VERIFY_PORTAL)
-        result, error = endpoint.create({'username': self._config.username,
-                                         'key': self._config.access_key or self._config.upload_key,
-                                         'organisation': self._subdomain})
-        if error:
-            raise InvalidOrgMembershipError(self._subdomain)
-
-    @property
-    def config(self):
-        return self._config
+    def _validate_context_specific(self):
+        """Run validations specific to dataset uploads"""
+        self._validate_input_dataset_uuid_or_name()
+        if self._input_telescope_uuid:
+            self._validate_input_telescope_uuid()
+        # Forcing Telescope validation and association with Dataset.
+        self._validate_telescope_in_dataset()
 
     @property
     def dataset_uuid(self):
@@ -184,20 +133,12 @@ class UploadContext(object):
 
     @property
     def telescope_uuid(self):
-        return self._telescope.get('uuid', '') if self._telescope else ''
+        return self._telescope.get('uuid', '') if self._telescope else self._input_telescope_uuid
 
     @property
     def telescope(self):
         return self._telescope if self._telescope else None
 
     @property
-    def organisation_subdomain(self):
-        return self._organisation.get('subdomain', '') if self._organisation else ''
-
-    @property
     def is_raw_data(self):
         return self._is_raw_data
-
-    @property
-    def custom_tags(self):
-        return self._custom_tags

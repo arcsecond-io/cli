@@ -1,44 +1,12 @@
 import pathlib
 
 import click
-import math
 
-from .context import UploadContext
-
-
-def is_file_hidden(path):
-    return any([part for part in path.parts if len(part) > 0 and part[0] == '.'])
+from arcsecond.cloud.uploader.utils import __get_formatted_bytes_size, __get_formatted_size_times, is_file_hidden
+from .context import DatasetUploadContext
 
 
-def __get_formatted_time(seconds):
-    if seconds > 86400:
-        return f"{seconds / 86400:.1f}d"
-    elif seconds > 3600:
-        return f"{seconds / 3600:.1f}h"
-    elif seconds > 60:
-        return f"{seconds / 60:.1f}m"
-    else:
-        return f"{seconds:.1f}s"
-
-
-def __get_formatted_size_times(size):
-    total = f"{__get_formatted_time(size / pow(10, 4))} on 10 kB/s, "
-    total += f"{__get_formatted_time(size / pow(10, 5))} on 100 kB/s, "
-    total += f"{__get_formatted_time(size / pow(10, 6))} on 1 MB/s, "
-    total += f"{__get_formatted_time(size / pow(10, 7))} on 10 MB/s"
-    return total
-
-
-def __get_formatted_bytes_size(size):
-    if size == 0:
-        return '0 Bytes'
-    k = 1024
-    units = ['Bytes', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    i = math.floor(math.log10(1.0 * size) / math.log10(k))
-    return f"{(size / math.pow(k, i)):.2f} {units[i]}"
-
-
-def display_command_summary(context: UploadContext, folders: list):
+def display_upload_datafiles_command_summary(context: DatasetUploadContext, folders: list):
     click.echo("\n --- Upload summary --- ")
     click.echo(f" • Arcsecond username: @{context.config.username} (Upload key: {context.config.upload_key[:4]}••••)")
     if context.organisation_subdomain:
@@ -57,7 +25,7 @@ def display_command_summary(context: UploadContext, folders: list):
         msg = " • Using folder names for dataset names (one folder = one dataset)."
     click.echo(msg)
 
-    msg = f" • Data is considered as {'raw' if context.is_raw else 'NOT raw'}."
+    msg = f" • Data is considered as {'raw' if context.is_raw_data else 'NOT raw'}."
     click.echo(msg)
 
     if context.custom_tags:

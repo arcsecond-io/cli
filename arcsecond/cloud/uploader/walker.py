@@ -4,18 +4,18 @@ from pathlib import Path
 import click
 
 from .constants import Status
-from .context import UploadContext
+from .context import BaseUploadContext
 from .logger import get_logger
-from .uploader import DataFileUploader
+from .uploader import BaseFileUploader
 from .utils import is_file_hidden
 
 
-def __get_duplicates(values):
+def _get_duplicates(values):
     dups = Counter(values) - Counter(set(values))
     return list(dups.keys())
 
 
-def __walk_first_pass(context: UploadContext, root_path: Path):
+def _walk_first_pass(root_path: Path):
     logger = get_logger()
     log_prefix = '[Walker - 1/2]'
     logger.info(f"{log_prefix} Making a first pass to collect info on files...")
@@ -39,7 +39,10 @@ def __walk_first_pass(context: UploadContext, root_path: Path):
     return file_paths
 
 
-def __walk_second_pass(context: UploadContext, root_path: Path, file_paths: list):
+def _walk_second_pass(uploader_class: BaseFileUploader.__class__,
+                      context: BaseUploadContext,
+                      root_path: Path,
+                      file_paths: list):
     logger = get_logger()
     log_prefix = '[Walker - 2/2]'
     logger.info(f"{log_prefix} Starting second pass to upload files...")
@@ -52,7 +55,7 @@ def __walk_second_pass(context: UploadContext, root_path: Path, file_paths: list
         index += 1
         click.echo(f"{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)")
 
-        uploader = DataFileUploader(context, root_path, file_path, display_progress=True)
+        uploader = uploader_class(context, root_path, file_path, display_progress=True)
         status, substatus, error = uploader.upload_file()
         if status == Status.OK:
             uploads['succeeded'].append(str(file_path))
@@ -67,7 +70,9 @@ def __walk_second_pass(context: UploadContext, root_path: Path, file_paths: list
     return uploads
 
 
-def walk_folder_and_upload(context: UploadContext, folder_string: str):
+def walk_folder_and_upload_files(uploader_class: BaseFileUploader.__class__,
+                                 context: BaseUploadContext,
+                                 folder_string: str):
     logger = get_logger()
     log_prefix = '[Walker]'
     root_path = Path(folder_string).resolve()
@@ -76,14 +81,14 @@ def walk_folder_and_upload(context: UploadContext, folder_string: str):
 
     logger.info(f"{log_prefix} Starting to walk through {root_path} and its subfolders...")
 
-    file_paths = __walk_first_pass(context, root_path)
+    file_paths = _walk_first_pass(root_path)
     if len(file_paths) == 0:
         msg = f"{log_prefix} No file paths to upload. Exiting.\n\n"
         logger.info(msg)
         return
 
     all_local_filenames = [path.name for path in file_paths]
-    duplicates = __get_duplicates(all_local_filenames)
+    duplicates = _get_duplicates(all_local_filenames)
     if len(duplicates) > 0:
         msg = f"{log_prefix} The following files have duplicate names (not allowed in the same dataset): "
         msg += f"{', '.join(duplicates)}"
@@ -91,7 +96,7 @@ def walk_folder_and_upload(context: UploadContext, folder_string: str):
         logger.error(f"Exiting.")
         return
 
-    uploads = __walk_second_pass(context, root_path, file_paths)
+    uploads = _walk_second_pass(uploader_class, context, root_path, file_paths)
     msg = f"{log_prefix} uploads succeeded: {len(uploads['succeeded'])}, "
     msg += f"skipped: {len(uploads['skipped'])}, failed: {len(uploads['failed'])}\n"
     logger.info(msg)
