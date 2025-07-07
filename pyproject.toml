@@ -27,7 +27,8 @@ dependencies = [
     'requests',
     'requests_toolbelt',
     'configparser',
-    'progress'
+    'progress',
+    "rich (>=14.0.0,<15.0.0)"
 ]
 
 [project.scripts]

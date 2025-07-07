@@ -8,9 +8,11 @@ from arcsecond.options import State, basic_options
 from .checks import is_user_logged_in, has_user_verified_email, fetch_profile_email
 from .constants import BANNER, PREFIX, PREFIX_SUB, PREFIX_SUB_FAIL
 from .keygen import KeygenClient
+from .setup import setup_hosting_variables
 
-__version__ = '6.0.0-alpha.1 - Please, send feedback to cedric@arcsecond.io'
-warning = '---> ARCSECOND.LOCAL (SELF-HOSTING) IS IN ALPHA STATE. USE AT YOUR OWN RISK. <---'
+__version__ = '6.0.0-alpha.1 - Please, send feedback to team@arcsecond.io'
+
+warning = '---> ARCSECOND.LOCAL (SELF-HOSTING) IS IN ALPHA STATE. USE AT YOUR OWN RISK. WE DECLINE ANY RESPONSIBILITY. <---'
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
@@ -48,11 +50,11 @@ def install(state, do_try=True, skip_setup=False):
         click.echo(PREFIX_SUB_FAIL + msg)
         return
 
-    # if not skip_setup:
-    #     setup_hosting_variables(config, do_try=do_try)
-    # if not docker.has_all_arcsecond_docker_images():
-    #     docker.pull_all_arcsecond_docker_images()
-    #
+    if not skip_setup:
+        setup_hosting_variables(config, do_try=do_try)
+    if not docker.has_all_arcsecond_docker_images():
+        docker.pull_all_arcsecond_docker_images()
+
     # docker.setup_network()
     # docker.run_db_container(restart=False)
     # docker.run_broker_container(restart=False)
