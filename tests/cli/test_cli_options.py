@@ -3,7 +3,6 @@ import re
 from click.testing import CliRunner
 
 from arcsecond import cli
-from arcsecond.errors import ArcsecondError
 
 
 def test_cli_basic():
