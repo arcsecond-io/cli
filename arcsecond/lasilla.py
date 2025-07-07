@@ -1,7 +1,7 @@
 import click
 
 from . import __version__
-from .hosting import run_arcsecond, stop_arcsecond, print_arcsecond_status
+from .hosting import install, status, stop
 from .options import State, basic_options
 
 pass_state = click.make_pass_decorator(State, ensure=True)
@@ -28,7 +28,7 @@ def main(ctx, version=False, v=False, h=False):
 @basic_options
 @pass_state
 def do_try(state, skip_setup=False):
-    run_arcsecond(state, do_try=True, skip_setup=skip_setup)
+    install(state, do_try=True, skip_setup=skip_setup)
 
 
 # @main.command(name='install', help='Install a true self-hosting Arcsecond instance.')
@@ -42,10 +42,10 @@ def do_try(state, skip_setup=False):
 @main.command(name='stop', help='Stop the running self-hosted Arcsecond instance.')
 @pass_state
 def do_stop(state):
-    stop_arcsecond()
+    stop()
 
 
 @main.command(name='status', help='Stop the running self-hosted Arcsecond instance.')
 @pass_state
 def do_get_status(state):
-    print_arcsecond_status()
+    status()
