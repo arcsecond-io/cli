@@ -43,7 +43,7 @@ def prepare_successful_login(subdomain='robotland', role='member'):
     config.api_server = ARCSECOND_API_URL_DEV
     httpretty.register_uri(
         httpretty.POST,
-        ARCSECOND_API_URL_DEV + API_AUTH_PATH_VERIFY,
+        ARCSECOND_API_URL_DEV + '/' + API_AUTH_PATH_VERIFY,
         status=204,
         body='{ "key": "' + TEST_API_KEY + '", "username": "' + TEST_LOGIN_USERNAME + '" }'
     )
