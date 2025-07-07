@@ -36,6 +36,9 @@ class ArcsecondAPI(object):
         self.datasets = ArcsecondAPIEndpoint(self.config, 'datasets', self.subdomain)
         self.datafiles = ArcsecondAPIEndpoint(self.config, 'datafiles', self.subdomain)
 
+        self.allskycameras = ArcsecondAPIEndpoint(self.config, 'allskycameras', self.subdomain)
+        self.allskycameraimages = ArcsecondAPIEndpoint(self.config, 'allskycameraimages', self.subdomain)
+
     def login(self, username, access_key=None, upload_key=None):
         assert access_key or upload_key
         assert not (access_key and upload_key)
