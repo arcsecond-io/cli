@@ -1,4 +1,5 @@
 import json
+import subprocess
 
 import click
 import machineid
@@ -21,7 +22,7 @@ class KeygenClient(object):
     def __generate_user_token(self):
         res = requests.post(
             self.__base_url + "/tokens",
-            headers={ "Accept": "application/vnd.api+json" },
+            headers={"Accept": "application/vnd.api+json"},
             auth=(self.__email, self.__config.read_key('keygen_user_password'))
         )
         if res.status_code == 201:
@@ -136,6 +137,16 @@ class KeygenClient(object):
 
         return license_key, 'OK'
 
+    def __login_keygen_docker(self, license_key):
+        result = subprocess.run(
+            ["docker", "login", "oci.pkg.keygen.sh", "--username", "license", "--password-stdin"],
+            input=license_key.encode(),
+            capture_output=True
+        )
+        if result.returncode != 0:
+            return False, result.stderr.decode()
+        return True, "OK"
+
     def __activate_license(self, license_key):
         machine_fingerprint = machineid.hashed_id()
         res = requests.post(
@@ -214,6 +225,11 @@ class KeygenClient(object):
 
         license_key, msg = self.__create_license(user_id)
         if license_key is None:
+            click.echo(msg)
+            return False, msg
+
+        status, msg = self.__login_keygen_docker(license_key)
+        if not status:
             click.echo(msg)
             return False, msg
 
