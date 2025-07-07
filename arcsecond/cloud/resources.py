@@ -2,7 +2,7 @@ import click
 from arcsecond.api import ArcsecondAPI, ArcsecondConfig
 
 from arcsecond.options import State, basic_options
-from arcsecond.uploader.errors import ArcsecondError
+from arcsecond.errors import ArcsecondError
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
