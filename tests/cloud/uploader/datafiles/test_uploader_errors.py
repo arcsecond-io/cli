@@ -3,20 +3,24 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from arcsecond.cloud.uploader.constants import Status, Substatus
-from arcsecond.cloud.uploader.datafiles.errors import UploadRemoteDatasetPreparationError
+from arcsecond.cloud.uploader.datafiles.errors import (
+    UploadRemoteDatasetPreparationError,
+)
 from arcsecond.cloud.uploader.errors import (
     UploadRemoteFileInvalidatedContextError,
     UploadRemoteFileError,
-    UploadRemoteFileMetadataError
+    UploadRemoteFileMetadataError,
 )
 
 
 def test_upload_file_skipped(uploader):
     """Test upload file process when file is skipped."""
     # Mock all the component methods
-    with patch.object(uploader, '_prepare_upload') as mock_prepare, \
-            patch.object(uploader, '_perform_upload') as mock_perform, \
-            patch.object(uploader, '_update_metadata') as mock_update:
+    with (
+        patch.object(uploader, "_prepare_upload") as mock_prepare,
+        patch.object(uploader, "_perform_upload") as mock_perform,
+        patch.object(uploader, "_update_metadata") as mock_update,
+    ):
         # Simulate skipped file
         uploader._status = [Status.SKIPPED, Substatus.ALREADY_SYNCED, None]
         result = uploader.upload_file()
@@ -50,7 +54,7 @@ def test_perform_upload_already_exists(uploader):
     error.__str__.return_value = "already exists in dataset"
     uploader._api.datafiles.create.return_value = (None, error)
 
-    with patch.object(uploader, '_get_upload_data', return_value=mock_encoder):
+    with patch.object(uploader, "_get_upload_data", return_value=mock_encoder):
         uploader._perform_upload()
 
     # Verify status was set to SKIPPED
@@ -68,7 +72,7 @@ def test_perform_upload_error(uploader):
     error.status = 400
     uploader._api.datafiles.create.return_value = (None, error)
 
-    with patch.object(uploader, '_get_upload_data', return_value=mock_encoder):
+    with patch.object(uploader, "_get_upload_data", return_value=mock_encoder):
         with pytest.raises(UploadRemoteFileError) as excinfo:
             uploader._perform_upload()
 
@@ -82,14 +86,20 @@ def test_perform_upload_error(uploader):
 def test_upload_file_retry_on_error(uploader):
     """Test that upload retries on error."""
     # Mock methods with side effects
-    prepare_mock = MagicMock(side_effect=[UploadRemoteDatasetPreparationError("First error"), None])
+    prepare_mock = MagicMock(
+        side_effect=[UploadRemoteDatasetPreparationError("First error"), None]
+    )
     perform_mock = MagicMock(side_effect=[UploadRemoteFileError("First error"), None])
-    update_mock = MagicMock(side_effect=[UploadRemoteFileMetadataError("First error"), None])
+    update_mock = MagicMock(
+        side_effect=[UploadRemoteFileMetadataError("First error"), None]
+    )
 
-    with patch.object(uploader, '_prepare_upload', prepare_mock), \
-            patch.object(uploader, '_perform_upload', perform_mock), \
-            patch.object(uploader, '_update_metadata', update_mock), \
-            patch('time.sleep'):
+    with (
+        patch.object(uploader, "_prepare_upload", prepare_mock),
+        patch.object(uploader, "_perform_upload", perform_mock),
+        patch.object(uploader, "_update_metadata", update_mock),
+        patch("time.sleep"),
+    ):
         # Upload should retry each step once
         uploader.upload_file()
 
@@ -104,7 +114,7 @@ def test_update_metadata_error(uploader):
     # Mock API error
     error = "API error"
     uploader._api.datafiles.update.return_value = (None, error)
-    uploader._uploaded_file = {'id': 12345}
+    uploader._uploaded_file = {"id": 12345}
 
     # Test that the error is properly raised
     with pytest.raises(UploadRemoteFileMetadataError) as excinfo:

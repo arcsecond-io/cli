@@ -8,11 +8,10 @@ def test_update_metadata_success(uploader):
     uploader._update_metadata(is_raw=True, custom_tags=["tag1", "tag2"])
 
     # Verify API call with correct parameters
-    expected_metadata = {
-        "is_raw": True,
-        "custom_tags": ["tag1", "tag2"]
-    }
-    uploader._api.datafiles.update.assert_called_once_with("test-file-id", expected_metadata)
+    expected_metadata = {"is_raw": True, "custom_tags": ["tag1", "tag2"]}
+    uploader._api.datafiles.update.assert_called_once_with(
+        "test-file-id", expected_metadata
+    )
 
 
 def test_update_metadata_with_context_values(uploader):
@@ -27,9 +26,11 @@ def test_update_metadata_with_context_values(uploader):
     # Verify API call with context values
     expected_metadata = {
         "is_raw": uploader._context.is_raw_data,
-        "custom_tags": uploader._context.custom_tags
+        "custom_tags": uploader._context.custom_tags,
     }
-    uploader._api.datafiles.update.assert_called_once_with("test-file-id", expected_metadata)
+    uploader._api.datafiles.update.assert_called_once_with(
+        "test-file-id", expected_metadata
+    )
 
 
 def test_update_metadata_missing_uuid(uploader):

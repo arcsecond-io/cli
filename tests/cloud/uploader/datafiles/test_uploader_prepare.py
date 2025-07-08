@@ -1,6 +1,8 @@
 import pytest
 
-from arcsecond.cloud.uploader.datafiles.errors import UploadRemoteDatasetPreparationError
+from arcsecond.cloud.uploader.datafiles.errors import (
+    UploadRemoteDatasetPreparationError,
+)
 
 
 def test_prepare_upload_with_existing_dataset(uploader):
@@ -25,8 +27,8 @@ def test_prepare_upload_with_new_dataset(uploader):
 
     # Verify API call was made with correct parameters
     expected_data = {
-        'name': uploader._context.dataset_name,
-        'telescope': uploader._context.telescope_uuid
+        "name": uploader._context.dataset_name,
+        "telescope": uploader._context.telescope_uuid,
     }
     uploader._api.datasets.create.assert_called_once_with(data=expected_data)
 
@@ -47,4 +49,6 @@ def test_prepare_upload_with_error(uploader):
     with pytest.raises(UploadRemoteDatasetPreparationError) as excinfo:
         uploader._prepare_upload()
 
-    assert f"Dataset {uploader._context.dataset_name} could not be created" in str(excinfo.value)
+    assert f"Dataset {uploader._context.dataset_name} could not be created" in str(
+        excinfo.value
+    )

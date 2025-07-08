@@ -10,30 +10,30 @@ def test_cli_basic():
     result = runner.invoke(cli.main)
     assert result.exit_code == 0 and not result.exception
     # Here 'arcsecond' is replaced by 'main' ??
-    assert 'Usage: main [OPTIONS] COMMAND [ARGS]' in result.output
+    assert "Usage: main [OPTIONS] COMMAND [ARGS]" in result.output
 
 
 def test_cli_version():
     runner = CliRunner()
-    result = runner.invoke(cli.main, ['-V'])
+    result = runner.invoke(cli.main, ["-V"])
     assert result.exit_code == 0 and not result.exception
-    assert re.match('[0-9].[0-9].[0-9]', result.output)
-    result = runner.invoke(cli.main, ['--version'])
+    assert re.match("[0-9].[0-9].[0-9]", result.output)
+    result = runner.invoke(cli.main, ["--version"])
     assert result.exit_code == 0 and not result.exception
-    assert re.match('[0-9].[0-9].[0-9]', result.output)
+    assert re.match("[0-9].[0-9].[0-9]", result.output)
     result = runner.invoke(cli.version)
     assert result.exit_code == 0 and not result.exception
-    assert re.match('[0-9].[0-9].[0-9]', result.output)
+    assert re.match("[0-9].[0-9].[0-9]", result.output)
 
 
 def test_cli_global_help():
     runner = CliRunner()
-    result = runner.invoke(cli.main, ['-h'])
+    result = runner.invoke(cli.main, ["-h"])
     assert result.exit_code == 0 and not result.exception
-    assert 'Usage: main [OPTIONS] COMMAND [ARGS]' in result.output
-    result = runner.invoke(cli.main, ['--help'])
+    assert "Usage: main [OPTIONS] COMMAND [ARGS]" in result.output
+    result = runner.invoke(cli.main, ["--help"])
     assert result.exit_code == 0 and not result.exception
-    assert 'Usage: main [OPTIONS] COMMAND [ARGS]' in result.output
+    assert "Usage: main [OPTIONS] COMMAND [ARGS]" in result.output
 
 
 # def test_no_connection_to_server():

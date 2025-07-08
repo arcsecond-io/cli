@@ -11,10 +11,12 @@ def test_get_upload_data(uploader, temp_file):
     mock_encoder = MagicMock()
     mock_monitor = MagicMock()
 
-    with patch('requests_toolbelt.MultipartEncoder', return_value=mock_encoder), \
-            patch('requests_toolbelt.MultipartEncoderMonitor', return_value=mock_monitor), \
-            patch('arcsecond.cloud.uploader.utils.get_upload_progress_printer'), \
-            patch('builtins.open', mock_open(read_data="test data")):
+    with (
+        patch("requests_toolbelt.MultipartEncoder", return_value=mock_encoder),
+        patch("requests_toolbelt.MultipartEncoderMonitor", return_value=mock_monitor),
+        patch("arcsecond.cloud.uploader.utils.get_upload_progress_printer"),
+        patch("builtins.open", mock_open(read_data="test data")),
+    ):
         # Without progress display
         uploader._display_progress = False
         result = uploader._get_upload_data()
@@ -35,13 +37,12 @@ def test_perform_upload_success(uploader):
     mock_datafile = {"id": "new-file-id"}
     uploader._api.datafiles.create.return_value = (mock_datafile, None)
 
-    with patch.object(uploader, '_get_upload_data', return_value=mock_encoder):
+    with patch.object(uploader, "_get_upload_data", return_value=mock_encoder):
         uploader._perform_upload()
 
     # Verify API call
     uploader._api.datafiles.create.assert_called_once_with(
-        data=mock_encoder,
-        headers={"Content-Type": "multipart/form-data"}
+        data=mock_encoder, headers={"Content-Type": "multipart/form-data"}
     )
 
     # Verify status and file ID
@@ -52,9 +53,11 @@ def test_perform_upload_success(uploader):
 def test_upload_file_complete_process(uploader):
     """Test the complete upload file process."""
     # Mock all the component methods
-    with patch.object(uploader, '_prepare_upload') as mock_prepare, \
-            patch.object(uploader, '_perform_upload') as mock_perform, \
-            patch.object(uploader, '_update_metadata') as mock_update:
+    with (
+        patch.object(uploader, "_prepare_upload") as mock_prepare,
+        patch.object(uploader, "_perform_upload") as mock_perform,
+        patch.object(uploader, "_update_metadata") as mock_update,
+    ):
         # Successful upload
         uploader._status = [Status.UPLOADING, Substatus.UPLOADING, None]
         result = uploader.upload_file(is_raw=True, custom_tags=["tag1"])
@@ -72,33 +75,40 @@ def test_dataset_file_uploader_integration(mock_config, temp_file):
     """Integration test for DatasetFileUploader."""
     # Create a real context with mocked API
     mock_api = MagicMock()
-    mock_api.datasets.create.return_value = ({"uuid": "new-dataset-uuid", "name": "test-dataset"}, None)
+    mock_api.datasets.create.return_value = (
+        {"uuid": "new-dataset-uuid", "name": "test-dataset"},
+        None,
+    )
     mock_api.datafiles.create.return_value = ({"id": "new-file-id"}, None)
     mock_api.datafiles.update.return_value = ({"id": "new-file-id"}, None)
 
     # Create a patched context class
-    with patch('arcsecond.api.main.ArcsecondAPI', return_value=mock_api):
+    with patch("arcsecond.api.main.ArcsecondAPI", return_value=mock_api):
         context = DatasetUploadContext(
             mock_config,
             input_dataset_uuid_or_name="test-dataset",
             input_telescope_uuid="test-telescope-uuid",
             is_raw_data=True,
-            custom_tags=["test_tag"]
+            custom_tags=["test_tag"],
         )
 
         # Mock context validation
-        with patch.object(context, 'validate'):
+        with patch.object(context, "validate"):
             context._is_validated = True
             context._api = mock_api
 
             # Create uploader with mocked file operations
             walking_root = Path(temp_file).parent
 
-            with patch('arcsecond.cloud.uploader.logger.get_logger'), \
-                    patch('requests_toolbelt.MultipartEncoder'), \
-                    patch('requests_toolbelt.MultipartEncoderMonitor'), \
-                    patch('builtins.open', mock_open(read_data="test data")):
-                uploader = DatasetFileUploader(context, walking_root, temp_file, display_progress=False)
+            with (
+                patch("arcsecond.cloud.uploader.logger.get_logger"),
+                patch("requests_toolbelt.MultipartEncoder"),
+                patch("requests_toolbelt.MultipartEncoderMonitor"),
+                patch("builtins.open", mock_open(read_data="test data")),
+            ):
+                uploader = DatasetFileUploader(
+                    context, walking_root, temp_file, display_progress=False
+                )
                 uploader._logger = MagicMock()
 
                 # Execute the upload
