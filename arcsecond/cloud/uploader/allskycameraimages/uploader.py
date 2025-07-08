@@ -3,9 +3,10 @@ import os
 from arcsecond.cloud.uploader.errors import UploadRemoteFileMetadataError
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
 from arcsecond.cloud.uploader.utils import get_upload_progress_printer
+from .context import AllSkyCameraImageUploadContext
 
 
-class AllSkyCameraImageFileUploader(BaseFileUploader):
+class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadContext]):
     """Uploader for image files with camera attachment"""
 
     def _prepare_upload(self):
@@ -38,8 +39,8 @@ class AllSkyCameraImageFileUploader(BaseFileUploader):
 
     def _update_metadata(self, timestamp=None, custom_tags=None):
         """Update image metadata after upload"""
-        if not self._uploaded_file_uuid:
-            self._logger.warning(f'{self.log_prefix} No UUID found for uploaded file. Skipping metadata update.')
+        if not self.uploaded_file_id:
+            self._logger.warning(f'{self.log_prefix} No ID found for uploaded file. Skipping metadata update.')
             return
 
         # Determine final timestamp
@@ -59,7 +60,7 @@ class AllSkyCameraImageFileUploader(BaseFileUploader):
         # Update metadata
         if metadata:
             self._logger.info(f'{self.log_prefix} Updating image metadata: {metadata}')
-            response, error = self._api.datafiles.update(self._uploaded_file_uuid, metadata)
+            response, error = self._api.datafiles.update(self.uploaded_file_id, metadata)
 
             if error:
                 error_msg = f'Failed to update image metadata: {error}'

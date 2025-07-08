@@ -3,8 +3,10 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
+from typing import TypeVar, Generic
 
 from .constants import Status, Substatus
+from .context import BaseUploadContext
 from .errors import (
     UploadRemoteFileError,
     UploadRemoteFileInvalidatedContextError,
@@ -12,12 +14,15 @@ from .errors import (
 )
 from .logger import get_logger
 
+ContextT = TypeVar('ContextT', bound=BaseUploadContext)
 
-class BaseFileUploader(ABC):
+
+class BaseFileUploader(Generic[ContextT], ABC):
     """Abstract base class for file uploaders"""
 
-    def __init__(self, context, walking_root, file_path, display_progress=False):
+    def __init__(self, context: ContextT, walking_root: str, file_path: str, display_progress=False):
         self._context = context
+        self._api = context._api
         self._walking_root = Path(walking_root)
         self._file_path = Path(file_path)
         self._display_progress = display_progress
@@ -27,10 +32,21 @@ class BaseFileUploader(ABC):
         self._started = None
         self._file_size = os.path.getsize(file_path)
 
+        self._uploaded_file = None
+
     @property
     def log_prefix(self):
         """Generate a log prefix for this file"""
         return f'File {self._file_path.name}:'
+
+    @property
+    def uploaded_file_id(self):
+        """Generate a log prefix for this file"""
+        return self._uploaded_file.get('id', None) if self._uploaded_file else None
+
+    @property
+    def main_status(self):
+        return self._status[0]
 
     def upload_file(self, **kwargs):
         """Generic upload method that orchestrates the upload process"""
@@ -81,7 +97,7 @@ class BaseFileUploader(ABC):
 
         data = self._get_upload_data()
         headers = {"Content-Type": data.content_type}
-        _, error = self._context.api_endpoint.create(data=data, headers=headers)
+        self._uploaded_file, error = self._context.api_endpoint.create(data=data, headers=headers)
 
         if not error:
             seconds = (datetime.now() - self._started).total_seconds()

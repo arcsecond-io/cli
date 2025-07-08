@@ -3,10 +3,11 @@ import os
 from arcsecond.cloud.uploader.errors import UploadRemoteFileMetadataError
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
 from arcsecond.cloud.uploader.utils import get_upload_progress_printer
+from .context import DatasetUploadContext
 from .errors import UploadRemoteDatasetPreparationError
 
 
-class DatasetFileUploader(BaseFileUploader):
+class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
     """Uploader for files in a dataset context"""
 
     def _prepare_upload(self):
@@ -21,7 +22,7 @@ class DatasetFileUploader(BaseFileUploader):
                 data['telescope'] = self._context.telescope_uuid
 
             self._logger.info(f'{self.log_prefix} Creating dataset with name {dataset_name}...')
-            dataset, error = self._api.datasets.create(data=data)
+            dataset, error = self._context._api.datasets.create(data=data)
 
             if error:
                 error_msg = f'Dataset {dataset_name} could not be created: {error}'
@@ -35,9 +36,7 @@ class DatasetFileUploader(BaseFileUploader):
         """Get upload data for dataset files"""
         from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
-        relative_path = self._file_path.relative_to(self._walking_root)
         filename = os.path.basename(self._file_path)
-
         # Create fields dictionary for MultipartEncoder
         fields = {
             'file': (filename, open(self._file_path, 'rb'), 'application/octet-stream'),
@@ -57,8 +56,8 @@ class DatasetFileUploader(BaseFileUploader):
 
     def _update_metadata(self, is_raw=None, custom_tags=None):
         """Update file metadata after upload"""
-        if not self._uploaded_file_uuid:
-            self._logger.warning(f'{self.log_prefix} No UUID found for uploaded file. Skipping metadata update.')
+        if not self.uploaded_file_id:
+            self._logger.warning(f'{self.log_prefix} No ID found for uploaded file. Skipping metadata update.')
             return
 
         # Determine final is_raw value
@@ -70,15 +69,15 @@ class DatasetFileUploader(BaseFileUploader):
         # Build metadata
         metadata = {}
         if is_raw_value is not None:
-            metadata['isRaw'] = is_raw_value
+            metadata['is_raw'] = is_raw_value
 
         if final_tags:
-            metadata['customTags'] = final_tags
+            metadata['custom_tags'] = final_tags
 
         # Update metadata
         if metadata:
             self._logger.info(f'{self.log_prefix} Updating file metadata: {metadata}')
-            response, error = self._api.datafiles.update(self._uploaded_file_uuid, metadata)
+            response, error = self._api.datafiles.update(self.uploaded_file_id, metadata)
 
             if error:
                 error_msg = f'Failed to update file metadata: {error}'

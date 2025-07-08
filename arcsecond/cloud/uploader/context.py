@@ -22,7 +22,7 @@ class BaseUploadContext(ABC):
         self._custom_tags = custom_tags
         self._organisation = None
         self._api = ArcsecondAPI(config, org_subdomain)
-        self.__is_validated = False
+        self._is_validated = False
 
     @property
     def api_endpoint(self):
@@ -30,7 +30,7 @@ class BaseUploadContext(ABC):
 
     @property
     def is_validated(self):
-        return self.__is_validated
+        return self._is_validated
 
     @property
     def config(self):
@@ -56,7 +56,7 @@ class BaseUploadContext(ABC):
             self._validate_remote_organisation()
             self._validate_astronomer_role_in_remote_organisation()
 
-        self.__is_validated = True
+        self._is_validated = True
 
     @abstractmethod
     def _validate_context_specific(self):
