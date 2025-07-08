@@ -11,10 +11,11 @@ VERSION_HELP_STRING = "Show the 'lasilla' CLI version and exit."
 
 ######################## SELF-HOSTING ##################################################################################
 
+
 @click.group(invoke_without_command=True)
-@click.option('--version', is_flag=True, help=VERSION_HELP_STRING)
-@click.option('-V', is_flag=True, help=VERSION_HELP_STRING)
-@click.option('-h', is_flag=True, help="Show this message and exit.")
+@click.option("--version", is_flag=True, help=VERSION_HELP_STRING)
+@click.option("-V", is_flag=True, help=VERSION_HELP_STRING)
+@click.option("-h", is_flag=True, help="Show this message and exit.")
 @click.pass_context
 def main(ctx, version=False, v=False, h=False):
     if version or v:
@@ -23,8 +24,12 @@ def main(ctx, version=False, v=False, h=False):
         click.echo(ctx.get_help())
 
 
-@main.command(name='try', help='Try a full-featured demo of a self-hosted Arcsecond instance.')
-@click.option('-s', '--skip-setup', required=False, is_flag=True, help="Skip the setup.")
+@main.command(
+    name="try", help="Try a full-featured demo of a self-hosted Arcsecond instance."
+)
+@click.option(
+    "-s", "--skip-setup", required=False, is_flag=True, help="Skip the setup."
+)
 @basic_options
 @pass_state
 def do_try(state, skip_setup=False):
@@ -39,13 +44,13 @@ def do_try(state, skip_setup=False):
 #     run_arcsecond(state, do_try=False, skip_setup=skip_setup)
 
 
-@main.command(name='stop', help='Stop the running self-hosted Arcsecond instance.')
+@main.command(name="stop", help="Stop the running self-hosted Arcsecond instance.")
 @pass_state
 def do_stop(state):
     stop()
 
 
-@main.command(name='status', help='Stop the running self-hosted Arcsecond instance.')
+@main.command(name="status", help="Stop the running self-hosted Arcsecond instance.")
 @pass_state
 def do_get_status(state):
     status()

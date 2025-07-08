@@ -6,11 +6,11 @@ from .constants import DOCKER_IMAGE_CONTAINERS_NAMES
 
 
 def has_docker_image(full_name):
-    name, tag = full_name.split(':')
-    click.echo(f'Checking for Docker image {name}:{tag}...')
+    name, tag = full_name.split(":")
+    click.echo(f"Checking for Docker image {name}:{tag}...")
     client = docker.from_env()
     try:
-        client.images.get(f'{name}:{tag}')
+        client.images.get(f"{name}:{tag}")
     except ImageNotFound:
         return False
     except APIError:
@@ -21,9 +21,9 @@ def has_docker_image(full_name):
 
 
 def update_docker_image(full_name: str):
-    name, tag = full_name.split(':')
+    name, tag = full_name.split(":")
     client = docker.from_env()
-    click.echo(f'Pulling Docker image {name}:{tag}...')
+    click.echo(f"Pulling Docker image {name}:{tag}...")
     try:
         client.images.pull(name, tag=tag)
         return True

@@ -9,25 +9,36 @@ from .checks import is_user_logged_in, has_user_verified_email, fetch_profile_em
 from .constants import BANNER, PREFIX, PREFIX_SUB, PREFIX_SUB_FAIL
 from .keygen import KeygenClient
 
-__version__ = '6.0.0-alpha.1 - Please, send feedback to cedric@arcsecond.io'
-warning = '---> ARCSECOND.LOCAL (SELF-HOSTING) IS IN ALPHA STATE. USE AT YOUR OWN RISK. <---'
+__version__ = "6.0.0-alpha.1 - Please, send feedback to cedric@arcsecond.io"
+warning = (
+    "---> ARCSECOND.LOCAL (SELF-HOSTING) IS IN ALPHA STATE. USE AT YOUR OWN RISK. <---"
+)
 
 pass_state = click.make_pass_decorator(State, ensure=True)
 
 
-@click.command(help='Install a self-hosted Arcsecond system.')
-@click.option('--do_try', required=False, nargs=1, prompt=False, default=True, type=click.BOOL)
-@click.option('--skip_setup', required=False, nargs=1, prompt=False, default=False, type=click.BOOL)
+@click.command(help="Install a self-hosted Arcsecond system.")
+@click.option(
+    "--do_try", required=False, nargs=1, prompt=False, default=True, type=click.BOOL
+)
+@click.option(
+    "--skip_setup",
+    required=False,
+    nargs=1,
+    prompt=False,
+    default=False,
+    type=click.BOOL,
+)
 @basic_options
 @pass_state
 def install(state, do_try=True, skip_setup=False):
     click.echo(BANNER)
-    click.echo('\n' + PREFIX + __version__)
-    click.echo('\n' + PREFIX + warning)
+    click.echo("\n" + PREFIX + __version__)
+    click.echo("\n" + PREFIX + warning)
     click.echo("\n" + PREFIX + "Checking prerequisites...")
     if not docker.is_docker_available():
         return
-    if sys.platform == 'darwin':
+    if sys.platform == "darwin":
         docker.setup_docker_host_on_macos()
     if not is_user_logged_in(state):
         return
@@ -61,13 +72,13 @@ def install(state, do_try=True, skip_setup=False):
 
 
 def stop():
-    click.echo(PREFIX + 'Stopping Arcsecond...')
-    if sys.platform == 'darwin':
+    click.echo(PREFIX + "Stopping Arcsecond...")
+    if sys.platform == "darwin":
         docker.setup_docker_host_on_macos()
     docker.stop_all_containers()
-    click.echo(PREFIX + 'Arcsecond stopped.')
+    click.echo(PREFIX + "Arcsecond stopped.")
 
 
 def status():
-    click.echo(PREFIX + 'Checking Arcsecond status...')
+    click.echo(PREFIX + "Checking Arcsecond status...")
     click.echo(docker.get_all_containers_status_string())

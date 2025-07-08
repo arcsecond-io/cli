@@ -7,13 +7,15 @@ import click
 
 from arcsecond import ArcsecondConfig
 
-email_regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
+email_regex = re.compile(
+    r"([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+"
+)
 
 
 def _get_random_secret_key():
     # No '%' to avoid interpolation surprises
-    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$^&*(-_=+)'
-    return ''.join(secrets.choice(chars) for i in range(50))
+    chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$^&*(-_=+)"
+    return "".join(secrets.choice(chars) for i in range(50))
 
 
 def _validate_value_base(value):
@@ -24,23 +26,27 @@ def _validate_value_base(value):
 
 def _validate_subdomain(value):
     value = _validate_value_base(value).lower()
-    if not re.match(r'[a-z\-_]{3,}', value):
-        raise click.BadParameter("Value must be a correct subdomain (no special characters except - or _)")
+    if not re.match(r"[a-z\-_]{3,}", value):
+        raise click.BadParameter(
+            "Value must be a correct subdomain (no special characters except - or _)"
+        )
     return value
 
 
 def _validate_email_host_item(value):
     value = _validate_value_base(value)
-    if value[0] == '$':
+    if value[0] == "$":
         value = os.environ[value[1:]].lower()
-        click.echo('Value: ' + value)
+        click.echo("Value: " + value)
     return value
 
 
 def __validate_email_host(value):
     value = _validate_email_host_item(value)
-    if not re.match(r'[a-z\-_]{1,}(\.[a-z\-_]{1,})?', value):
-        raise click.BadParameter("Value must be a correct email host name (no http://, only the hostname).")
+    if not re.match(r"[a-z\-_]{1,}(\.[a-z\-_]{1,})?", value):
+        raise click.BadParameter(
+            "Value must be a correct email host name (no http://, only the hostname)."
+        )
     return value
 
 
@@ -53,17 +59,19 @@ def _validate_email_admin(value):
 
 def setup_hosting_variables(config: ArcsecondConfig, do_try=True):
     click.echo("\nWelcome to the setup of self-hosting Arcsecond.")
-    section = 'hosting:try' if do_try else 'hosting'
+    section = "hosting:try" if do_try else "hosting"
 
     # Django SECRET_KEY variable.
-    if config.read_key('secret_key') is None:
+    if config.read_key("secret_key") is None:
         secret_key = _get_random_secret_key()
         config.save(secret_key=secret_key)
-    if config.read_key('field_encryption_key') is None:
-        field_encryption_key = base64.urlsafe_b64encode(os.urandom(32)).decode('utf8')
+    if config.read_key("field_encryption_key") is None:
+        field_encryption_key = base64.urlsafe_b64encode(os.urandom(32)).decode("utf8")
         config.save(field_encryption_key=field_encryption_key)
 
-    click.echo("Note that you will need a recent version of Docker running on this machine for Arcsecond to run.")
+    click.echo(
+        "Note that you will need a recent version of Docker running on this machine for Arcsecond to run."
+    )
     click.echo("A connexion to Internet is also required.")
 
     # click.echo("\nPlease answer the following questions to setup your local installation.")

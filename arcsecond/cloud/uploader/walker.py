@@ -17,14 +17,16 @@ def _get_duplicates(values):
 
 def _walk_first_pass(root_path: Path):
     logger = get_logger()
-    log_prefix = '[Walker - 1/2]'
+    log_prefix = "[Walker - 1/2]"
     logger.info(f"{log_prefix} Making a first pass to collect info on files...")
 
-    total_file_count = sum(1 for f in root_path.glob('**/*') if f.is_file() and not is_file_hidden(f))
+    total_file_count = sum(
+        1 for f in root_path.glob("**/*") if f.is_file() and not is_file_hidden(f)
+    )
 
     index = 0
     file_paths = []
-    for file_path in root_path.glob('**/*'):
+    for file_path in root_path.glob("**/*"):
         # Skipping both hidden files and hidden directories.
         if is_file_hidden(file_path) or not file_path.is_file():
             continue
@@ -35,34 +37,40 @@ def _walk_first_pass(root_path: Path):
         click.echo(msg)
         file_paths.append(file_path)
 
-    logger.info(f"{log_prefix} Finished collecting file info inside folder {str(root_path)}.")
+    logger.info(
+        f"{log_prefix} Finished collecting file info inside folder {str(root_path)}."
+    )
     return file_paths
 
 
-def _walk_second_pass(uploader_class: BaseFileUploader.__class__,
-                      context: BaseUploadContext,
-                      root_path: Path,
-                      file_paths: list):
+def _walk_second_pass(
+    uploader_class: BaseFileUploader.__class__,
+    context: BaseUploadContext,
+    root_path: Path,
+    file_paths: list,
+):
     logger = get_logger()
-    log_prefix = '[Walker - 2/2]'
+    log_prefix = "[Walker - 2/2]"
     logger.info(f"{log_prefix} Starting second pass to upload files...")
 
-    uploads = {'succeeded': [], 'skipped': [], 'failed': []}
+    uploads = {"succeeded": [], "skipped": [], "failed": []}
     total_file_count = len(file_paths)
 
     index = 0
     for file_path in file_paths:
         index += 1
-        click.echo(f"{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)")
+        click.echo(
+            f"{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)"
+        )
 
         uploader = uploader_class(context, root_path, file_path, display_progress=True)
         status, substatus, error = uploader.upload_file()
         if status == Status.OK:
-            uploads['succeeded'].append(str(file_path))
+            uploads["succeeded"].append(str(file_path))
         elif status == Status.SKIPPED:
-            uploads['skipped'].append((str(file_path), substatus, error))
+            uploads["skipped"].append((str(file_path), substatus, error))
         else:
-            uploads['failed'].append((str(file_path), substatus, error))
+            uploads["failed"].append((str(file_path), substatus, error))
 
     msg = f"{log_prefix}\n\nFinished upload walk inside folder {root_path} "
     logger.info(msg)
@@ -70,16 +78,20 @@ def _walk_second_pass(uploader_class: BaseFileUploader.__class__,
     return uploads
 
 
-def walk_folder_and_upload_files(uploader_class: BaseFileUploader.__class__,
-                                 context: BaseUploadContext,
-                                 folder_string: str):
+def walk_folder_and_upload_files(
+    uploader_class: BaseFileUploader.__class__,
+    context: BaseUploadContext,
+    folder_string: str,
+):
     logger = get_logger()
-    log_prefix = '[Walker]'
+    log_prefix = "[Walker]"
     root_path = Path(folder_string).resolve()
     if root_path.is_file():  # Just in case we pass a file...
         root_path = root_path.parent
 
-    logger.info(f"{log_prefix} Starting to walk through {root_path} and its subfolders...")
+    logger.info(
+        f"{log_prefix} Starting to walk through {root_path} and its subfolders..."
+    )
 
     file_paths = _walk_first_pass(root_path)
     if len(file_paths) == 0:
@@ -101,12 +113,12 @@ def walk_folder_and_upload_files(uploader_class: BaseFileUploader.__class__,
     msg += f"skipped: {len(uploads['skipped'])}, failed: {len(uploads['failed'])}\n"
     logger.info(msg)
 
-    if len(uploads['skipped']) > 0:
-        logger.error(f'{log_prefix} Here are the skipped uploads:')
-        for path, substatus, error in uploads['skipped']:
-            logger.warning(f'{path} ({substatus})')
+    if len(uploads["skipped"]) > 0:
+        logger.error(f"{log_prefix} Here are the skipped uploads:")
+        for path, substatus, error in uploads["skipped"]:
+            logger.warning(f"{path} ({substatus})")
 
-    if len(uploads['failed']) > 0:
-        logger.error(f'{log_prefix} Here are the failed uploads:')
-        for path, substatus, error in uploads['failed']:
-            logger.error(f'{path} ({substatus}) {error}')
+    if len(uploads["failed"]) > 0:
+        logger.error(f"{log_prefix} Here are the failed uploads:")
+        for path, substatus, error in uploads["failed"]:
+            logger.error(f"{path} ({substatus}) {error}")

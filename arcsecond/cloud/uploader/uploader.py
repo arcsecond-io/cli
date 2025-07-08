@@ -10,17 +10,23 @@ from .context import BaseUploadContext
 from .errors import (
     UploadRemoteFileError,
     UploadRemoteFileInvalidatedContextError,
-    UploadRemoteFileMetadataError
+    UploadRemoteFileMetadataError,
 )
 from .logger import get_logger
 
-ContextT = TypeVar('ContextT', bound=BaseUploadContext)
+ContextT = TypeVar("ContextT", bound=BaseUploadContext)
 
 
 class BaseFileUploader(Generic[ContextT], ABC):
     """Abstract base class for file uploaders"""
 
-    def __init__(self, context: ContextT, walking_root: str, file_path: str, display_progress=False):
+    def __init__(
+        self,
+        context: ContextT,
+        walking_root: str,
+        file_path: str,
+        display_progress=False,
+    ):
         self._context = context
         self._api = context._api
         self._walking_root = Path(walking_root)
@@ -37,12 +43,12 @@ class BaseFileUploader(Generic[ContextT], ABC):
     @property
     def log_prefix(self):
         """Generate a log prefix for this file"""
-        return f'File {self._file_path.name}:'
+        return f"File {self._file_path.name}:"
 
     @property
     def uploaded_file_id(self):
         """Generate a log prefix for this file"""
-        return self._uploaded_file.get('id', None) if self._uploaded_file else None
+        return self._uploaded_file.get("id", None) if self._uploaded_file else None
 
     @property
     def main_status(self):
@@ -53,7 +59,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
         if self._context.is_validated is False:
             raise UploadRemoteFileInvalidatedContextError()
 
-        self._logger.info(f'{self.log_prefix} Opening upload sequence.')
+        self._logger.info(f"{self.log_prefix} Opening upload sequence.")
 
         # Pre-upload preparation (different for each context type)
         try:
@@ -73,9 +79,9 @@ class BaseFileUploader(Generic[ContextT], ABC):
 
         # Update metadata if upload successful
         if self._status[0] == Status.SKIPPED:
-            self._logger.info(f'{self.log_prefix} Upload skipped.')
+            self._logger.info(f"{self.log_prefix} Upload skipped.")
         else:
-            self._logger.info(f'{self.log_prefix} Upload done.')
+            self._logger.info(f"{self.log_prefix} Upload done.")
 
             try:
                 self._update_metadata(**kwargs)
@@ -84,31 +90,41 @@ class BaseFileUploader(Generic[ContextT], ABC):
                 time.sleep(1)
                 self._update_metadata(**kwargs)
 
-        self._logger.info(f'{self.log_prefix} Closing upload sequence.')
+        self._logger.info(f"{self.log_prefix} Closing upload sequence.")
 
         return self._status
 
     def _perform_upload(self):
         """Common upload implementation"""
-        self._logger.info(f'{self.log_prefix} Starting uploading to Arcsecond.io ({self._file_size} bytes)')
+        self._logger.info(
+            f"{self.log_prefix} Starting uploading to Arcsecond.io ({self._file_size} bytes)"
+        )
 
         self._status = [Status.UPLOADING, Substatus.UPLOADING, None]
         self._started = datetime.now()
 
         data = self._get_upload_data()
         headers = {"Content-Type": data.content_type}
-        self._uploaded_file, error = self._context.api_endpoint.create(data=data, headers=headers)
+        self._uploaded_file, error = self._context.api_endpoint.create(
+            data=data, headers=headers
+        )
 
         if not error:
             seconds = (datetime.now() - self._started).total_seconds()
-            self._logger.info(f'{self.log_prefix} Upload duration is {seconds} seconds.')
+            self._logger.info(
+                f"{self.log_prefix} Upload duration is {seconds} seconds."
+            )
             return
 
-        if 'already exists in dataset' in str(error):  # VERY WEAK!!! But solution with HTTP 409 isn't nice either.
+        if "already exists in dataset" in str(
+            error
+        ):  # VERY WEAK!!! But solution with HTTP 409 isn't nice either.
             self._status = [Status.SKIPPED, Substatus.ALREADY_SYNCED, None]
         else:
             self._status = [Status.ERROR, Substatus.ERROR, None]
-            self._logger.info(f'{self.log_prefix} Upload of file {self._file_path} failed.')
+            self._logger.info(
+                f"{self.log_prefix} Upload of file {self._file_path} failed."
+            )
             raise UploadRemoteFileError(f"{str(error.status)} - {str(error)}")
 
     @abstractmethod

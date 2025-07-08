@@ -8,4 +8,6 @@ class InvalidCameraError(ArcsecondError):
 
 class InvalidOrganisationCameraError(ArcsecondError):
     def __init__(self, camera_uuid, org_subdomain, message):
-        super().__init__(f"Invalid camera UUID {camera_uuid} for organisation {org_subdomain}: {message}")
+        super().__init__(
+            f"Invalid camera UUID {camera_uuid} for organisation {org_subdomain}: {message}"
+        )

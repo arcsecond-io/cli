@@ -2,13 +2,21 @@ import pathlib
 
 import click
 
-from arcsecond.cloud.uploader.utils import __get_formatted_bytes_size, __get_formatted_size_times, is_file_hidden
+from arcsecond.cloud.uploader.utils import (
+    __get_formatted_bytes_size,
+    __get_formatted_size_times,
+    is_file_hidden,
+)
 from .context import DatasetUploadContext
 
 
-def display_upload_datafiles_command_summary(context: DatasetUploadContext, folders: list):
+def display_upload_datafiles_command_summary(
+    context: DatasetUploadContext, folders: list
+):
     click.echo("\n --- Upload summary --- ")
-    click.echo(f" • Arcsecond username: @{context.config.username} (Upload key: {context.config.upload_key[:4]}••••)")
+    click.echo(
+        f" • Arcsecond username: @{context.config.username} (Upload key: {context.config.upload_key[:4]}••••)"
+    )
     if context.organisation_subdomain:
         role = context.config.read_key(context.organisation_subdomain)
         msg = f" • Uploading to Observatory Portal '{context.organisation_subdomain}'."
@@ -42,15 +50,25 @@ def display_upload_datafiles_command_summary(context: DatasetUploadContext, fold
             msg = " • Dataset will not be attached to any telescope. It can be changed later in the web."
             click.echo(msg)
 
-    click.echo(f" • Using API server: '{context.config.api_name}' ({context.config.api_server})")
+    click.echo(
+        f" • Using API server: '{context.config.api_name}' ({context.config.api_server})"
+    )
     click.echo(f" • Folder{'s' if len(folders) > 1 else ''}:")
     for folder in folders:
         folder_path = pathlib.Path(folder).expanduser().resolve()
-        click.echo(f"   > Path: {str(folder_path.parent if folder_path.is_file() else folder_path)}")
+        click.echo(
+            f"   > Path: {str(folder_path.parent if folder_path.is_file() else folder_path)}"
+        )
 
         if folder_path == pathlib.Path.home():
             click.echo("   >>> Warning: This folder is your HOME folder. <<<")
 
-        size = sum(f.stat().st_size for f in folder_path.glob('**/*') if f.is_file() and not is_file_hidden(f))
-        click.echo(f"   > Volume: {__get_formatted_bytes_size(size)} in total in this folder.")
+        size = sum(
+            f.stat().st_size
+            for f in folder_path.glob("**/*")
+            if f.is_file() and not is_file_hidden(f)
+        )
+        click.echo(
+            f"   > Volume: {__get_formatted_bytes_size(size)} in total in this folder."
+        )
         click.echo(f"   > Estimated upload time: {__get_formatted_size_times(size)}")

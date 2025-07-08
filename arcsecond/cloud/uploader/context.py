@@ -9,7 +9,7 @@ from .errors import (
     InvalidAstronomerError,
     InvalidWatchOptionsError,
     UnknownOrganisationError,
-    InvalidOrgMembershipError
+    InvalidOrgMembershipError,
 )
 
 
@@ -38,7 +38,7 @@ class BaseUploadContext(ABC):
 
     @property
     def organisation_subdomain(self):
-        return self._organisation.get('subdomain', '') if self._organisation else ''
+        return self._organisation.get("subdomain", "") if self._organisation else ""
 
     @property
     def custom_tags(self):
@@ -67,20 +67,20 @@ class BaseUploadContext(ABC):
         if tags is None:
             return
         if not isinstance(tags, list):
-            raise TypeError('custom_tags must be a list')
+            raise TypeError("custom_tags must be a list")
         if not all([isinstance(t, str) for t in tags]):
-            raise TypeError('all custom_tags must be strings')
-        if any([t.startswith('arcsecond') for t in tags]):
+            raise TypeError("all custom_tags must be strings")
+        if any([t.startswith("arcsecond") for t in tags]):
             raise TypeError('none of custom_tags must start with "arcsecond"')
 
     def _validate_local_astronomer_credentials(self):
         username = self._config.username
         if username is None:
-            raise InvalidAstronomerError('Missing username')
+            raise InvalidAstronomerError("Missing username")
 
         upload_key = self._config.upload_key
         if not upload_key:
-            raise InvalidWatchOptionsError('Missing upload_key.')
+            raise InvalidWatchOptionsError("Missing upload_key.")
 
     def _validate_remote_organisation(self):
         click.echo(f" • Fetching details of organisation {self._subdomain}...")
@@ -90,8 +90,12 @@ class BaseUploadContext(ABC):
 
     def _validate_astronomer_role_in_remote_organisation(self):
         endpoint = ArcsecondAPIEndpoint(self.config, API_AUTH_PATH_VERIFY_PORTAL)
-        result, error = endpoint.create({'username': self._config.username,
-                                         'key': self._config.access_key or self._config.upload_key,
-                                         'organisation': self._subdomain})
+        result, error = endpoint.create(
+            {
+                "username": self._config.username,
+                "key": self._config.access_key or self._config.upload_key,
+                "organisation": self._subdomain,
+            }
+        )
         if error:
             raise InvalidOrgMembershipError(self._subdomain)

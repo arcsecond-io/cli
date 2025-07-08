@@ -9,13 +9,28 @@ from arcsecond.options import State, basic_options
 pass_state = click.make_pass_decorator(State, ensure=True)
 
 
-@click.command(help='Login to your Arcsecond account.')
-@click.option('--username', required=True, nargs=1, prompt=True,
-              help='Account username (without @). Primary email address is also allowed.')
-@click.option('--type', required=True, type=click.Choice(['access', 'upload'], case_sensitive=False), prompt=True,
-              help='Your access key (a.k.a. API key). Visit your settings page to copy and paste it here. One of Access or Upload key must be provided.')
-@click.option('--key', required=True, nargs=1, prompt=True,
-              help='Your upload key. Visit your settings page to copy and paste it here. One of Access or Upload key must be provided.')
+@click.command(help="Login to your Arcsecond account.")
+@click.option(
+    "--username",
+    required=True,
+    nargs=1,
+    prompt=True,
+    help="Account username (without @). Primary email address is also allowed.",
+)
+@click.option(
+    "--type",
+    required=True,
+    type=click.Choice(["access", "upload"], case_sensitive=False),
+    prompt=True,
+    help="Your access key (a.k.a. API key). Visit your settings page to copy and paste it here. One of Access or Upload key must be provided.",
+)
+@click.option(
+    "--key",
+    required=True,
+    nargs=1,
+    prompt=True,
+    help="Your upload key. Visit your settings page to copy and paste it here. One of Access or Upload key must be provided.",
+)
 @basic_options
 @pass_state
 def login(state, username, type, key):
@@ -32,22 +47,22 @@ def login(state, username, type, key):
     Beware that the Key you provide will be stored locally on the file:
     ~/.config/arcsecond/config.ini
     """
-    key_name = 'access_key' if type == 'access' else 'upload_key'
+    key_name = "access_key" if type == "access" else "upload_key"
     config = ArcsecondConfig(state)
     _, error = ArcsecondAPI(config).login(username, **{key_name: key})
     if error:
         click.echo(str(error))
 
 
-@click.command(help='Get or set the API server address (fully qualified domain name).')
-@click.argument('name', required=False, nargs=1)
-@click.argument('fqdn', required=False, nargs=1)
+@click.command(help="Get or set the API server address (fully qualified domain name).")
+@click.argument("name", required=False, nargs=1)
+@click.argument("fqdn", required=False, nargs=1)
 @pass_state
 def api(state, name=None, fqdn=None):
     """Configure the API server address"""
     if name is None:
-        name = 'cloud'
-    elif name == 'cloud':
+        name = "cloud"
+    elif name == "cloud":
         raise ArcsecondError("You cannot change the FQDN of the 'cloud' API server.")
 
     # The setter below is normally handled by the option --api, but here, the DX is different,
@@ -62,14 +77,14 @@ def api(state, name=None, fqdn=None):
         click.echo(f" • Set fqdn: {config.api_server} to API named {name}.")
 
 
-@click.command(help='Get your complete user profile.')
+@click.command(help="Get your complete user profile.")
 @basic_options
 @pass_state
 def me(state):
     """Fetch your complete user profile."""
     username = ArcsecondConfig(state).username or None
     if not username:
-        msg = f'Invalid/missing username: {username}. Make sure to login first: $ arcsecond login'
+        msg = f"Invalid/missing username: {username}. Make sure to login first: $ arcsecond login"
         raise ArcsecondError(msg)
     response, error = ArcsecondAPI(ArcsecondConfig(state)).profiles.read(username)
     if error:

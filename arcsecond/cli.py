@@ -1,6 +1,14 @@
 import click
 
-from arcsecond.cloud import login, api, me, datasets, telescopes, upload_images, upload_datafiles
+from arcsecond.cloud import (
+    login,
+    api,
+    me,
+    datasets,
+    telescopes,
+    upload_images,
+    upload_datafiles,
+)
 from arcsecond.hosting import install
 from . import __version__
 from .options import State
@@ -11,9 +19,9 @@ VERSION_HELP_STRING = "Show the 'arcsecond' CLI version and exit."
 
 
 @click.group(invoke_without_command=True)
-@click.option('--version', is_flag=True, help=VERSION_HELP_STRING)
-@click.option('-V', is_flag=True, help=VERSION_HELP_STRING)
-@click.option('-h', is_flag=True, help="Show this message and exit.")
+@click.option("--version", is_flag=True, help=VERSION_HELP_STRING)
+@click.option("-V", is_flag=True, help=VERSION_HELP_STRING)
+@click.option("-h", is_flag=True, help="Show this message and exit.")
 @click.pass_context
 def main(ctx, version=False, v=False, h=False):
     if version or v:

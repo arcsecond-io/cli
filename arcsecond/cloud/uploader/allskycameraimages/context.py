@@ -7,11 +7,14 @@ from .errors import InvalidOrganisationCameraError, InvalidCameraError
 class AllSkyCameraImageUploadContext(BaseUploadContext):
     """Upload context for all-sky camera image uploads"""
 
-    def __init__(self, config,
-                 input_camera_uuid,
-                 timestamp=None,
-                 org_subdomain=None,
-                 custom_tags=None):
+    def __init__(
+        self,
+        config,
+        input_camera_uuid,
+        timestamp=None,
+        org_subdomain=None,
+        custom_tags=None,
+    ):
         super().__init__(config, org_subdomain, custom_tags)
         self._input_camera_uuid = str(input_camera_uuid) if input_camera_uuid else None
         self._timestamp = timestamp
@@ -35,19 +38,19 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
 
         if error is not None:
             if self._subdomain:
-                raise InvalidOrganisationCameraError(self._input_camera_uuid,
-                                                     self._subdomain,
-                                                     str(error))
+                raise InvalidOrganisationCameraError(
+                    self._input_camera_uuid, self._subdomain, str(error)
+                )
             else:
                 raise InvalidCameraError(str(self._input_camera_uuid), str(error))
 
     @property
     def camera_uuid(self):
-        return self._camera.get('uuid', '') if self._camera else self._input_camera_uuid
+        return self._camera.get("uuid", "") if self._camera else self._input_camera_uuid
 
     @property
     def camera_name(self):
-        return self._camera.get('name', '') if self._camera else ''
+        return self._camera.get("name", "") if self._camera else ""
 
     @property
     def camera(self):
