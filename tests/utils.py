@@ -1,6 +1,6 @@
 import json
 
-import httpretty
+import responses
 
 from arcsecond import cli, ArcsecondConfig
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY, ARCSECOND_API_URL_DEV
@@ -41,30 +41,10 @@ def make_profile_json(subdomain, role):
 def prepare_successful_login(subdomain='robotland', role='member'):
     config = ArcsecondConfig(State(api_name='test'))
     config.api_server = ARCSECOND_API_URL_DEV
-    httpretty.register_uri(
-        httpretty.POST,
-        ARCSECOND_API_URL_DEV + '/' + API_AUTH_PATH_VERIFY,
+    responses.post(
+        '/'.join([ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY]) + '/',
         status=204,
-        body='{ "key": "' + TEST_API_KEY + '", "username": "' + TEST_LOGIN_USERNAME + '" }'
     )
-    # httpretty.register_uri(
-    #     httpretty.GET,
-    #     ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/',
-    #     status=200,
-    #     body=make_profile_json(subdomain, role)
-    # )
-    # httpretty.register_uri(
-    #     httpretty.GET,
-    #     ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/apikey/',
-    #     status=200,
-    #     body='{ "access_key": "' + TEST_API_KEY + '" }'
-    # )
-    # httpretty.register_uri(
-    #     httpretty.GET,
-    #     ARCSECOND_API_URL_DEV + '/profiles/' + TEST_LOGIN_USERNAME + '/uploadkey/',
-    #     status=200,
-    #     body='{ "upload_key": "' + TEST_UPLOAD_KEY + '" }'
-    # )
 
 
 def make_successful_login(runner, subdomain='robotland', role='member'):
@@ -87,17 +67,19 @@ def clear_test_credentials():
 
 
 def mock_url_path(method, path, body='', query='', status=200):
-    path = path + '/' if path[-1] != '/' else path
-    httpretty.register_uri(method,
-                           ARCSECOND_API_URL_DEV + path + query,
-                           status=status,
-                           body=body,
-                           match_querystring=True)
+    responses.add(
+        responses.Response(
+            method=method,
+            url='/'.join([ARCSECOND_API_URL_DEV, path]) + query,
+            status=status,
+            body=body,
+            match_querystring=True)
+    )
 
 
 def mock_http_get(path, body='{}', status=200):
-    mock_url_path(httpretty.GET, path, body, status=status)
+    mock_url_path("GET", path, body, status=status)
 
 
 def mock_http_post(path, body='{}', status=200):
-    mock_url_path(httpretty.POST, path, body, status=status)
+    mock_url_path("POST", path, body, status=status)

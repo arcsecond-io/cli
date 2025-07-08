@@ -1,4 +1,4 @@
-import httpretty
+import responses
 
 from arcsecond import ArcsecondAPI, ArcsecondConfig
 from arcsecond.api.constants import ARCSECOND_API_URL_DEV
@@ -12,7 +12,7 @@ from tests.utils import (
 )
 
 
-@httpretty.activate
+@responses.activate
 def test_login_basic():
     clear_test_credentials()
     config = ArcsecondConfig(State(api_name='test'))
@@ -24,7 +24,7 @@ def test_login_basic():
     assert config.upload_key == ''
 
 
-@httpretty.activate
+@responses.activate
 def test_login_upload_key():
     clear_test_credentials()
     config = ArcsecondConfig(State(api_name='test'))
