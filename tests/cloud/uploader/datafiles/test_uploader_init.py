@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, mock_open, patch
 
 from arcsecond import DatasetUploadContext
 from arcsecond.cloud.uploader.constants import Status, Substatus

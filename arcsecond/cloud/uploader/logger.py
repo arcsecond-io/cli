@@ -2,9 +2,9 @@ import os
 from datetime import datetime
 from logging import (
     DEBUG,
+    INFO,
     FileHandler,
     Formatter,
-    INFO,
     Logger,
     StreamHandler,
     getLogger,

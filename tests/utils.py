@@ -2,7 +2,7 @@ import json
 
 import responses
 
-from arcsecond import cli, ArcsecondConfig
+from arcsecond import ArcsecondConfig, cli
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY, ARCSECOND_API_URL_DEV
 from arcsecond.options import State
 

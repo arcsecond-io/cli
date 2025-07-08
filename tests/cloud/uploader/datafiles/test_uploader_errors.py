@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -7,8 +7,8 @@ from arcsecond.cloud.uploader.datafiles.errors import (
     UploadRemoteDatasetPreparationError,
 )
 from arcsecond.cloud.uploader.errors import (
-    UploadRemoteFileInvalidatedContextError,
     UploadRemoteFileError,
+    UploadRemoteFileInvalidatedContextError,
     UploadRemoteFileMetadataError,
 )
 

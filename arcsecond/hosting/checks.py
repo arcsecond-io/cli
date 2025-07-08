@@ -4,7 +4,8 @@ import click
 import requests
 
 from arcsecond import ArcsecondAPI, ArcsecondConfig
-from .constants import PREFIX_SUB, PREFIX, PREFIX_SUB_FAIL
+
+from .constants import PREFIX, PREFIX_SUB, PREFIX_SUB_FAIL
 
 
 def is_arcsecond_api_reachable(state) -> bool:

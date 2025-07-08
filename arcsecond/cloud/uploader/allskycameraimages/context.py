@@ -1,7 +1,8 @@
 import click
 
 from arcsecond.cloud.uploader.context import BaseUploadContext
-from .errors import InvalidOrganisationCameraError, InvalidCameraError
+
+from .errors import InvalidCameraError, InvalidOrganisationCameraError
 
 
 class AllSkyCameraImageUploadContext(BaseUploadContext):

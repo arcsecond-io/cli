@@ -5,11 +5,12 @@ import click
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY_PORTAL
 from arcsecond.api.endpoint import ArcsecondAPIEndpoint
 from arcsecond.api.main import ArcsecondAPI
+
 from .errors import (
     InvalidAstronomerError,
+    InvalidOrgMembershipError,
     InvalidWatchOptionsError,
     UnknownOrganisationError,
-    InvalidOrgMembershipError,
 )
 
 

@@ -3,6 +3,7 @@ import os
 from arcsecond.cloud.uploader.errors import UploadRemoteFileMetadataError
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
 from arcsecond.cloud.uploader.utils import get_upload_progress_printer
+
 from .context import DatasetUploadContext
 from .errors import UploadRemoteDatasetPreparationError
 

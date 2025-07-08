@@ -7,8 +7,7 @@ import click
 import docker
 from docker.errors import APIError, NotFound
 
-from arcsecond.hosting.constants import PREFIX_SUB, PREFIX
-from arcsecond.hosting.constants import PREFIX_SUB, PREFIX_SUB_FAIL
+from arcsecond.hosting.constants import PREFIX, PREFIX_SUB, PREFIX_SUB_FAIL
 
 
 def is_docker_available() -> bool:

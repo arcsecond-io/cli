@@ -4,6 +4,7 @@ from typing import Optional
 import click
 
 from arcsecond.options import State
+
 from .config import ArcsecondConfig
 from .constants import API_AUTH_PATH_VERIFY
 from .endpoint import ArcsecondAPIEndpoint
