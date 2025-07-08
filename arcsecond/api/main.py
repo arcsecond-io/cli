@@ -69,7 +69,7 @@ class ArcsecondAPI(object):
         assert not (access_key and upload_key)
 
         endpoint = ArcsecondAPIEndpoint(self.config, API_AUTH_PATH_VERIFY)
-        result, error = endpoint.create(
+        _, error = endpoint.create(
             {"username": username, "key": access_key or upload_key}
         )
         if error:
