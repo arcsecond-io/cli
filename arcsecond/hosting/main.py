@@ -1,12 +1,11 @@
 import sys
 
 import click
-
 from arcsecond.api import ArcsecondConfig
+
 from arcsecond.hosting import docker
 from arcsecond.options import State, basic_options
-
-from .checks import fetch_profile_email, has_user_verified_email, is_user_logged_in
+from .checks import fetch_profile_email, is_user_logged_in
 from .constants import BANNER, PREFIX, PREFIX_SUB, PREFIX_SUB_FAIL
 from .keygen import KeygenClient
 
@@ -32,7 +31,7 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 )
 @basic_options
 @pass_state
-def install(state, do_try=True, skip_setup=False):
+def install(state, skip_setup=False):
     click.echo(BANNER)
     click.echo("\n" + PREFIX + __version__)
     click.echo("\n" + PREFIX + warning)
@@ -43,15 +42,13 @@ def install(state, do_try=True, skip_setup=False):
         docker.setup_docker_host_on_macos()
     if not is_user_logged_in(state):
         return
-    if do_try is False and not has_user_verified_email(state):
-        return
 
     email, error = fetch_profile_email(state)
     if error is not None:
         return
 
     config = ArcsecondConfig(state)
-    klient = KeygenClient(config, do_try, email)
+    klient = KeygenClient(config, email)
     click.echo(PREFIX + "Setting up your license...")
     is_license_ok, msg = klient.setup_and_validate_license()
     if is_license_ok:
