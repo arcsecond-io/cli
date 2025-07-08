@@ -23,11 +23,13 @@ classifiers = [
     'Topic :: Software Development :: Libraries :: Python Modules'
 ]
 dependencies = [
-    'click',
-    'requests',
+    'click>=8',
+    'requests>=2.26',
     'requests_toolbelt',
     'configparser',
-    'progress'
+    'docker',
+    'wait-for-it',
+    'py-machineid'
 ]
 
 [project.scripts]
