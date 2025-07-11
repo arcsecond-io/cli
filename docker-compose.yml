@@ -1,6 +1,6 @@
 services:
   db:
-    image: arcsecond-postgres-linux-arm64:16
+    image: postgres:16
     container_name: arcsecond-db
     restart: unless-stopped
     ports:
@@ -11,7 +11,6 @@ services:
       - .env
 
   broker:
-    image: arcsecond-redis-linux-arm64:7.4
     container_name: arcsecond-broker
     restart: unless-stopped
     ports:
