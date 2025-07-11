@@ -1,0 +1,4 @@
+SECRET_KEY=<use generate_keys.py to get the keys>
+FIELD_ENCRYPTION_KEY=<use generate_keys.py to get the keys>
+SHARED_DATA_PATH=<put here the folder path where data and backups will be stored>
+
