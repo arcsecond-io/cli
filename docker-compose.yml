@@ -11,6 +11,7 @@ services:
       - .env
 
   broker:
+    image: redis:7.4
     container_name: arcsecond-broker
     restart: unless-stopped
     ports:
