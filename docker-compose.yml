@@ -1,13 +1,4 @@
 services:
-#  nginx-proxy:
-#    image: nginxproxy/nginx-proxy
-#    container_name: nginx-proxy
-#    restart: unless-stopped
-#    ports:
-#      - '80:80'
-#    volumes:
-#      - /var/run/docker.sock:/tmp/docker.sock:ro
-
   db:
     image: arcsecond-postgres-linux-arm64:16
     container_name: arcsecond-db
@@ -29,11 +20,6 @@ services:
   backend:
     image: ghcr.io/arcsecond-io/arcsecond-api:latest
     platform: amd64
-#    build:
-#      context: ../arcsecond-back
-#      dockerfile: ../arcsecond-back/.docker/Dockerfile
-#      tags:
-#        - arcsecond-api
     container_name: arcsecond-api
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-server.sh
@@ -42,9 +28,6 @@ services:
     depends_on:
       - db
       - broker
-#    environment:
-#      - VIRTUAL_HOST=api.arcsecond.ground
-#      - VIRTUAL_PORT=8000
     env_file:
       - .env
     healthcheck:
@@ -81,11 +64,6 @@ services:
   web:
     image: ghcr.io/arcsecond-io/arcsecond-web:latest
     platform: amd64
-#    build:
-#      context: ../arcsecond-front
-#      dockerfile: ../arcsecond-front/.docker/Dockerfile
-#      tags:
-#        - arcsecond-web
     container_name: arcsecond-web
     restart: unless-stopped
     depends_on:
