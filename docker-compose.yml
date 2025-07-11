@@ -30,6 +30,8 @@ services:
       - broker
     env_file:
       - .env
+    volumes:
+      - ${SHARED_DATA_PATH}:/home/app/data
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/healthcheck/" ]
       interval: 30s
@@ -46,6 +48,8 @@ services:
     depends_on:
       backend:
         condition: service_started
+    volumes:
+      - ${SHARED_DATA_PATH}:/home/app/data
     env_file:
       - .env
 
