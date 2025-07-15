@@ -5,7 +5,6 @@ import click
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY_PORTAL
 from arcsecond.api.endpoint import ArcsecondAPIEndpoint
 from arcsecond.api.main import ArcsecondAPI
-
 from .errors import (
     InvalidAstronomerError,
     InvalidOrgMembershipError,
@@ -76,7 +75,7 @@ class BaseUploadContext(ABC):
 
     def _validate_local_astronomer_credentials(self):
         username = self._config.username
-        if username is None:
+        if not username:
             raise InvalidAstronomerError("Missing username")
 
         upload_key = self._config.upload_key
