@@ -40,6 +40,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
         self._file_size = os.path.getsize(file_path)
 
         self._uploaded_file = None
+        self._cleanup_resources = []
 
     @property
     def log_prefix(self):
@@ -71,6 +72,8 @@ class BaseFileUploader(Generic[ContextT], ABC):
 
         fields = self._get_upload_data_fields()
         assert len(fields) > 0
+        assert len(self._cleanup_resources) > 0
+
         e = MultipartEncoder(fields=fields)
 
         # Create progress monitor if display_progress is True
@@ -104,7 +107,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
             return
 
         if "already exists in dataset" in str(
-            error
+                error
         ):  # VERY WEAK!!! But solution with HTTP 409 isn't nice either.
             self._status = [Status.SKIPPED, Substatus.ALREADY_SYNCED, None]
         else:
@@ -118,6 +121,15 @@ class BaseFileUploader(Generic[ContextT], ABC):
     def _update_metadata(self, **kwargs):
         """Update metadata after upload - to be implemented by subclasses"""
         raise NotImplementedError()
+
+    def _cleanup(self):
+        for resource in self._cleanup_resources:
+            try:
+                if hasattr(resource, 'close') and not getattr(resource, 'closed', False):
+                    resource.close()
+            except Exception as e:
+                self._logger.error(f"{self.log_prefix} {str(e)}.")
+        self._cleanup_resources = []
 
     def upload_file(self, **kwargs):
         """Generic upload method that orchestrates the upload process"""
@@ -141,6 +153,8 @@ class BaseFileUploader(Generic[ContextT], ABC):
             # Just try again
             time.sleep(1)
             self._perform_upload()
+        finally:
+            self._cleanup()
 
         # Update metadata if upload successful
         if self._status[0] == Status.SKIPPED:

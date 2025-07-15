@@ -2,7 +2,6 @@ import os
 
 from arcsecond.cloud.uploader.errors import UploadRemoteFileMetadataError
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
-from arcsecond.cloud.uploader.utils import AutoCleanupFile
 from .context import AllSkyCameraImageUploadContext
 
 
@@ -16,9 +15,10 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
 
     def _get_upload_data_fields(self):
         filename = os.path.basename(self._file_path)
-        auto_cleanup_file = AutoCleanupFile(self._file_path)
+        self._file = open(self._file_path, "rb")
+        self._cleanup_resources.append(self._file)
         return {
-            "file": (filename, auto_cleanup_file, "application/octet-stream"),
+            "file": (filename, self._file, "application/octet-stream"),
             "camera": self._context.camera_uuid,
         }
 

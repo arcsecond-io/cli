@@ -66,6 +66,19 @@ def prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain=''):
             json={"subdomain": org_subdomain, "name": "dummy org"},
         )
 
+def prepare_upload_allskyimage(camera_uuid, org_subdomain=''):
+    responses.get(
+        "/".join([part for part in [ARCSECOND_API_URL_DEV, org_subdomain, 'allskycameras', camera_uuid] if part]) + "/",
+        status=201,
+        json={"status": "success", "uuid": camera_uuid}
+    )
+    if org_subdomain:
+        responses.get(
+            "/".join([ARCSECOND_API_URL_DEV, 'organisations', org_subdomain]) + "/",
+            status=200,
+            json={"subdomain": org_subdomain, "name": "dummy org"},
+        )
+
 
 def save_test_credentials(username, memberships=None):
     config = ArcsecondConfig(State(api_name="test"))
