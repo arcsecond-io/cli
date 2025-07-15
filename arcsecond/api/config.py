@@ -9,13 +9,16 @@ from .constants import ARCSECOND_API_URL_PROD
 
 
 class ArcsecondConfig(object):
-    def __init__(self, state: State = None):
+    def __init__(self, state: State = None, config: dict = None):
         self.__state = state or State()
-        self.__config = ConfigParser()
-        self.__config.read(str(ArcsecondConfig.file_path()))
         api_name = self.__state.api_name or "cloud"
-        if api_name not in self.__config.sections():
-            self.__config.add_section(api_name)
+        if config:
+            self.__config = config
+        else:
+            self.__config = ConfigParser()
+            self.__config.read(str(ArcsecondConfig.file_path()))
+            if api_name not in self.__config.sections():
+                self.__config.add_section(api_name)
         self.__section = self.__config[api_name]
 
     @classmethod
