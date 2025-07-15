@@ -62,10 +62,9 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
     def _update_metadata(self, is_raw=None, custom_tags=None):
         """Update file metadata after upload"""
         if not self.uploaded_file_id:
-            self._logger.warning(
-                f"{self.log_prefix} No ID found for uploaded file. Skipping metadata update."
-            )
-            return
+            error_msg = f"{self.log_prefix} No ID found for uploaded file. Skipping metadata update."
+            self._logger.error(error_msg)
+            raise UploadRemoteFileMetadataError(error_msg)
 
         # Determine final is_raw value
         is_raw_value = is_raw if is_raw is not None else self._context.is_raw_data
