@@ -14,7 +14,7 @@ from tests.utils import prepare_successful_login, prepare_upload_files
 
 
 @responses.activate
-def test_full_upload_process(tmpdir):
+def test_full_upload_process():
     dataset_uuid = str(uuid.uuid4())
     telescope_uuid = str(uuid.uuid4())
     org_subdomain = 'test-portal'
