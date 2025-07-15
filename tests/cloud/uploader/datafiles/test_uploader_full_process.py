@@ -19,9 +19,6 @@ def test_full_upload_process():
     telescope_uuid = str(uuid.uuid4())
     org_subdomain = 'test-portal'
 
-    config = ArcsecondConfig(State(api_name="test"))
-    config.api_server = ARCSECOND_API_URL_DEV
-
     prepare_successful_login(org_subdomain)
     prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain)
 
@@ -47,7 +44,6 @@ def test_full_upload_process():
             'api_server': ARCSECOND_API_URL_DEV
         }
     }
-
     config = ArcsecondConfig(state, config)  # it will read your config file.
 
     context = DatasetUploadContext(
