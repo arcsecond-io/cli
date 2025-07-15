@@ -2,8 +2,7 @@ import os
 
 from arcsecond.cloud.uploader.errors import UploadRemoteFileMetadataError
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
-from arcsecond.cloud.uploader.utils import get_upload_progress_printer
-
+from arcsecond.cloud.uploader.utils import AutoCleanupFile
 from .context import AllSkyCameraImageUploadContext
 
 
@@ -15,28 +14,13 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
         # Camera validation was already done in the context
         pass
 
-    def _get_upload_data(self):
-        """Get upload data for image files"""
-        from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
-
+    def _get_upload_data_fields(self):
         filename = os.path.basename(self._file_path)
-
-        # Create fields dictionary for MultipartEncoder
-        fields = {
-            "file": (filename, open(self._file_path, "rb"), "application/octet-stream"),
+        auto_cleanup_file = AutoCleanupFile(self._file_path)
+        return {
+            "file": (filename, auto_cleanup_file, "application/octet-stream"),
             "camera": self._context.camera_uuid,
         }
-
-        # Create MultipartEncoder
-        e = MultipartEncoder(fields=fields)
-
-        # Create progress monitor if display_progress is True
-        if self._display_progress:
-            callback = get_upload_progress_printer(self._file_size)
-            # Wrap MultipartEncoder with MultipartEncoderMonitor for progress tracking
-            e = MultipartEncoderMonitor(e, callback)
-
-        return e
 
     def _update_metadata(self, timestamp=None, custom_tags=None):
         """Update image metadata after upload"""

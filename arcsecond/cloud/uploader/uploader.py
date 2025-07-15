@@ -13,6 +13,7 @@ from .errors import (
     UploadRemoteFileMetadataError,
 )
 from .logger import get_logger
+from .utils import get_upload_progress_printer
 
 ContextT = TypeVar("ContextT", bound=BaseUploadContext)
 
@@ -60,9 +61,25 @@ class BaseFileUploader(Generic[ContextT], ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def _get_upload_data(self):
-        """Get upload data - to be implemented by subclasses"""
+    def _get_upload_data_fields(self) -> dict:
+        """Get upload data fields - to be implemented by subclasses"""
         raise NotImplementedError()
+
+    def _get_upload_data(self):
+        """Get upload data for dataset files"""
+        from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
+
+        fields = self._get_upload_data_fields()
+        assert len(fields) > 0
+        e = MultipartEncoder(fields=fields)
+
+        # Create progress monitor if display_progress is True
+        if self._display_progress:
+            callback = get_upload_progress_printer(self._file_size)
+            # Wrap MultipartEncoder with MultipartEncoderMonitor for progress tracking
+            e = MultipartEncoderMonitor(e, callback)
+
+        return e
 
     def _perform_upload(self):
         """Common upload implementation"""

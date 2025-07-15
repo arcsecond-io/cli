@@ -36,27 +36,13 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
                 f"{self.log_prefix} Dataset created with UUID {self._context.dataset_uuid}"
             )
 
-    def _get_upload_data(self):
-        """Get upload data for dataset files"""
-        from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
-
+    def _get_upload_data_fields(self):
         filename = os.path.basename(self._file_path)
-        # Create fields dictionary for MultipartEncoder
-        fields = {
+        # auto_cleanup_file = AutoCleanupFile(self._file_path)
+        return {
             "file": (filename, open(self._file_path, "rb"), "application/octet-stream"),
             "dataset": self._context.dataset_uuid,
         }
-
-        # Create MultipartEncoder
-        e = MultipartEncoder(fields=fields)
-
-        # Create progress monitor if display_progress is True
-        if self._display_progress:
-            callback = get_upload_progress_printer(self._file_size)
-            # Wrap MultipartEncoder with MultipartEncoderMonitor for progress tracking
-            e = MultipartEncoderMonitor(e, callback)
-
-        return e
 
     def _update_metadata(self, is_raw=None, custom_tags=None):
         """Update file metadata after upload"""

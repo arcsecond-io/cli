@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 
 def is_file_hidden(path):
@@ -42,3 +43,28 @@ def get_upload_progress_printer(file_size: int):
         print(f"[{hashes}{spaces}] {(fraction * 100):.1f}%", end="\r")
 
     return percent_printer
+
+
+class AutoCleanupFile:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.file_obj = open(file_path, "rb")
+        self._size = Path(self.file_path).stat().st_size
+
+    def read(self, size=-1):
+        return self.file_obj.read(size)
+
+    def seek(self, offset, whence=0):
+        return self.file_obj.seek(offset, whence)
+
+    def tell(self):
+        return self.file_obj.tell()
+
+    def close(self):
+        self.file_obj.close()
+
+    def __len__(self):
+        return self._size
+
+    def __del__(self):
+        self.close()
