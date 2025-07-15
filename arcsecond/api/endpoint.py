@@ -100,7 +100,7 @@ class ArcsecondAPIEndpoint(object):
             else:
                 return None, ArcsecondError(response.text, response.status_code)
         else:
-            return None, ArcsecondError('Response is None', -1)
+            return None, ArcsecondError("Response is None", -1)
 
     def _check_and_set_auth_key(self, headers, url):
         # No token header for login and register

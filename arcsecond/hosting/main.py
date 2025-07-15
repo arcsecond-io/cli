@@ -1,10 +1,11 @@
 import sys
 
 import click
-from arcsecond.api import ArcsecondConfig
 
+from arcsecond.api import ArcsecondConfig
 from arcsecond.hosting import docker
 from arcsecond.options import State, basic_options
+
 from .checks import fetch_profile_email, is_user_logged_in
 from .constants import BANNER, PREFIX, PREFIX_SUB, PREFIX_SUB_FAIL
 from .keygen import KeygenClient

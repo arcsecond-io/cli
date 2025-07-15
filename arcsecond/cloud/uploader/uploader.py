@@ -107,7 +107,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
             return
 
         if "already exists in dataset" in str(
-                error
+            error
         ):  # VERY WEAK!!! But solution with HTTP 409 isn't nice either.
             self._status = [Status.SKIPPED, Substatus.ALREADY_SYNCED, None]
         else:
@@ -125,7 +125,9 @@ class BaseFileUploader(Generic[ContextT], ABC):
     def _cleanup(self):
         for resource in self._cleanup_resources:
             try:
-                if hasattr(resource, 'close') and not getattr(resource, 'closed', False):
+                if hasattr(resource, "close") and not getattr(
+                    resource, "closed", False
+                ):
                     resource.close()
             except Exception as e:
                 self._logger.error(f"{self.log_prefix} {str(e)}.")
