@@ -3,7 +3,6 @@ import os
 from arcsecond.cloud.uploader.errors import UploadRemoteFileMetadataError
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
 from arcsecond.cloud.uploader.utils import get_upload_progress_printer
-
 from .context import DatasetUploadContext
 from .errors import UploadRemoteDatasetPreparationError
 
@@ -90,6 +89,6 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
             )
 
             if error:
-                error_msg = f"Failed to update file metadata: {error}"
+                error_msg = f"{self.log_prefix} Failed to update file metadata: {error}"
                 self._logger.error(error_msg)
                 raise UploadRemoteFileMetadataError(error_msg)
