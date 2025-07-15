@@ -6,10 +6,11 @@ from pathlib import Path
 
 import responses
 
-from api.constants import ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY, API_AUTH_PATH_VERIFY_PORTAL
+from api.constants import ARCSECOND_API_URL_DEV
 from arcsecond import ArcsecondConfig, DatasetUploadContext, DatasetFileUploader
-from cloud.uploader.constants import Substatus, Status
-from options import State
+from arcsecond.cloud.uploader.constants import Substatus, Status
+from arcsecond.options import State
+from tests.utils import prepare_successful_login, prepare_upload_files
 
 
 @responses.activate
@@ -20,29 +21,9 @@ def test_full_upload_process(tmpdir):
 
     config = ArcsecondConfig(State(api_name="test"))
     config.api_server = ARCSECOND_API_URL_DEV
-    responses.post(
-        "/".join([ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY]) + "/",
-        status=204,
-    )
-    responses.post(
-        "/".join([ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY_PORTAL]) + "/",
-        status=204,
-    )
-    responses.get(
-        "/".join([ARCSECOND_API_URL_DEV, org_subdomain, 'datasets', dataset_uuid]) + "/",
-        status=200,
-        json={"uuid": dataset_uuid, "name": "dummy dataset"},
-    )
-    responses.get(
-        "/".join([ARCSECOND_API_URL_DEV, org_subdomain, 'telescopes', telescope_uuid]) + "/",
-        status=200,
-        json={"uuid": telescope_uuid, "name": "dummy telescope"},
-    )
-    responses.get(
-        "/".join([ARCSECOND_API_URL_DEV, 'organisations', org_subdomain]) + "/",
-        status=200,
-        json={"subdomain": org_subdomain, "name": "dummy org"},
-    )
+
+    prepare_successful_login(org_subdomain)
+    prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain)
 
     # file upload
     datafile_id = random.randint(1, 1000)

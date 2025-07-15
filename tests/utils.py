@@ -2,8 +2,8 @@ import json
 
 import responses
 
-from arcsecond import ArcsecondConfig, cli
-from arcsecond.api.constants import API_AUTH_PATH_VERIFY, ARCSECOND_API_URL_DEV
+from arcsecond import ArcsecondConfig
+from arcsecond.api.constants import API_AUTH_PATH_VERIFY, ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY_PORTAL
 from arcsecond.options import State
 
 TEST_LOGIN_USERNAME = "robot1"
@@ -34,23 +34,37 @@ def make_profile_json(subdomain, role):
     return json.dumps(make_profile(subdomain, role))
 
 
-def prepare_successful_login(subdomain="robotland", role="member"):
+def prepare_successful_login(org_subdomain=''):
     config = ArcsecondConfig(State(api_name="test"))
     config.api_server = ARCSECOND_API_URL_DEV
     responses.post(
         "/".join([ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY]) + "/",
         status=204,
     )
+    if org_subdomain:
+        responses.post(
+            "/".join([ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY_PORTAL]) + "/",
+            status=204,
+        )
 
 
-def make_successful_login(runner, subdomain="robotland", role="member"):
-    prepare_successful_login(subdomain, role)
-    result = runner.invoke(
-        cli.login,
-        ["--api", "test"],
-        input=TEST_LOGIN_USERNAME + "\n" + TEST_API_KEY + "\n\nY",
+def prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain=''):
+    responses.get(
+        "/".join([part for part in [ARCSECOND_API_URL_DEV, org_subdomain, 'datasets', dataset_uuid] if part]) + "/",
+        status=200,
+        json={"uuid": dataset_uuid, "name": "dummy dataset"},
     )
-    assert result.exit_code == 0
+    responses.get(
+        "/".join([part for part in [ARCSECOND_API_URL_DEV, org_subdomain, 'telescopes', telescope_uuid] if part]) + "/",
+        status=200,
+        json={"uuid": telescope_uuid, "name": "dummy telescope"},
+    )
+    if org_subdomain:
+        responses.get(
+            "/".join([ARCSECOND_API_URL_DEV, 'organisations', org_subdomain]) + "/",
+            status=200,
+            json={"subdomain": org_subdomain, "name": "dummy org"},
+        )
 
 
 def save_test_credentials(username, memberships=None):
@@ -82,5 +96,9 @@ def mock_http_get(path, body="{}", status=200):
     mock_url_path("GET", path, body, status=status)
 
 
-def mock_http_post(path, body="{}", status=200):
+def mock_http_post(path, body="{}", status=201):
     mock_url_path("POST", path, body, status=status)
+
+
+def mock_http_patch(path, body="{}", status=200):
+    mock_url_path("PATCH", path, body, status=status)
