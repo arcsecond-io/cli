@@ -1,9 +1,10 @@
 import uuid
 
 import click
-from arcsecond.api import ArcsecondAPIEndpoint
 
+from arcsecond.api import ArcsecondAPIEndpoint
 from arcsecond.cloud.uploader.context import BaseUploadContext
+
 from .errors import (
     InvalidDatasetError,
     InvalidOrganisationDatasetError,

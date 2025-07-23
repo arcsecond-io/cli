@@ -1,6 +1,6 @@
 import click
-from arcsecond.api import ArcsecondConfig
 
+from arcsecond.api import ArcsecondConfig
 from arcsecond.cloud.uploader import (
     DatasetFileUploader,
     DatasetUploadContext,

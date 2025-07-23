@@ -16,7 +16,8 @@ from arcsecond import (
 from arcsecond.cloud.uploader.constants import Status, Substatus
 from tests.utils import (
     prepare_successful_login,
-    prepare_upload_files, random_string,
+    prepare_upload_files,
+    random_string,
 )
 
 

@@ -3,7 +3,7 @@ import pytest
 from arcsecond.api.config import ArcsecondConfig
 from arcsecond.errors import ArcsecondError
 from arcsecond.options import State
-from tests.utils import save_test_credentials, random_string
+from tests.utils import random_string, save_test_credentials
 
 USERNAME = "cedric"
 ACCESS_KEY = "1-2-3"

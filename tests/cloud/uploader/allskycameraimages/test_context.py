@@ -1,9 +1,14 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from arcsecond.cloud.uploader.allskycameraimages.context import AllSkyCameraImageUploadContext
-from arcsecond.cloud.uploader.allskycameraimages.errors import InvalidCameraError, InvalidOrganisationCameraError
+from arcsecond.cloud.uploader.allskycameraimages.context import (
+    AllSkyCameraImageUploadContext,
+)
+from arcsecond.cloud.uploader.allskycameraimages.errors import (
+    InvalidCameraError,
+    InvalidOrganisationCameraError,
+)
 from tests.utils import random_string
 
 

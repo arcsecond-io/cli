@@ -5,6 +5,7 @@ from typing import Optional
 
 from arcsecond.errors import ArcsecondError
 from arcsecond.options import State
+
 from .constants import ARCSECOND_API_URL_PROD
 
 

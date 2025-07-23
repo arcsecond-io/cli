@@ -6,7 +6,8 @@ from tests.utils import (
     TEST_API_KEY,
     TEST_LOGIN_USERNAME,
     TEST_UPLOAD_KEY,
-    prepare_successful_login, random_string,
+    prepare_successful_login,
+    random_string,
 )
 
 
