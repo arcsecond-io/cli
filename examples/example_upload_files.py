@@ -17,3 +17,9 @@ for filepath in glob.glob('directory containing files'):
     uploader = DatasetFileUploader(context, filepath, display_progress=False)
     status, substatus, error = uploader.upload_file()
     print(status, substatus, error)
+
+for filepath in glob.glob('directory containing files'):
+    uploader = DatasetFileUploader(context, filepath, display_progress=False)
+    # metadata can be overridden on a per-file basis
+    status, substatus, error = uploader.upload_file(is_raw="True or False", tags=["t1", "t2", "t3"])
+    print(status, substatus, error)

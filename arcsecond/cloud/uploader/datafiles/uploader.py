@@ -38,13 +38,14 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
                 f"{self.log_prefix} Dataset created with UUID {self._context.dataset_uuid}"
             )
 
-    def _get_upload_data_fields(self):
+    def _get_upload_data_fields(self, **kwargs):
         filename = os.path.basename(self._file_path)
         self._file = open(self._file_path, "rb")
         self._cleanup_resources.append(self._file)
-        return {
+        fields = {
             "file": (filename, self._file, "application/octet-stream"),
             "dataset": self._context.dataset_uuid,
+            "is_raw": str(self._context.is_raw_data),
         }
 
     def _update_metadata(self, is_raw=None, custom_tags=None):
@@ -81,3 +82,11 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
                 error_msg = f"{self.log_prefix} Failed to update file metadata: {error}"
                 self._logger.error(error_msg)
                 raise UploadRemoteFileMetadataError(error_msg)
+        if self._context.custom_tags:
+            fields["tags"] = ",".join(self._context.custom_tags or [])  # will be split back in backend
+        clean_kwargs = {k: kwargs[k] for k in ('is_raw', 'tags', 'dataset')}
+        if 'tags' in clean_kwargs and not clean_kwargs['tags']:
+            # Tags must really be provided only when non-blank/null/empty
+            del clean_kwargs['tags']
+        fields.update(**clean_kwargs)
+        return fields

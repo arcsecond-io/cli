@@ -62,15 +62,15 @@ class BaseFileUploader(Generic[ContextT], ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def _get_upload_data_fields(self) -> dict:
+    def _get_upload_data_fields(self, **kwargs) -> dict:
         """Get upload data fields - to be implemented by subclasses"""
         raise NotImplementedError()
 
-    def _get_upload_data(self):
+    def _get_upload_data(self, **kwargs):
         """Get upload data for dataset files"""
         from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
-        fields = self._get_upload_data_fields()
+        fields = self._get_upload_data_fields(**kwargs)
         assert len(fields) > 0
         assert len(self._cleanup_resources) > 0
 
@@ -84,7 +84,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
 
         return e
 
-    def _perform_upload(self):
+    def _perform_upload(self, **kwargs):
         """Common upload implementation"""
         self._logger.info(
             f"{self.log_prefix} Starting uploading to Arcsecond.io ({self._file_size} bytes)"
@@ -93,7 +93,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
         self._status = [Status.UPLOADING, Substatus.UPLOADING, None]
         self._started = datetime.now()
 
-        data = self._get_upload_data()
+        data = self._get_upload_data(**kwargs)
         headers = {"Content-Type": data.content_type}
         self._uploaded_file, error = self._context.upload_api_endpoint.create(
             data=data, headers=headers
@@ -150,11 +150,11 @@ class BaseFileUploader(Generic[ContextT], ABC):
 
         # Perform the actual upload (common to all types)
         try:
-            self._perform_upload()
+            self._perform_upload(**kwargs)
         except UploadRemoteFileError:
             # Just try again
             time.sleep(1)
-            self._perform_upload()
+            self._perform_upload(**kwargs)
         finally:
             self._cleanup()
 

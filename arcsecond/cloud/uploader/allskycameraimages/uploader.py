@@ -14,13 +14,14 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
         # Camera validation was already done in the context
         pass
 
-    def _get_upload_data_fields(self):
+    def _get_upload_data_fields(self, **kwargs):
         filename = os.path.basename(self._file_path)
         self._file = open(self._file_path, "rb")
         self._cleanup_resources.append(self._file)
-        return {
+        fields = {
             "file": (filename, self._file, "application/octet-stream"),
             "camera": self._context.camera_uuid,
+            "timestamp": self._context.timestamp,
         }
 
     def _update_metadata(self, timestamp=None, custom_tags=None):
@@ -60,3 +61,11 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
                 error_msg = f"Failed to update image metadata: {error}"
                 self._logger.error(error_msg)
                 raise UploadRemoteFileMetadataError(error_msg)
+        if self._context.custom_tags:
+            fields["tags"] = ",".join(self._context.custom_tags or [])  # will be split back in backend
+        clean_kwargs = {k: kwargs[k] for k in ('timestamp', 'camera')}
+        if 'tags' in clean_kwargs and not clean_kwargs['tags']:
+            # Tags must really be provided only when non-blank/null/empty
+            del clean_kwargs['tags']
+        fields.update(**clean_kwargs)
+        return fields
