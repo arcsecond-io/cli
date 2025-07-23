@@ -19,7 +19,7 @@ ContextT = TypeVar("ContextT", bound=BaseUploadContext)
 
 
 class BaseFileUploader(Generic[ContextT], ABC):
-    """Abstract base class for file uploaders"""
+    """Abstract base class for uploaders"""
 
     def __init__(
         self,
@@ -29,7 +29,6 @@ class BaseFileUploader(Generic[ContextT], ABC):
         display_progress=False,
     ):
         self._context = context
-        self._api = context._api
         self._walking_root = Path(walking_root)
         self._file_path = Path(file_path)
         self._display_progress = display_progress
