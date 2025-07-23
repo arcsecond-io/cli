@@ -5,8 +5,8 @@ import uuid
 from pathlib import Path
 
 import responses
-from api.constants import ARCSECOND_API_URL_DEV
 
+from api.constants import ARCSECOND_API_URL_DEV
 from arcsecond import (
     AllSkyCameraImageFileUploader,
     AllSkyCameraImageUploadContext,
@@ -77,7 +77,7 @@ def test_full_upload_process_datafiles():
 
             # Use the actual file for uploading
             uploader = DatasetFileUploader(
-                context, str(temp_dir), str(temp_path), display_progress=False
+                context, str(temp_path), display_progress=False
             )
 
             status, substatus, error = uploader.upload_file()
@@ -128,7 +128,7 @@ def test_full_upload_process_allskyimages():
 
             # Use the actual file for uploading
             uploader = AllSkyCameraImageFileUploader(
-                context, str(temp_dir), str(temp_path), display_progress=False
+                context, str(temp_path), display_progress=False
             )
 
             status, substatus, error = uploader.upload_file()
