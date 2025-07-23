@@ -1,19 +1,17 @@
 import glob
 
-from arcsecond import ArcsecondConfig, DatasetUploadContext, DatasetFileUploader
+from arcsecond import ArcsecondConfig, AllSkyCameraImageUploadContext, AllSkyCameraImageFileUploader
 
 config = ArcsecondConfig()  # it will read your config file.
-context = DatasetUploadContext(
+context = AllSkyCameraImageUploadContext(
     config,
-    input_dataset_uuid_or_name="uuid of dataset",
-    input_telescope_uuid="uuid of telescope",
-    is_raw_data=False,
+    input_camera_uuid="uuid of all-sky camera",
     org_subdomain="subdomain or portal / organisation"
 )
 
 context.validate()
 
 for filepath in glob.glob('directory containing files'):
-    uploader = DatasetFileUploader(context, filepath, display_progress=False)
+    uploader = AllSkyCameraImageFileUploader(context, filepath, display_progress=False)
     status, substatus, error = uploader.upload_file()
     print(status, substatus, error)
