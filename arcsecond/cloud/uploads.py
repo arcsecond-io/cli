@@ -60,7 +60,7 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 )
 @basic_options
 @pass_state
-def upload_datafiles(
+def upload_data(
     state, folder, dataset=None, telescope=None, raw=None, tags=None, portal=None
 ):
     """
