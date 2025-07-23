@@ -33,7 +33,7 @@ class DatasetUploadContext(BaseUploadContext):
             str(input_telescope_uuid) if input_telescope_uuid else None
         )
         self._should_update_dataset_with_telescope = False
-        self._is_raw_data = is_raw_data
+        self._is_raw_data = True if is_raw_data is None else is_raw_data
         self._dataset = None
         self._telescope = None
 
