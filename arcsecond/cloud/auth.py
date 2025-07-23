@@ -75,9 +75,13 @@ def api(state, name=None, fqdn=None):
 
     $ arcsecond api
     """
-    if name is None:
-        name = "cloud"
-    elif name == "cloud" and fqdn is not None:
+
+    if name is not None and fqdn is None:
+        raise ArcsecondError(
+            f"You must provide a fully-qualified domain name server for the api '{name}'."
+        )
+
+    if name == "cloud" and fqdn is not None:
         raise ArcsecondError(
             "You cannot change the server address of the 'cloud' API server."
         )
