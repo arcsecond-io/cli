@@ -85,6 +85,16 @@ class ArcsecondConfig(object):
         return result
 
     @property
+    def all_apis(self) -> Optional[str]:
+        apis = [f"cloud: {ARCSECOND_API_URL_PROD} (protected)"]
+        for section_name in self.__config.sections():
+            section = self.__config[section_name]
+            api_server = section.get('api_server', '')
+            if api_server:
+                apis.append(f"{section_name}: {api_server}")
+        return "\n".join(apis)
+
+    @property
     def api_server(self) -> Optional[str]:
         result = self.__read_key("api_server")
         if self.api_name == "cloud" and (result is None or result == ""):
