@@ -30,8 +30,7 @@ setup(
     platforms='any',
     install_requires=[
         'click>=8',
-        'requests>=2.26',
-        'requests_toolbelt',
+        'httpx',
         'configparser',
         'docker',
         'wait-for-it',
