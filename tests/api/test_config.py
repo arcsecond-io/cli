@@ -5,7 +5,6 @@ from arcsecond.errors import ArcsecondError
 from arcsecond.options import State
 from tests.utils import save_test_credentials, random_string
 
-SECTION = "test"
 USERNAME = "cedric"
 ACCESS_KEY = "1-2-3"
 UPLOAD_KEY = "9-8-7"
