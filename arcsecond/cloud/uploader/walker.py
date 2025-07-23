@@ -63,7 +63,7 @@ def _walk_second_pass(
             f"{log_prefix} File {index} / {total_file_count} ({index / total_file_count * 100:.2f}%)"
         )
 
-        uploader = uploader_class(context, root_path, file_path, display_progress=True)
+        uploader = uploader_class(context, file_path, display_progress=True)
         status, substatus, error = uploader.upload_file()
         if status == Status.OK:
             uploads["succeeded"].append(str(file_path))
