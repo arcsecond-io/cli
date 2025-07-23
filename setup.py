@@ -30,11 +30,12 @@ setup(
     platforms='any',
     install_requires=[
         'click>=8',
-        'httpx',
         'configparser',
         'docker',
+        'httpx',
+        'tqdm',
+        'py-machineid',
         'wait-for-it',
-        'py-machineid'
     ],
     entry_points={
         'console_scripts': [

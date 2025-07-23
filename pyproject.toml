@@ -24,11 +24,12 @@ classifiers = [
 ]
 dependencies = [
     'click>=8',
-    'httpx',
     'configparser',
     'docker',
+    'httpx',
+    "tqdm (>=4.67.1,<5.0.0)",
+    'py-machineid',
     'wait-for-it',
-    'py-machineid'
 ]
 
 [project.scripts]
