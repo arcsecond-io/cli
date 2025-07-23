@@ -39,7 +39,7 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 )
 @click.option(
     "--raw",
-    required=True,
+    required=False,
     nargs=1,
     type=click.BOOL,
     help="A flag indicating the data is raw or not. Default True.",
