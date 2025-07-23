@@ -25,7 +25,7 @@ def datasets(state, portal=None):
         click.echo(" • Fetching datasets...")
 
     dataset_list, error = ArcsecondAPI(
-        ArcsecondConfig(state), org_subdomain
+        ArcsecondConfig.from_state(state), org_subdomain
     ).datasets.list()
     if error is not None:
         raise ArcsecondError(str(error))
@@ -62,7 +62,7 @@ def telescopes(state, portal=None):
         click.echo(" • Fetching telescopes...")
 
     telescope_list, error = ArcsecondAPI(
-        ArcsecondConfig(state), org_subdomain
+        ArcsecondConfig.from_state(state), org_subdomain
     ).telescopes.list()
     if error is not None:
         raise ArcsecondError(str(error))

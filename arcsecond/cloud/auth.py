@@ -48,7 +48,7 @@ def login(state, username, type, key):
     ~/.config/arcsecond/config.ini
     """
     key_name = "access_key" if type == "access" else "upload_key"
-    config = ArcsecondConfig(state)
+    config = ArcsecondConfig.from_state(state)
     _, error = ArcsecondAPI(config).login(username, **{key_name: key})
     if error:
         click.echo(str(error))
@@ -85,7 +85,7 @@ def api(state, name=None, fqdn=None):
     # The setter below is normally handled by the option --api, but here, the DX is different,
     # because we manipulate the api and its address itself.
     state.api_name = name
-    config = ArcsecondConfig(state)
+    config = ArcsecondConfig.from_state(state)
 
     if fqdn is None:
         click.echo(f" • All registered API servers:")
@@ -102,11 +102,11 @@ def api(state, name=None, fqdn=None):
 @pass_state
 def me(state):
     """Fetch your complete user profile."""
-    username = ArcsecondConfig(state).username or None
+    username = ArcsecondConfig.from_state(state).username or None
     if not username:
         msg = f"Invalid/missing username: {username}. Make sure to login first: $ arcsecond login"
         raise ArcsecondError(msg)
-    response, error = ArcsecondAPI(ArcsecondConfig(state)).profiles.read(username)
+    response, error = ArcsecondAPI(ArcsecondConfig.from_state(state)).profiles.read(username)
     if error:
         click.echo(str(error))
     else:

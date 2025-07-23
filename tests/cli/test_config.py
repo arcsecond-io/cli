@@ -1,3 +1,6 @@
+import random
+import string
+
 from arcsecond import ArcsecondConfig
 from arcsecond.options import State
 
@@ -7,25 +10,42 @@ ACCESS_KEY = "1-2-3"
 UPLOAD_KEY = "9-8-7"
 
 
+def random_string(n=10):
+    # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
+    return ''.join(random.choice(string.ascii_letters) for _ in range(n))
+
+
 def test_config_file_path():
     assert str(ArcsecondConfig.file_path()).endswith("arcsecond/config.ini")
 
 
 def test_config_file_is_logged_in_no_file():
-    config = ArcsecondConfig(State(api_name="test"))
+    random_api_name = random_string()
+    config = ArcsecondConfig(api_name=random_api_name)
     config.reset()
     assert config.is_logged_in is False
 
 
 def test_config_api_server():
-    config = ArcsecondConfig(State(api_name="test"))
+    random_api_name = random_string()
+    config = ArcsecondConfig(api_name=random_api_name)
+    assert config.api_server == ""
+    config.api_server = "http://localhost/dummy:8989"
+    assert config.api_server == "http://localhost/dummy:8989"
+
+
+def test_config_api_server_from_state():
+    random_api_name = random_string()
+    config = ArcsecondConfig.from_state(State(api_name=random_api_name))
+    assert config.api_name == random_api_name
     assert config.api_server == ""
     config.api_server = "http://localhost/dummy:8989"
     assert config.api_server == "http://localhost/dummy:8989"
 
 
 def test_config_memberships():
-    config = ArcsecondConfig(State(api_name="test"))
+    random_api_name = random_string()
+    config = ArcsecondConfig(api_name=random_api_name)
     assert config.memberships == {}
     ms = [
         {"organisation": "oma", "role": "superadmin"},
@@ -36,14 +56,16 @@ def test_config_memberships():
 
 
 def test_config_access_key():
-    config = ArcsecondConfig(State(api_name="test"))
+    random_api_name = random_string()
+    config = ArcsecondConfig(api_name=random_api_name)
     assert config.access_key == ""
     config.save_access_key("1234")
     assert config.access_key == "1234"
 
 
 def test_config_upload_key():
-    config = ArcsecondConfig(State(api_name="test"))
+    random_api_name = random_string()
+    config = ArcsecondConfig(api_name=random_api_name)
     assert config.upload_key == ""
     config.save_upload_key("1234")
     assert config.upload_key == "1234"

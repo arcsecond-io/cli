@@ -48,7 +48,7 @@ def install(state, skip_setup=False):
     if error is not None:
         return
 
-    config = ArcsecondConfig(state)
+    config = ArcsecondConfig.from_state(state)
     klient = KeygenClient(config, email)
     click.echo(PREFIX + "Setting up your license...")
     is_license_ok, msg = klient.setup_and_validate_license()

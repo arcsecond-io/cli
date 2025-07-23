@@ -21,17 +21,6 @@ class ArcsecondAPI(object):
 
         self.profiles = ArcsecondAPIEndpoint(self.config, "profiles", self.subdomain)
 
-        self.email = ArcsecondAPIEndpoint(self.config, "profiles", subresource="email")
-        self.sharedkeys = ArcsecondAPIEndpoint(
-            self.config, "profiles", subresource="sharedkeys"
-        )
-        self.private_observingsites = ArcsecondAPIEndpoint(
-            self.config, "profiles", subresource="observingsites"
-        )
-        self.private_telescopes = ArcsecondAPIEndpoint(
-            self.config, "profiles", subresource="telescopes"
-        )
-
         self.organisations = ArcsecondAPIEndpoint(
             self.config, "organisations"
         )  # never subdomain here
@@ -90,8 +79,8 @@ class ArcsecondAPI(object):
 
     @classmethod
     def is_logged_in(cls, state: Optional[State] = None) -> bool:
-        return ArcsecondConfig(state).is_logged_in
+        return ArcsecondConfig.from_state(state).is_logged_in
 
     @classmethod
     def get_username(cls, state: Optional[State] = None) -> str:
-        return ArcsecondConfig(state).username
+        return ArcsecondConfig.from_state(state).username

@@ -7,10 +7,9 @@ class State(object):
     the persistence of the various parameters.
     """
 
-    def __init__(self, is_using_cli=True, verbose=0, api_name="main"):
-        self.is_using_cli = is_using_cli
-        self.verbose = verbose
-        self.api_name = api_name
+    def __init__(self, **kwargs):
+        self.verbose = kwargs.get("verbose", 0)
+        self.api_name = kwargs.get("api_name", "cloud")
 
     def update(self, **kwargs):
         self.is_using_cli = kwargs.get("is_using_cli", self.is_using_cli)

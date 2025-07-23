@@ -9,7 +9,7 @@ from .constants import PREFIX, PREFIX_SUB, PREFIX_SUB_FAIL
 
 
 def is_arcsecond_api_reachable(state) -> bool:
-    api_server = ArcsecondConfig(state).api_server
+    api_server = ArcsecondConfig.from_state(state).api_server
     click.echo(PREFIX + "Check if Arcsecond is reachable...")
     try:
         response = requests.get(api_server)
@@ -79,7 +79,7 @@ def fetch_profile_email(state) -> Union[tuple[None, str], tuple[dict, None]]:
         PREFIX + "Fetching your email from the cloud, to register your license..."
     )
     state.api_name = "cloud"
-    email_dict, error = ArcsecondAPI(ArcsecondConfig(state)).fetch_email()
+    email_dict, error = ArcsecondAPI(ArcsecondConfig.from_state(state)).fetch_email()
     if error is not None:
         click.echo(PREFIX_SUB_FAIL + str(error))
         return None, str(error)

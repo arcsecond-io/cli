@@ -4,22 +4,25 @@ from pathlib import Path
 from typing import Optional
 
 from arcsecond.options import State
-
 from .constants import ARCSECOND_API_URL_PROD
 
 
 class ArcsecondConfig(object):
-    def __init__(self, state: State = None, config: dict = None):
-        self.__state = state or State()
-        api_name = self.__state.api_name or "cloud"
-        if config:
-            self.__config = config
+    def __init__(self, **kwargs):
+        self.__api_name = kwargs.get('api_name', 'cloud')
+        self.__verbose = kwargs.get("verbose", 0)
+        if 'config' in kwargs.keys():
+            self.__config = kwargs.get('config')
         else:
             self.__config = ConfigParser()
             self.__config.read(str(ArcsecondConfig.file_path()))
-            if api_name not in self.__config.sections():
-                self.__config.add_section(api_name)
-        self.__section = self.__config[api_name]
+            if self.__api_name not in self.__config.sections():
+                self.__config.add_section(self.__api_name)
+        self.__section = self.__config[self.__api_name]
+
+    @classmethod
+    def from_state(cls, state: State):
+        return cls(api_name=state.api_name, verbose=state.verbose)
 
     @classmethod
     def __old_config_file_path(cls):
@@ -70,16 +73,12 @@ class ArcsecondConfig(object):
         return self.__section.get(key, "") if self.__section else ""
 
     @property
-    def verbose(self) -> Optional[bool]:
-        return self.__state.verbose
-
-    @property
-    def is_using_cli(self) -> Optional[bool]:
-        return self.__state.is_using_cli
+    def verbose(self) -> int:
+        return self.__verbose
 
     @property
     def api_name(self) -> Optional[str]:
-        result = self.__state.api_name
+        result = self.__api_name
         if not result:
             result = "cloud"
         return result

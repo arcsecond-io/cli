@@ -84,7 +84,7 @@ def upload_data(
     Upon validation, Arcsecond will then start walking through the folder tree and uploads regular
     files (hidden and empty files will always be skipped).
     """
-    config = ArcsecondConfig(state)
+    config = ArcsecondConfig.from_state(state)
     context = DatasetUploadContext(
         config,
         input_dataset_uuid_or_name=dataset,
