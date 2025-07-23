@@ -1,4 +1,6 @@
 import json
+import random
+import string
 
 import responses
 
@@ -8,11 +10,15 @@ from arcsecond.api.constants import (
     API_AUTH_PATH_VERIFY_PORTAL,
     ARCSECOND_API_URL_DEV,
 )
-from arcsecond.options import State
 
 TEST_LOGIN_USERNAME = "robot1"
 TEST_API_KEY = "4c4458935e2b9e21b4ef5f4c8e53213e"
 TEST_UPLOAD_KEY = "b4ef5f4c8e53213e935e2b9e24c44581"
+
+
+def random_string(n=10):
+    # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
+    return ''.join(random.choice(string.ascii_letters) for _ in range(n))
 
 
 def make_profile(subdomain, role):
@@ -38,8 +44,8 @@ def make_profile_json(subdomain, role):
     return json.dumps(make_profile(subdomain, role))
 
 
-def prepare_successful_login(org_subdomain=""):
-    config = ArcsecondConfig(State(api_name="test"))
+def prepare_successful_login(api_name, org_subdomain=""):
+    config = ArcsecondConfig(api_name=api_name)
     config.api_server = ARCSECOND_API_URL_DEV
     responses.post(
         "/".join([ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY]) + "/",
@@ -58,11 +64,11 @@ def prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain=""):
             [
                 part
                 for part in [
-                    ARCSECOND_API_URL_DEV,
-                    org_subdomain,
-                    "datasets",
-                    dataset_uuid,
-                ]
+                ARCSECOND_API_URL_DEV,
+                org_subdomain,
+                "datasets",
+                dataset_uuid,
+            ]
                 if part
             ]
         )
@@ -75,11 +81,11 @@ def prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain=""):
             [
                 part
                 for part in [
-                    ARCSECOND_API_URL_DEV,
-                    org_subdomain,
-                    "telescopes",
-                    telescope_uuid,
-                ]
+                ARCSECOND_API_URL_DEV,
+                org_subdomain,
+                "telescopes",
+                telescope_uuid,
+            ]
                 if part
             ]
         )
@@ -101,11 +107,11 @@ def prepare_upload_allskyimage(camera_uuid, org_subdomain=""):
             [
                 part
                 for part in [
-                    ARCSECOND_API_URL_DEV,
-                    org_subdomain,
-                    "allskycameras",
-                    camera_uuid,
-                ]
+                ARCSECOND_API_URL_DEV,
+                org_subdomain,
+                "allskycameras",
+                camera_uuid,
+            ]
                 if part
             ]
         )
@@ -121,16 +127,16 @@ def prepare_upload_allskyimage(camera_uuid, org_subdomain=""):
         )
 
 
-def save_test_credentials(username, memberships=None):
-    config = ArcsecondConfig(State(api_name="test"))
+def save_test_credentials(api_name, username, memberships=None):
+    config = ArcsecondConfig(api_name=api_name)
     config.save(username=username)
     config.save_access_key(TEST_API_KEY)
     if memberships:
         config.save_memberships(memberships)
 
 
-def clear_test_credentials():
-    config = ArcsecondConfig(State(api_name="test"))
+def clear_test_credentials(api_name):
+    config = ArcsecondConfig(api_name=api_name)
     config.reset()
 
 

@@ -1,21 +1,14 @@
-import random
-import string
-
 import pytest
 
 from arcsecond.api.config import ArcsecondConfig
 from arcsecond.errors import ArcsecondError
 from arcsecond.options import State
+from tests.utils import save_test_credentials, random_string
 
 SECTION = "test"
 USERNAME = "cedric"
 ACCESS_KEY = "1-2-3"
 UPLOAD_KEY = "9-8-7"
-
-
-def random_string(n=10):
-    # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
-    return ''.join(random.choice(string.ascii_letters) for _ in range(n))
 
 
 def test_config_file_path():
@@ -78,3 +71,26 @@ def test_config_change_master_api_server():
     with pytest.raises(ArcsecondError):
         config = ArcsecondConfig()
         config.api_server = 'http://dummy.com'
+
+
+def test_default_empty_state():
+    random_api_name = random_string()
+    assert ArcsecondConfig(api_name=random_api_name).is_logged_in is False
+    assert ArcsecondConfig(api_name=random_api_name).username == ""
+    assert ArcsecondConfig(api_name=random_api_name).memberships == {}
+
+
+def test_default_logged_in_state():
+    random_api_name = random_string()
+    save_test_credentials(random_api_name, "cedric")
+    assert ArcsecondConfig(api_name=random_api_name).is_logged_in is True
+    assert ArcsecondConfig(api_name=random_api_name).username == "cedric"
+    assert ArcsecondConfig(api_name=random_api_name).memberships == {}
+
+
+def test_default_logged_in_with_membership_state():
+    random_api_name = random_string()
+    save_test_credentials(random_api_name, "cedric", [{"organisation": "saao", "role": "superadmin"}])
+    assert ArcsecondConfig(api_name=random_api_name).is_logged_in is True
+    assert ArcsecondConfig(api_name=random_api_name).username == "cedric"
+    assert ArcsecondConfig(api_name=random_api_name).memberships == {"saao": "superadmin"}
