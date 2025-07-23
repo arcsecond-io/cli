@@ -36,7 +36,7 @@ def display_upload_datafiles_command_summary(
         msg = " • Using folder names for dataset names (one folder = one dataset)."
     click.echo(msg)
 
-    msg = f" • Data is considered as {'raw' if context.is_raw_data else 'NOT raw'}."
+    msg = f" • Data is considered as {'RAW' if context.is_raw_data else 'NOT RAW'}."
     click.echo(msg)
 
     if context.custom_tags:
