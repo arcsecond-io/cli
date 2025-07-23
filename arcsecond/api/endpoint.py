@@ -27,6 +27,8 @@ class ArcsecondAPIEndpoint(object):
         return self.__path
 
     def _get_base_url(self):
+        if not self.__config.api_server:
+            raise ArcsecondError(f"API server address for name \'{self.__config.api_name}\' is unknown/invalid.")
         url = self.__config.api_server
         if not url.endswith("/"):
             url += "/"
