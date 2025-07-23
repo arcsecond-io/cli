@@ -1,14 +1,9 @@
 import click
-
 from arcsecond.api import ArcsecondConfig
+
 from arcsecond.cloud.uploader import (
-    AllSkyCameraImageFileUploader,
-    AllSkyCameraImageUploadContext,
     DatasetFileUploader,
     DatasetUploadContext,
-)
-from arcsecond.cloud.uploader.allskycameraimages.utils import (
-    display_upload_allskycameraimages_command_summary,
 )
 from arcsecond.cloud.uploader.datafiles.utils import (
     display_upload_datafiles_command_summary,
@@ -110,71 +105,3 @@ def upload_data(
     ok = input("\n   ----> OK? (Press Enter) ")
     if ok.strip() == "":
         walk_folder_and_upload_files(DatasetFileUploader, context, folder)
-
-
-@click.command()
-@click.argument("folder", required=True, nargs=1)
-@click.option(
-    "-c",
-    "--camera",
-    required=True,
-    nargs=1,
-    type=click.UUID,
-    help="The camera UUID to attach to all uploaded images.",
-)
-@click.option(
-    "--timestamp",
-    required=False,
-    nargs=1,
-    help="An optional timestamp to be attached to all images.",
-)
-@click.option(
-    "--tags",
-    required=False,
-    nargs=1,
-    help="An optional list of custom tags to be attached to every image.",
-)
-@click.option(
-    "-p",
-    "--portal",
-    required=False,
-    nargs=1,
-    type=click.STRING,
-    help="The portal subdomain, if uploading for an Observatory Portal.",
-)
-@basic_options
-@pass_state
-def upload_images(state, folder, camera, timestamp=None, tags=None, portal=None):
-    """
-    Upload the all-sky images contained in a folder.
-
-    You will be prompted for confirmation before the whole walking process actually
-    starts.
-
-    This command uploads images from an all-sky camera with consistent tags
-    and an optional timestamp applied to all images. All images will be attached
-    to the specified camera UUID.
-
-    Upon validation, Arcsecond will then start walking through the folder tree
-    and uploads regular image files (hidden and empty files will always be skipped).
-    """
-    config = ArcsecondConfig(state)
-    context = AllSkyCameraImageUploadContext(
-        config,
-        input_camera_uuid=camera,
-        timestamp=timestamp,
-        org_subdomain=portal,
-        custom_tags=tags,
-    )
-
-    context.validate()
-
-    display_upload_allskycameraimages_command_summary(
-        context,
-        [
-            folder,
-        ],
-    )
-    ok = input("\n   ----> OK? (Press Enter) ")
-    if ok.strip() == "":
-        walk_folder_and_upload_files(AllSkyCameraImageFileUploader, context, folder)
