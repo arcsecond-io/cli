@@ -1,5 +1,5 @@
 from .auth import api, login, me
-from .resources import datasets, telescopes, allskycameras
+from .resources import allskycameras, datasets, telescopes
 from .uploader import (
     AllSkyCameraImageFileUploader,
     AllSkyCameraImageUploadContext,

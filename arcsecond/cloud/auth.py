@@ -1,8 +1,8 @@
 import json
 
 import click
-from arcsecond.api import ArcsecondAPI, ArcsecondConfig
 
+from arcsecond.api import ArcsecondAPI, ArcsecondConfig
 from arcsecond.errors import ArcsecondError
 from arcsecond.options import State, basic_options
 
