@@ -5,7 +5,6 @@ import click
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY_PORTAL
 from arcsecond.api.endpoint import ArcsecondAPIEndpoint
 from arcsecond.api.main import ArcsecondAPI
-
 from .errors import (
     InvalidAstronomerError,
     InvalidOrgMembershipError,
@@ -80,8 +79,8 @@ class BaseUploadContext(ABC):
             raise InvalidAstronomerError("Missing username")
 
         upload_key = self._config.upload_key
-        if not upload_key:
-            raise InvalidWatchOptionsError("Missing upload_key.")
+        if not self._config.upload_key and not self._config.access_key:
+            raise InvalidWatchOptionsError("Missing upload_key (or access_key). Make sure to login first.")
 
     def _validate_remote_organisation(self):
         click.echo(f" • Fetching details of organisation {self._subdomain}...")
