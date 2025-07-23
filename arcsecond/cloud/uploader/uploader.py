@@ -24,7 +24,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
     def __init__(
         self,
         context: ContextT,
-        file_path: str,
+        file_path: str | Path,
         display_progress=False,
     ):
         self._context = context
