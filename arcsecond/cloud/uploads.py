@@ -61,7 +61,7 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 @basic_options
 @pass_state
 def upload_datafiles(
-    state, folder, raw=True, tags=None, dataset=None, telescope=None, portal=None
+        state, folder, dataset=None, telescope=None, raw=None, tags=None, portal=None
 ):
     """
     Upload the content of a folder.
