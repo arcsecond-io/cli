@@ -39,7 +39,8 @@ def datasets(state, portal=None):
     for dataset_dict in dataset_list:
         s = f" 💾 \"{dataset_dict['name']}\" "
         s += f"(uuid: {dataset_dict['uuid']}) "
-        # s += f"[ObservingSite UUID: {telescope_dict['observing_site']}]"
+        s += f"(telescope: {dataset_dict['telescope']}) "
+        s += f"(files: {dataset_dict['data_files_count']}) "
         click.echo(s)
 
 
