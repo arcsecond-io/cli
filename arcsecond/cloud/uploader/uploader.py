@@ -1,9 +1,12 @@
+import copy
 import os
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import Generic, TypeVar
+
+from tqdm import tqdm
 
 from .constants import Status, Substatus
 from .context import BaseUploadContext
@@ -12,19 +15,50 @@ from .errors import (
     UploadRemoteFileInvalidatedContextError,
 )
 from .logger import get_logger
-from .utils import get_upload_progress_printer
 
 ContextT = TypeVar("ContextT", bound=BaseUploadContext)
+
+
+class UploadFileWithProgress:
+    def __init__(self, file_path, chunk_size=8192, display_progress=False):
+        self._file = open(file_path, "rb")
+        self._chunk_size = chunk_size
+        self._total = os.fstat(self._file.fileno()).st_size
+        self._display_progress = display_progress
+        if display_progress:
+            self._progress = tqdm(total=self._total, unit="B", unit_scale=True)
+
+    def read(self, amt=None):
+        data = self._file.read(amt or self._chunk_size)
+        if self._display_progress:
+            self._progress.update(len(data))
+            self._progress.refresh()
+        return data
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        return self._file.seek(offset, whence)
+
+    def tell(self):
+        return self._file.tell()
+
+    def close(self):
+        self._file.close()
+        if self._display_progress:
+            self._progress.close()
+
+    def __getattr__(self, name):
+        # Delegate all other attributes to the file object
+        return getattr(self._file, name)
 
 
 class BaseFileUploader(Generic[ContextT], ABC):
     """Abstract base class for uploaders"""
 
     def __init__(
-        self,
-        context: ContextT,
-        file_path: str | Path,
-        display_progress=False,
+            self,
+            context: ContextT,
+            file_path: str | Path,
+            display_progress=False,
     ):
         self._context = context
         self._file_path = Path(file_path)
@@ -60,28 +94,18 @@ class BaseFileUploader(Generic[ContextT], ABC):
         """Prepare for upload - to be implemented by subclasses"""
         raise NotImplementedError()
 
+    def _get_upload_files(self, **kwargs):
+        filename = os.path.basename(self._file_path)
+        self._file = UploadFileWithProgress(self._file_path, display_progress=self._display_progress)
+        self._cleanup_resources.append(self._file)
+        return {
+            "file": (filename, self._file, "application/octet-stream"),
+        }
+
     @abstractmethod
-    def _get_upload_data_fields(self, **kwargs) -> dict:
+    def _get_upload_data(self, **kwargs) -> dict:
         """Get upload data fields - to be implemented by subclasses"""
         raise NotImplementedError()
-
-    def _get_upload_data(self, **kwargs):
-        """Get upload data for dataset files"""
-        from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
-
-        fields = self._get_upload_data_fields(**kwargs)
-        assert len(fields) > 0
-        assert len(self._cleanup_resources) > 0
-
-        e = MultipartEncoder(fields=fields)
-
-        # Create progress monitor if display_progress is True
-        if self._display_progress:
-            callback = get_upload_progress_printer(self._file_size)
-            # Wrap MultipartEncoder with MultipartEncoderMonitor for progress tracking
-            e = MultipartEncoderMonitor(e, callback)
-
-        return e
 
     def _perform_upload(self, **kwargs):
         """Common upload implementation"""
@@ -92,11 +116,9 @@ class BaseFileUploader(Generic[ContextT], ABC):
         self._status = [Status.UPLOADING, Substatus.UPLOADING, None]
         self._started = datetime.now()
 
+        files = self._get_upload_files(**kwargs)
         data = self._get_upload_data(**kwargs)
-        headers = {"Content-Type": data.content_type}
-        self._uploaded_file, error = self._context.upload_api_endpoint.create(
-            data=data, headers=headers
-        )
+        self._uploaded_file, error = self._context.upload_api_endpoint.create(files=files, json=data)
 
         if not error:
             seconds = (datetime.now() - self._started).total_seconds()
@@ -106,7 +128,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
             return
 
         if "already exists in dataset" in str(
-            error
+                error
         ):  # VERY WEAK!!! But solution with HTTP 409 isn't nice either.
             self._status = [Status.SKIPPED, Substatus.ALREADY_SYNCED, None]
         else:
@@ -119,9 +141,8 @@ class BaseFileUploader(Generic[ContextT], ABC):
     def _cleanup(self):
         for resource in self._cleanup_resources:
             try:
-                if hasattr(resource, "close") and not getattr(
-                    resource, "closed", False
-                ):
+                if hasattr(resource, "close") and \
+                        not getattr(resource, "closed", False):
                     resource.close()
             except Exception as e:
                 self._logger.error(f"{self.log_prefix} {str(e)}.")
@@ -138,17 +159,20 @@ class BaseFileUploader(Generic[ContextT], ABC):
         try:
             self._prepare_upload()
         except Exception:
+            self._logger.info(f"{self.log_prefix} Upload preparation error. Trying again automatically in 1 second.")
             # Just try again
             time.sleep(1)
             self._prepare_upload()
 
         # Perform the actual upload (common to all types)
+        kwargs_copy = copy.deepcopy(kwargs)
         try:
             self._perform_upload(**kwargs)
         except UploadRemoteFileError:
             # Just try again
+            self._logger.info(f"{self.log_prefix} Upload error. Trying again automatically in 1 second.")
             time.sleep(1)
-            self._perform_upload(**kwargs)
+            self._perform_upload(**kwargs_copy)
         finally:
             self._cleanup()
 

@@ -1,6 +1,5 @@
-import os
-
 from arcsecond.api import ArcsecondAPIEndpoint
+
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
 from .context import DatasetUploadContext
 from .errors import UploadRemoteDatasetPreparationError
@@ -36,12 +35,8 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
                 f"{self.log_prefix} Dataset created with UUID {self._context.dataset_uuid}"
             )
 
-    def _get_upload_data_fields(self, **kwargs):
-        filename = os.path.basename(self._file_path)
-        self._file = open(self._file_path, "rb")
-        self._cleanup_resources.append(self._file)
+    def _get_upload_data(self, **kwargs):
         fields = {
-            "file": (filename, self._file, "application/octet-stream"),
             "dataset": self._context.dataset_uuid,
             "is_raw": str(self._context.is_raw_data),
         }

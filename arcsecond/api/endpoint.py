@@ -60,44 +60,61 @@ class ArcsecondAPIEndpoint(object):
 
     def read(self, id_name_uuid, headers=None):
         return self._perform_request(
-            self._detail_url(id_name_uuid), "get", json=None, data=None, headers=headers
+            self._detail_url(id_name_uuid), "get", headers=headers
         )
 
-    def create(self, json=None, data=None, headers=None):
+    def create(self, json=None, files=None, headers=None):
         return self._perform_request(
-            self._list_url(), "post", json=json, data=data, headers=headers
+            self._list_url(),
+            "post",
+            json=json,
+            files=files,
+            headers=headers
         )
 
-    def update(self, id_name_uuid, json=None, data=None, headers=None):
+    def update(self, id_name_uuid, json=None, files=None, headers=None):
         return self._perform_request(
             self._detail_url(id_name_uuid),
             "patch",
             json=json,
-            data=data,
+            files=files,
             headers=headers,
         )
 
     def delete(self, id_name_uuid):
         return self._perform_request(self._detail_url(id_name_uuid), "delete")
 
-    def _perform_request(self, url, method_name, json=None, data=None, headers=None):
+    def _perform_request(self, url, method_name, json=None, files=None, headers=None):
         if self.__config.verbose:
             click.echo(f"Sending {method_name} request to {url}")
 
         headers = self._check_and_set_auth_key(headers or {}, url)
         method = getattr(httpx, method_name.lower())
-        response = method(url, json=json, data=data, headers=headers, timeout=60)
 
-        if isinstance(response, dict):
-            # Responses of standard JSON payload requests are dict
-            return response, None
-        elif response is not None:
-            if 200 <= response.status_code < 300:
-                return response.json() if response.text else {}, None
-            else:
-                return None, ArcsecondError(response.text, response.status_code)
+        kwargs = {'headers': headers, 'timeout': 60}
+        if files and json:
+            # Do NOT set json=json, keep data=json, to avoid overriding Content-Type with `application/json`.
+            kwargs.update(files=files, data=json)
+        elif json and not files:
+            kwargs.update(json=json)
+        elif files and not json:
+            raise ArcsecondError('Files but no json?')
+
+        try:
+            response = method(url, **kwargs)
+        except httpx.RequestError as exc:
+            return None, ArcsecondError(str(exc), 400)
         else:
-            return None, ArcsecondError("Response is None", -1)
+            if isinstance(response, dict):
+                # Responses of standard JSON payload requests are dict
+                return response, None
+            elif response is not None:
+                if 200 <= response.status_code < 300:
+                    return response.json() if response.text else {}, None
+                else:
+                    return None, ArcsecondError(response.text, response.status_code)
+            else:
+                return None, ArcsecondError("Response is None", -1)
 
     def _check_and_set_auth_key(self, headers, url):
         # No token header for login and register
