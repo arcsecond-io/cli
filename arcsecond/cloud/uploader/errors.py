@@ -12,10 +12,6 @@ class UploadRemoteFileInvalidatedContextError(ArcsecondError):
         )
 
 
-class UploadRemoteFileMetadataError(ArcsecondError):
-    pass
-
-
 # TODO: Check
 class NotLoggedInError(ArcsecondError):
     def __init__(self):

@@ -10,7 +10,6 @@ from .context import BaseUploadContext
 from .errors import (
     UploadRemoteFileError,
     UploadRemoteFileInvalidatedContextError,
-    UploadRemoteFileMetadataError,
 )
 from .logger import get_logger
 from .utils import get_upload_progress_printer
@@ -158,20 +157,12 @@ class BaseFileUploader(Generic[ContextT], ABC):
         finally:
             self._cleanup()
 
-        # Update metadata if upload successful
         if self._status[0] == Status.SKIPPED:
             self._logger.info(f"{self.log_prefix} Upload skipped.")
         else:
             self._logger.info(f"{self.log_prefix} Upload done.")
+            self._status = [Status.OK, Substatus.DONE, None]
 
-            try:
-                self._update_metadata(**kwargs)
-            except UploadRemoteFileMetadataError:
-                # Just try again
-                time.sleep(1)
-                self._update_metadata(**kwargs)
-
-        self._status = [Status.OK, Substatus.DONE, None]
         self._logger.info(f"{self.log_prefix} Closing upload sequence.")
 
         return self._status

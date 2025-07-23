@@ -9,7 +9,6 @@ from arcsecond.cloud.uploader.datafiles.errors import (
 from arcsecond.cloud.uploader.errors import (
     UploadRemoteFileError,
     UploadRemoteFileInvalidatedContextError,
-    UploadRemoteFileMetadataError,
 )
 
 
@@ -112,16 +111,3 @@ def test_upload_file_retry_on_error(file_uploader):
         assert update_mock.call_count == 2
 
 
-def test_update_metadata_error(file_uploader):
-    """Test metadata update with API error."""
-    # Mock API error
-    error = "API error"
-    with patch.object(file_uploader._context.upload_api_endpoint, "update") as mock_func:
-        mock_func.return_value = (None, error)
-        file_uploader._uploaded_file = {"id": 12345}
-
-        # Test that the error is properly raised
-        with pytest.raises(UploadRemoteFileMetadataError) as excinfo:
-            file_uploader._update_metadata()
-
-        assert "Failed to update file metadata" in str(excinfo.value)

@@ -1,8 +1,6 @@
 import os
 
 from arcsecond.api import ArcsecondAPIEndpoint
-
-from arcsecond.cloud.uploader.errors import UploadRemoteFileMetadataError
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
 from .context import DatasetUploadContext
 from .errors import UploadRemoteDatasetPreparationError
@@ -47,41 +45,6 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
             "dataset": self._context.dataset_uuid,
             "is_raw": str(self._context.is_raw_data),
         }
-
-    def _update_metadata(self, is_raw=None, custom_tags=None):
-        """Update file metadata after upload"""
-        if not self.uploaded_file_id:
-            error_msg = f"{self.log_prefix} No ID found for uploaded file. Skipping metadata update."
-            self._logger.error(error_msg)
-            raise UploadRemoteFileMetadataError(error_msg)
-
-        # Determine final is_raw value
-        is_raw_value = is_raw if is_raw is not None else self._context.is_raw_data
-
-        # Determine final custom tags
-        final_tags = (
-            custom_tags if custom_tags is not None else self._context.custom_tags
-        )
-
-        # Build metadata
-        metadata = {}
-        if is_raw_value is not None:
-            metadata["is_raw"] = is_raw_value
-
-        if final_tags:
-            metadata["custom_tags"] = final_tags
-
-        # Update metadata
-        if metadata:
-            self._logger.info(f"{self.log_prefix} Updating file metadata: {metadata}")
-            response, error = self._context.upload_api_endpoint.update(
-                self.uploaded_file_id, metadata
-            )
-
-            if error:
-                error_msg = f"{self.log_prefix} Failed to update file metadata: {error}"
-                self._logger.error(error_msg)
-                raise UploadRemoteFileMetadataError(error_msg)
         if self._context.custom_tags:
             fields["tags"] = ",".join(self._context.custom_tags or [])  # will be split back in backend
         clean_kwargs = {k: kwargs[k] for k in ('is_raw', 'tags', 'dataset')}
