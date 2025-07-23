@@ -1,8 +1,8 @@
 import json
 
 import click
-
 from arcsecond.api import ArcsecondAPI, ArcsecondConfig
+
 from arcsecond.errors import ArcsecondError
 from arcsecond.options import State, basic_options
 
@@ -54,16 +54,27 @@ def login(state, username, type, key):
         click.echo(str(error))
 
 
-@click.command(help="Get or set the API server address (fully qualified domain name).")
+@click.command()
 @click.argument("name", required=False, nargs=1)
 @click.argument("fqdn", required=False, nargs=1)
 @pass_state
 def api(state, name=None, fqdn=None):
-    """Configure the API server address"""
+    """List or configure the API server address (default: 'cloud').
+
+    By default, the Arcsecond CLI is using the "cloud" master server. But you can
+    here configure other servers, by typing:
+
+    $ arcsecond api <name> <fully qualified server address>
+
+    Once registered, you can then use all commands with the 'api' option to tell the
+    module where to point. For instance:
+
+    $ arcsecond login --api test
+    """
     if name is None:
         name = "cloud"
-    elif name == "cloud":
-        raise ArcsecondError("You cannot change the FQDN of the 'cloud' API server.")
+    elif name == "cloud" and fqdn is not None:
+        raise ArcsecondError("You cannot change the server address of the 'cloud' API server.")
 
     # The setter below is normally handled by the option --api, but here, the DX is different,
     # because we manipulate the api and its address itself.
@@ -71,10 +82,11 @@ def api(state, name=None, fqdn=None):
     config = ArcsecondConfig(state)
 
     if fqdn is None:
-        click.echo(f" • name: {name}, fqdn: {config.api_server}")
+        click.echo(f" • All registered API servers:")
+        click.echo(config.all_apis)
     else:
         config.api_server = fqdn
-        click.echo(f" • Set fqdn: {config.api_server} to API named {name}.")
+        click.echo(f" • Registering the API \"{name}\" with the server address \"{config.api_server}\".")
 
 
 @click.command(help="Get your complete user profile.")
