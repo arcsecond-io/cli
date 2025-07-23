@@ -60,9 +60,6 @@ class ArcsecondAPI(object):
         self.allskycameras = ArcsecondAPIEndpoint(
             self.config, "allskycameras", self.subdomain
         )
-        self.allskycameraimages = ArcsecondAPIEndpoint(
-            self.config, "allskycameraimages", self.subdomain
-        )
 
     def login(self, username, access_key=None, upload_key=None):
         assert access_key or upload_key
