@@ -98,7 +98,7 @@ def allskycameras(state, portal=None):
         click.echo(" • Fetching allskycameras...")
 
     cameras_list, error = ArcsecondAPI(
-        ArcsecondConfig(state), org_subdomain
+        ArcsecondConfig.from_state(state), org_subdomain
     ).allskycameras.list()
     if error is not None:
         raise ArcsecondError(str(error))
