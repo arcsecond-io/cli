@@ -16,16 +16,7 @@ def mock_config():
 
 
 @pytest.fixture
-def mock_api():
-    """Create a mock API with datasets and datafiles endpoints."""
-    api = MagicMock()
-    api.datasets = MagicMock()
-    api.datafiles = MagicMock()
-    return api
-
-
-@pytest.fixture
-def mock_context(mock_config, mock_api):
+def mock_file_context(mock_config):
     """Create a mock upload context."""
     context = MagicMock(spec=DatasetUploadContext)
     context.config = mock_config
@@ -48,11 +39,11 @@ def temp_file(tmp_path):
 
 
 @pytest.fixture
-def uploader(mock_context, temp_file):
+def file_uploader(mock_file_context, temp_file):
     """Create a DatasetFileUploader instance with mocked dependencies."""
     with patch("arcsecond.cloud.uploader.logger.get_logger"):
         uploader = DatasetFileUploader(
-            mock_context, temp_file, display_progress=False
+            mock_file_context, temp_file, display_progress=False
         )
         uploader._logger = MagicMock()
         return uploader

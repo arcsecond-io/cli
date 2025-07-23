@@ -4,7 +4,7 @@ from arcsecond.cloud.uploader import DatasetFileUploader, DatasetUploadContext
 from arcsecond.cloud.uploader.constants import Status, Substatus
 
 
-def test_get_upload_data(uploader, temp_file):
+def test_get_upload_data(file_uploader, temp_file):
     """Test the creation of upload data."""
     # Mock the MultipartEncoder
     mock_encoder = MagicMock()
@@ -17,49 +17,49 @@ def test_get_upload_data(uploader, temp_file):
         patch("builtins.open", mock_open(read_data="test data")),
     ):
         # Without progress display
-        uploader._display_progress = False
-        result = uploader._get_upload_data()
+        file_uploader._display_progress = False
+        result = file_uploader._get_upload_data()
         assert result == mock_encoder
 
         # With progress display
-        uploader._display_progress = True
-        result = uploader._get_upload_data()
+        file_uploader._display_progress = True
+        result = file_uploader._get_upload_data()
         assert result == mock_monitor
 
 
-def test_perform_upload_success(uploader):
+def test_perform_upload_success(file_uploader):
     """Test successful file upload."""
     # Mock upload data and successful API response
     mock_encoder = MagicMock()
     mock_encoder.content_type = "multipart/form-data"
 
     mock_datafile = {"id": "new-file-id"}
-    uploader._api.datafiles.create.return_value = (mock_datafile, None)
+    file_uploader._api.datafiles.create.return_value = (mock_datafile, None)
 
-    with patch.object(uploader, "_get_upload_data", return_value=mock_encoder):
-        uploader._perform_upload()
+    with patch.object(file_uploader, "_get_upload_data", return_value=mock_encoder):
+        file_uploader._perform_upload()
 
     # Verify API call
-    uploader._api.datafiles.create.assert_called_once_with(
+    file_uploader._api.datafiles.create.assert_called_once_with(
         data=mock_encoder, headers={"Content-Type": "multipart/form-data"}
     )
 
     # Verify status and file ID
-    assert uploader.uploaded_file_id == "new-file-id"
-    assert uploader.main_status == Status.UPLOADING
+    assert file_uploader.uploaded_file_id == "new-file-id"
+    assert file_uploader.main_status == Status.UPLOADING
 
 
-def test_upload_file_complete_process(uploader):
+def test_upload_file_complete_process(file_uploader):
     """Test the complete upload file process."""
     # Mock all the component methods
     with (
-        patch.object(uploader, "_prepare_upload") as mock_prepare,
-        patch.object(uploader, "_perform_upload") as mock_perform,
-        patch.object(uploader, "_update_metadata") as mock_update,
+        patch.object(file_uploader, "_prepare_upload") as mock_prepare,
+        patch.object(file_uploader, "_perform_upload") as mock_perform,
+        patch.object(file_uploader, "_update_metadata") as mock_update,
     ):
         # Successful upload
-        uploader._status = [Status.UPLOADING, Substatus.UPLOADING, None]
-        result = uploader.upload_file(is_raw=True, custom_tags=["tag1"])
+        file_uploader._status = [Status.UPLOADING, Substatus.UPLOADING, None]
+        result = file_uploader.upload_file(is_raw=True, custom_tags=["tag1"])
 
         # Verify all methods were called
         mock_prepare.assert_called_once()
@@ -94,7 +94,6 @@ def test_dataset_file_uploader_integration(mock_config, temp_file):
         # Mock context validation
         with patch.object(context, "validate"):
             context._is_validated = True
-            context._api = mock_api
 
             with (
                 patch("arcsecond.cloud.uploader.logger.get_logger"),
