@@ -35,12 +35,11 @@ def main(ctx, version=False, v=False, h=False):
 def version():
     click.echo(__version__.__version__)
 
+# Read/set API server to use.
+main.add_command(api)
 
 # Login to Arcsecond.
 main.add_command(login)
-
-# Read/set API server to use.
-main.add_command(api)
 
 # Read the logged-in user profile.
 main.add_command(me)
