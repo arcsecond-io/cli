@@ -32,13 +32,3 @@ def __get_formatted_bytes_size(size):
     i = math.floor(math.log10(1.0 * size) / math.log10(k))
     return f"{(size / math.pow(k, i)):.2f} {units[i]}"
 
-
-def get_upload_progress_printer(file_size: int):
-    def percent_printer(monitor):
-        bar_length = 40
-        fraction = min(float(monitor.bytes_read) / float(file_size), 1.0)
-        hashes = "#" * int(round(fraction * bar_length))
-        spaces = " " * (bar_length - len(hashes))
-        print(f"[{hashes}{spaces}] {(fraction * 100):.1f}%", end="\r")
-
-    return percent_printer
