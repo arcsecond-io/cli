@@ -15,8 +15,10 @@ def display_upload_allskycameraimages_command_summary(
     context: AllSkyCameraImageUploadContext, folders: list
 ):
     click.echo("\n --- Upload summary --- ")
-    click.echo(
-        f" • Arcsecond username: @{context.config.username} (Upload key: {context.config.upload_key[:4]}••••)"
+    key = (
+        f"(Upload key: {context.config.upload_key[:4]}••••)"
+        if context.config.upload_key
+        else f"(Access key: {context.config.access_key[:4]}••••)"
     )
     if context.organisation_subdomain:
         role = context.config.read_key(context.organisation_subdomain)
