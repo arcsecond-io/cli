@@ -4,6 +4,7 @@ import pytest
 
 from arcsecond import DatasetFileUploader
 from arcsecond.cloud.uploader import DatasetUploadContext
+from tests.utils import random_string
 
 
 @pytest.fixture
@@ -12,6 +13,10 @@ def mock_config():
     config = MagicMock()
     config.username = "test_user"
     config.upload_key = "test_key"
+    config.api_name = random_string()
+    config.api_server = "http://mock.example.com"
+    config.access_key = None  # very important, because access_key takes precedence on upload_key in headers setting.
+    config.upload_key = '1234567890'
     return config
 
 

@@ -25,7 +25,7 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
             self._logger.info(
                 f"{self.log_prefix} Creating dataset with name {dataset_name}..."
             )
-            endpoint = ArcsecondAPIEndpoint(self._context, 'datasets', self._context.subdomain)
+            endpoint = ArcsecondAPIEndpoint(self._context.config, 'datasets', self._context.subdomain)
             dataset, error = endpoint.create(data=data)
 
             if error:
