@@ -2,6 +2,7 @@ import click
 
 from arcsecond.cloud import (
     api,
+    allskycameras,
     datasets,
     login,
     me,
@@ -50,6 +51,9 @@ main.add_command(datasets)
 
 # Read the list of existing telescopes (for upload purposes).
 main.add_command(telescopes)
+
+# Read the list of existing allskycameras (for upload purposes).
+main.add_command(allskycameras)
 
 # Upload a folder of files to a given dataset.
 main.add_command(upload_datafiles)
