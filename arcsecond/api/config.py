@@ -3,6 +3,7 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Optional
 
+from arcsecond.errors import ArcsecondError
 from arcsecond.options import State
 from .constants import ARCSECOND_API_URL_PROD
 
@@ -102,6 +103,8 @@ class ArcsecondConfig(object):
 
     @api_server.setter
     def api_server(self, value) -> None:
+        if self.api_name == "cloud":
+            raise ArcsecondError("You cannot override the master cloud server address.")
         self.__section["api_server"] = value
         self.__save()
 

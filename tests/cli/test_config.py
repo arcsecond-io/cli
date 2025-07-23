@@ -1,7 +1,10 @@
 import random
 import string
 
-from arcsecond import ArcsecondConfig
+import pytest
+
+from arcsecond.api.config import ArcsecondConfig
+from arcsecond.errors import ArcsecondError
 from arcsecond.options import State
 
 SECTION = "test"
@@ -69,3 +72,9 @@ def test_config_upload_key():
     assert config.upload_key == ""
     config.save_upload_key("1234")
     assert config.upload_key == "1234"
+
+
+def test_config_change_master_api_server():
+    with pytest.raises(ArcsecondError):
+        config = ArcsecondConfig()
+        config.api_server = 'http://dummy.com'
