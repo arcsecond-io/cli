@@ -55,7 +55,6 @@ def test_upload_file_complete_process(file_uploader):
     with (
         patch.object(file_uploader, "_prepare_upload") as mock_prepare,
         patch.object(file_uploader, "_perform_upload") as mock_perform,
-        patch.object(file_uploader, "_update_metadata") as mock_update,
     ):
         # Successful upload
         file_uploader._status = [Status.UPLOADING, Substatus.UPLOADING, None]
@@ -64,7 +63,6 @@ def test_upload_file_complete_process(file_uploader):
         # Verify all methods were called
         mock_prepare.assert_called_once()
         mock_perform.assert_called_once()
-        mock_update.assert_called_once_with(is_raw=True, custom_tags=["tag1"])
 
         # Verify result
         assert result == [Status.UPLOADING, Substatus.UPLOADING, None]

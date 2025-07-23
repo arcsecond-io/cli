@@ -116,11 +116,6 @@ class BaseFileUploader(Generic[ContextT], ABC):
             )
             raise UploadRemoteFileError(f"{str(error.status)} - {str(error)}")
 
-    @abstractmethod
-    def _update_metadata(self, **kwargs):
-        """Update metadata after upload - to be implemented by subclasses"""
-        raise NotImplementedError()
-
     def _cleanup(self):
         for resource in self._cleanup_resources:
             try:
