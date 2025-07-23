@@ -97,18 +97,9 @@ def test_full_upload_process_allskyimages():
     # file upload
     image_id = random.randint(1, 1000)
     responses.post(
-        "/".join([ARCSECOND_API_URL_DEV, org_subdomain, "allskycameraimages"]) + "/",
+        "/".join([ARCSECOND_API_URL_DEV, org_subdomain, "allskycameras", camera_uuid, "images"]) + "/",
         status=201,
         json={"status": "success", "id": image_id},
-    )
-    # update metadata
-    responses.patch(
-        "/".join(
-            [ARCSECOND_API_URL_DEV, org_subdomain, "allskycameraimages", str(image_id)]
-        )
-        + "/",
-        status=200,
-        json={"id": image_id},
     )
 
     state = State(verbose=False, api_name="cloud")
