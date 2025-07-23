@@ -16,6 +16,7 @@ __all__ = [
 
 class ArcsecondAPI(object):
     def __init__(self, config: ArcsecondConfig, subdomain: str = ""):
+
         self.config = config
         self.subdomain = subdomain
 
