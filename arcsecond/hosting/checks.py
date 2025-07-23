@@ -1,7 +1,7 @@
 from typing import Union
 
 import click
-import requests
+import httpx
 
 from arcsecond import ArcsecondAPI, ArcsecondConfig
 
@@ -12,8 +12,8 @@ def is_arcsecond_api_reachable(state) -> bool:
     api_server = ArcsecondConfig.from_state(state).api_server
     click.echo(PREFIX + "Check if Arcsecond is reachable...")
     try:
-        response = requests.get(api_server)
-    except requests.exceptions.ConnectionError as e:
+        response = httpx.get(api_server)
+    except httpx.exceptions.ConnectionError as e:
         click.echo(PREFIX_SUB_FAIL + str(e))
         click.echo(
             PREFIX_SUB_FAIL

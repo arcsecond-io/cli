@@ -1,7 +1,7 @@
 from urllib.parse import urlencode
 
 import click
-import requests
+import httpx
 
 from arcsecond.api.config import ArcsecondConfig
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY, API_AUTH_PATH_VERIFY_PORTAL
@@ -85,7 +85,7 @@ class ArcsecondAPIEndpoint(object):
             click.echo(f"Sending {method_name} request to {url}")
 
         headers = self._check_and_set_auth_key(headers or {}, url)
-        method = getattr(requests, method_name.lower())
+        method = getattr(httpx, method_name.lower())
         response = method(url, json=json, data=data, headers=headers, timeout=60)
 
         if isinstance(response, dict):

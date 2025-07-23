@@ -1,8 +1,6 @@
-import json
-
 import click
+import httpx
 import machineid
-import requests
 
 from .utils import generate_password
 
@@ -18,7 +16,7 @@ class KeygenClient(object):
         self.__email = email
 
     def __generate_user_token(self):
-        res = requests.post(
+        res = httpx.post(
             self.__base_url + "/tokens",
             headers={"Accept": "application/vnd.api+json"},
             auth=(self.__email, self.__config.read_key("keygen_user_password")),
@@ -34,7 +32,7 @@ class KeygenClient(object):
         token, _ = self.__generate_user_token()
         headers = {**self.__default_headers}
         headers["Authorization"] = "Bearer " + token
-        res = requests.get(self.__base_url + "/users/" + self.__email, headers)
+        res = httpx.get(self.__base_url + "/users/" + self.__email, headers=headers)
         if res.status_code == 200:
             user_id = res.json().get("data").get("id")
             return user_id, "OK"
@@ -51,22 +49,20 @@ class KeygenClient(object):
             keygen_user_password = generate_password()
             self.__config.save(keygen_user_password=keygen_user_password)
 
-        res = requests.post(
+        res = httpx.post(
             self.__base_url + "/users",
             headers=self.__default_headers,
-            data=json.dumps(
-                {
-                    "data": {
-                        "type": "users",
-                        "attributes": {
-                            "firstName": "Awesome",
-                            "lastName": "Astronomer",
-                            "email": self.__email,
-                            "password": keygen_user_password,
-                        },
-                    }
+            json={
+                "data": {
+                    "type": "users",
+                    "attributes": {
+                        "firstName": "Awesome",
+                        "lastName": "Astronomer",
+                        "email": self.__email,
+                        "password": keygen_user_password,
+                    },
                 }
-            ),
+            }
         )
 
         keygen_user_id = None
@@ -101,7 +97,7 @@ class KeygenClient(object):
         headers["Authorization"] = "Bearer " + keygen_user_token
 
         # Checking for an existing license.
-        res = requests.get(self.__base_url + "/licenses?limit=1", headers=headers)
+        res = httpx.get(self.__base_url + "/licenses?limit=1", headers=headers)
         data = res.json().get("data")
         if len(data) == 1:
             license_id = data[0].get("id")
@@ -113,20 +109,18 @@ class KeygenClient(object):
 
         # We have no license, create one.
         policy_id = "2b2194d4-282e-4e3e-a39d-d01385cdf73e"
-        res = requests.post(
+        res = httpx.post(
             self.__base_url + "/licenses",
             headers=headers,
-            data=json.dumps(
-                {
-                    "data": {
-                        "type": "licenses",
-                        "relationships": {
-                            "policy": {"data": {"type": "policies", "id": policy_id}},
-                            "user": {"data": {"type": "users", "id": user_id}},
-                        },
-                    }
+            json={
+                "data": {
+                    "type": "licenses",
+                    "relationships": {
+                        "policy": {"data": {"type": "policies", "id": policy_id}},
+                        "user": {"data": {"type": "users", "id": user_id}},
+                    },
                 }
-            ),
+            }
         )
 
         # TODO: deal with failure.
@@ -139,17 +133,15 @@ class KeygenClient(object):
 
     def __activate_license(self, license_key):
         machine_fingerprint = machineid.hashed_id()
-        res = requests.post(
+        res = httpx.post(
             self.__base_url + "/licenses/actions/validate-key",
             headers=self.__default_headers,
-            data=json.dumps(
-                {
-                    "meta": {
-                        "key": license_key,
-                        "scope": {"fingerprint": machine_fingerprint},
-                    }
+            json={
+                "meta": {
+                    "key": license_key,
+                    "scope": {"fingerprint": machine_fingerprint},
                 }
-            ),
+            }
         )
 
         validation = res.json()
@@ -174,9 +166,9 @@ class KeygenClient(object):
         # we'll need to activate one.
         validation_code = validation["meta"]["code"]
         activation_is_required = (
-            validation_code == "FINGERPRINT_SCOPE_MISMATCH"
-            or validation_code == "NO_MACHINES"
-            or validation_code == "NO_MACHINE"
+                validation_code == "FINGERPRINT_SCOPE_MISMATCH"
+                or validation_code == "NO_MACHINES"
+                or validation_code == "NO_MACHINE"
         )
 
         if not activation_is_required:
@@ -186,25 +178,23 @@ class KeygenClient(object):
         # so we should go ahead and activate the current machine.
         headers = {**self.__default_headers}
         headers["Authorization"] = "License " + license_key
-        res = requests.post(
+        res = httpx.post(
             self.__base_url + "/machines",
             headers=headers,
-            data=json.dumps(
-                {
-                    "data": {
-                        "type": "machines",
-                        "attributes": {"fingerprint": machine_fingerprint},
-                        "relationships": {
-                            "license": {
-                                "data": {
-                                    "type": "licenses",
-                                    "id": validation["data"]["id"],
-                                }
+            json={
+                "data": {
+                    "type": "machines",
+                    "attributes": {"fingerprint": machine_fingerprint},
+                    "relationships": {
+                        "license": {
+                            "data": {
+                                "type": "licenses",
+                                "id": validation["data"]["id"],
                             }
-                        },
-                    }
+                        }
+                    },
                 }
-            ),
+            }
         )
 
         activation = res.json()
