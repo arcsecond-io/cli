@@ -16,4 +16,6 @@ def test_initialization(mock_file_context, temp_file):
         assert uploader._context == mock_file_context
         assert uploader._file_path == temp_file
         assert uploader._file_size == os.path.getsize(temp_file)
-        assert uploader._status == [Status.NEW, Substatus.PENDING, None]
+        assert uploader.uploaded_file_id is None
+        assert uploader.main_status == Status.NEW
+        assert uploader.get_full_status_error() == [Status.NEW, Substatus.PENDING, None]

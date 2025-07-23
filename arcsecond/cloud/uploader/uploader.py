@@ -53,6 +53,9 @@ class BaseFileUploader(Generic[ContextT], ABC):
     def main_status(self):
         return self._status[0]
 
+    def get_full_status_error(self):
+        return self._status
+
     @abstractmethod
     def _prepare_upload(self):
         """Prepare for upload - to be implemented by subclasses"""
