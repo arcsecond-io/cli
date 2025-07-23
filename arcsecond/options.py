@@ -12,12 +12,11 @@ class State(object):
         self.api_name = kwargs.get("api_name", "cloud")
 
     def update(self, **kwargs):
-        self.is_using_cli = kwargs.get("is_using_cli", self.is_using_cli)
         self.verbose = kwargs.get("verbose", self.verbose)
         self.api_name = kwargs.get("api_name", self.api_name)
 
     def make_new_silent(self):
-        return State(is_using_cli=self.is_using_cli, verbose=0, api_name=self.api_name)
+        return State(verbose=0, api_name=self.api_name)
 
 
 def verbose_option_constructor(f):

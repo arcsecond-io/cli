@@ -47,7 +47,7 @@ def test_full_upload_process_datafiles():
         json={"id": datafile_id},
     )
 
-    state = State(is_using_cli=False, verbose=False, api_name="cloud")
+    state = State(verbose=False, api_name="cloud")
     config = {
         "cloud": {
             "username": "dummy",
@@ -111,7 +111,7 @@ def test_full_upload_process_allskyimages():
         json={"id": image_id},
     )
 
-    state = State(is_using_cli=False, verbose=False, api_name="cloud")
+    state = State(verbose=False, api_name="cloud")
     config = {
         "cloud": {
             "username": "dummy",
