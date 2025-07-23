@@ -37,7 +37,6 @@ def mock_context(mock_config, mock_api):
     context.telescope_uuid = "test-telescope-uuid"
     context.is_raw_data = True
     context.custom_tags = ["test_tag1", "test_tag2"]
-    context.api_endpoint = mock_api.datafiles
     return context
 
 

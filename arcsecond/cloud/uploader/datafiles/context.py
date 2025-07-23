@@ -1,9 +1,9 @@
 import uuid
 
 import click
+from arcsecond.api import ArcsecondAPIEndpoint
 
 from arcsecond.cloud.uploader.context import BaseUploadContext
-
 from .errors import (
     InvalidDatasetError,
     InvalidOrganisationDatasetError,
@@ -38,19 +38,18 @@ class DatasetUploadContext(BaseUploadContext):
         self._telescope = None
 
     @property
-    def api_endpoint(self):
-        return self._api.datafiles
+    def upload_api_endpoint(self):
+        return ArcsecondAPIEndpoint(self.config, "datafiles", self.subdomain)
 
     def _validate_input_dataset_uuid_or_name(self):
+        endpoint = ArcsecondAPIEndpoint(self.config, "datasets", self.subdomain)
         try:
             uuid.UUID(self._input_dataset_uuid_or_name)
         except ValueError:
             click.echo(
                 f" • Looking for a dataset with name {self._input_dataset_uuid_or_name}..."
             )
-            datasets_list, error = self._api.datasets.list(
-                **{"name": self._input_dataset_uuid_or_name}
-            )
+            datasets_list, error = endpoint.list(**{"name": self._input_dataset_uuid_or_name})
             if len(datasets_list) == 0:
                 click.echo(
                     f" • No dataset with name {self._input_dataset_uuid_or_name} found. It will be created."
@@ -67,9 +66,7 @@ class DatasetUploadContext(BaseUploadContext):
             click.echo(
                 f" • Fetching details of dataset {self._input_dataset_uuid_or_name}..."
             )
-            self._dataset, error = self._api.datasets.read(
-                str(self._input_dataset_uuid_or_name)
-            )
+            self._dataset, error = endpoint.read(str(self._input_dataset_uuid_or_name))
 
         if error is not None:
             if self._subdomain:
@@ -85,7 +82,8 @@ class DatasetUploadContext(BaseUploadContext):
         click.echo(
             f" • Looking for a telescope with UUID {self._input_telescope_uuid}..."
         )
-        self._telescope, error = self._api.telescopes.read(self._input_telescope_uuid)
+        endpoint = ArcsecondAPIEndpoint(self.config, "telescopes", self.subdomain)
+        self._telescope, error = endpoint.read(self._input_telescope_uuid)
 
         if error is not None:
             if self._subdomain:

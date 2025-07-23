@@ -94,7 +94,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
 
         data = self._get_upload_data()
         headers = {"Content-Type": data.content_type}
-        self._uploaded_file, error = self._context.api_endpoint.create(
+        self._uploaded_file, error = self._context.upload_api_endpoint.create(
             data=data, headers=headers
         )
 

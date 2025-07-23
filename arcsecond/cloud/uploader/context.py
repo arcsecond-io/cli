@@ -24,7 +24,7 @@ class BaseUploadContext(ABC):
         self._is_validated = False
 
     @property
-    def api_endpoint(self):
+    def upload_api_endpoint(self):
         raise NotImplementedError()
 
     @property

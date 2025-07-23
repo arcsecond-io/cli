@@ -23,7 +23,7 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
         self._camera = None
 
     @property
-    def api_endpoint(self):
+    def upload_api_endpoint(self):
         return ArcsecondAPIEndpoint(
             self.config, f"allskycameras/{self._input_camera_uuid}/images", self.subdomain
         )

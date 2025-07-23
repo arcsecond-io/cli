@@ -1,8 +1,9 @@
 import os
 
+from arcsecond.api import ArcsecondAPIEndpoint
+
 from arcsecond.cloud.uploader.errors import UploadRemoteFileMetadataError
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
-
 from .context import DatasetUploadContext
 from .errors import UploadRemoteDatasetPreparationError
 
@@ -24,7 +25,8 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
             self._logger.info(
                 f"{self.log_prefix} Creating dataset with name {dataset_name}..."
             )
-            dataset, error = self._context._api.datasets.create(data=data)
+            endpoint = ArcsecondAPIEndpoint(self._context, 'datasets', self._context.subdomain)
+            dataset, error = endpoint.create(data=data)
 
             if error:
                 error_msg = f"Dataset {dataset_name} could not be created: {error}"
