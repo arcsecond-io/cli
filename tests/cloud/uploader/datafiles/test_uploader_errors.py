@@ -18,7 +18,6 @@ def test_upload_file_skipped(file_uploader):
     with (
         patch.object(file_uploader, "_prepare_upload") as mock_prepare,
         patch.object(file_uploader, "_perform_upload") as mock_perform,
-        patch.object(file_uploader, "_update_metadata") as mock_update,
     ):
         # Simulate skipped file
         file_uploader._status = [Status.SKIPPED, Substatus.ALREADY_SYNCED, None]
@@ -27,7 +26,6 @@ def test_upload_file_skipped(file_uploader):
         # Verify methods were called (except update)
         mock_prepare.assert_called_once()
         mock_perform.assert_called_once()
-        mock_update.assert_not_called()
 
         # Verify result
         assert result == [Status.OK, Substatus.DONE, None]
@@ -92,14 +90,10 @@ def test_upload_file_retry_on_error(file_uploader):
         side_effect=[UploadRemoteDatasetPreparationError("First error"), None]
     )
     perform_mock = MagicMock(side_effect=[UploadRemoteFileError("First error"), None])
-    update_mock = MagicMock(
-        side_effect=[UploadRemoteFileMetadataError("First error"), None]
-    )
 
     with (
         patch.object(file_uploader, "_prepare_upload", prepare_mock),
         patch.object(file_uploader, "_perform_upload", perform_mock),
-        patch.object(file_uploader, "_update_metadata", update_mock),
         patch("time.sleep"),
     ):
         # Upload should retry each step once
