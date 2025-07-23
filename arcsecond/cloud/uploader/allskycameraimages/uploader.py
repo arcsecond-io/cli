@@ -52,7 +52,7 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
         # Update metadata
         if metadata:
             self._logger.info(f"{self.log_prefix} Updating image metadata: {metadata}")
-            response, error = self._api.datafiles.update(
+            response, error = self._context.upload_api_endpoint.update(
                 self.uploaded_file_id, metadata
             )
 
