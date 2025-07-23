@@ -1,8 +1,7 @@
 import click
+
 from arcsecond.api import ArcsecondAPIEndpoint
-
 from arcsecond.cloud.uploader.context import BaseUploadContext
-
 from .errors import InvalidCameraError, InvalidOrganisationCameraError
 
 
@@ -10,16 +9,14 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
     """Upload context for all-sky camera image uploads"""
 
     def __init__(
-        self,
-        config,
-        input_camera_uuid,
-        timestamp=None,
-        org_subdomain=None,
-        custom_tags=None,
+            self,
+            config,
+            input_camera_uuid,
+            org_subdomain=None,
+            custom_tags=None,
     ):
         super().__init__(config, org_subdomain, custom_tags)
         self._input_camera_uuid = str(input_camera_uuid) if input_camera_uuid else None
-        self._timestamp = timestamp
         self._camera = None
 
     @property
@@ -60,7 +57,3 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
     @property
     def camera(self):
         return self._camera if self._camera else None
-
-    @property
-    def timestamp(self):
-        return self._timestamp

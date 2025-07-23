@@ -1,4 +1,5 @@
 import glob
+from datetime import datetime, timezone
 
 from arcsecond import ArcsecondConfig, AllSkyCameraImageUploadContext, AllSkyCameraImageFileUploader
 
@@ -13,5 +14,6 @@ context.validate()
 
 for filepath in glob.glob('directory containing files'):
     uploader = AllSkyCameraImageFileUploader(context, filepath, display_progress=False)
-    status, substatus, error = uploader.upload_file()
+    # You must provide timestamp for every file.
+    status, substatus, error = uploader.upload_file(timestamp=datetime.now(timezone.utc).timestamp())
     print(status, substatus, error)

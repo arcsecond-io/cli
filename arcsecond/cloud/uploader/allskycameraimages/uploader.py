@@ -1,6 +1,7 @@
 import os
 
 from arcsecond.cloud.uploader.uploader import BaseFileUploader
+from arcsecond.errors import ArcsecondError
 from .context import AllSkyCameraImageUploadContext
 
 
@@ -18,8 +19,7 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
         self._cleanup_resources.append(self._file)
         fields = {
             "file": (filename, self._file, "application/octet-stream"),
-            "camera": self._context.camera_uuid,
-            "timestamp": self._context.timestamp,
+            "camera": self._context.camera_uuid
         }
         if self._context.custom_tags:
             fields["tags"] = ",".join(self._context.custom_tags or [])  # will be split back in backend
@@ -28,4 +28,12 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
             # Tags must really be provided only when non-blank/null/empty
             del clean_kwargs['tags']
         fields.update(**clean_kwargs)
+        if 'timestamp' not in clean_kwargs:
+            raise ArcsecondError('Missing timestamp.')
         return fields
+
+    def upload_file(self, timestamp, **kwargs):
+        if timestamp is None:
+            raise ArcsecondError("Missing timestamp for image.")
+        kwargs.update(timestamp=timestamp)
+        super().upload_file(**kwargs)
