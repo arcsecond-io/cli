@@ -21,8 +21,6 @@ class BaseUploadContext(ABC):
         self._config = config
         self._subdomain = org_subdomain
         self._custom_tags = custom_tags
-        self._organisation = None
-        self._api = ArcsecondAPI(config, org_subdomain)
         self._is_validated = False
 
     @property
@@ -38,8 +36,8 @@ class BaseUploadContext(ABC):
         return self._config
 
     @property
-    def organisation_subdomain(self):
-        return self._organisation.get("subdomain", "") if self._organisation else ""
+    def subdomain(self):
+        return self._subdomain
 
     @property
     def custom_tags(self):

@@ -21,9 +21,8 @@ def display_upload_datafiles_command_summary(
         else f"(Access key: {context.config.access_key[:4]}••••)"
     )
     click.echo(f" • Arcsecond username: @{context.config.username} {key}")
-    if context.organisation_subdomain:
-        role = context.config.read_key(context.organisation_subdomain)
-        msg = f" • Uploading to Observatory Portal '{context.organisation_subdomain}'."
+    if context.subdomain:
+        msg = f" • Uploading to Observatory Portal '{context.subdomain}'."
     else:
         msg = " • Uploading to your *personal* account."
     click.echo(msg)
