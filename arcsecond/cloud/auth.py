@@ -70,6 +70,10 @@ def api(state, name=None, fqdn=None):
     module where to point. For instance:
 
     $ arcsecond login --api test
+
+    To list all registered servers, simply type:
+
+    $ arcsecond api
     """
     if name is None:
         name = "cloud"
