@@ -127,7 +127,6 @@ class DatasetUploadContext(BaseUploadContext):
                 msg = (
                     f" • Dataset '{self.dataset_uuid}' has no attached Telescope yet. "
                 )
-                msg += f"Telescope with UUID {self.telescope_uuid} will be attached to it upon upload."
                 click.echo(msg)
                 self._should_update_dataset_with_telescope = True
 
