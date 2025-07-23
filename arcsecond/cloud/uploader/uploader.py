@@ -24,12 +24,10 @@ class BaseFileUploader(Generic[ContextT], ABC):
     def __init__(
         self,
         context: ContextT,
-        walking_root: str,
         file_path: str,
         display_progress=False,
     ):
         self._context = context
-        self._walking_root = Path(walking_root)
         self._file_path = Path(file_path)
         self._display_progress = display_progress
 

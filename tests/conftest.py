@@ -1,4 +1,3 @@
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -52,10 +51,9 @@ def temp_file(tmp_path):
 @pytest.fixture
 def uploader(mock_context, temp_file):
     """Create a DatasetFileUploader instance with mocked dependencies."""
-    walking_root = Path(temp_file).parent
     with patch("arcsecond.cloud.uploader.logger.get_logger"):
         uploader = DatasetFileUploader(
-            mock_context, walking_root, temp_file, display_progress=False
+            mock_context, temp_file, display_progress=False
         )
         uploader._logger = MagicMock()
         return uploader

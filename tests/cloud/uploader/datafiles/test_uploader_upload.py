@@ -1,4 +1,3 @@
-from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 from arcsecond.cloud.uploader import DatasetFileUploader, DatasetUploadContext
@@ -97,9 +96,6 @@ def test_dataset_file_uploader_integration(mock_config, temp_file):
             context._is_validated = True
             context._api = mock_api
 
-            # Create uploader with mocked file operations
-            walking_root = Path(temp_file).parent
-
             with (
                 patch("arcsecond.cloud.uploader.logger.get_logger"),
                 patch("requests_toolbelt.MultipartEncoder"),
@@ -107,7 +103,7 @@ def test_dataset_file_uploader_integration(mock_config, temp_file):
                 patch("builtins.open", mock_open(read_data="test data")),
             ):
                 uploader = DatasetFileUploader(
-                    context, walking_root, temp_file, display_progress=False
+                    context, temp_file, display_progress=False
                 )
                 uploader._logger = MagicMock()
 
