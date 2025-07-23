@@ -89,7 +89,7 @@ class ArcsecondConfig(object):
         apis = [f"cloud: {ARCSECOND_API_URL_PROD} (protected)"]
         for section_name in self.__config.sections():
             section = self.__config[section_name]
-            api_server = section.get('api_server', '')
+            api_server = section.get("api_server", "")
             if api_server:
                 apis.append(f"{section_name}: {api_server}")
         return "\n".join(apis)

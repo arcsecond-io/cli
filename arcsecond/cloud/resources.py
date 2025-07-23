@@ -80,7 +80,6 @@ def telescopes(state, portal=None):
         click.echo(s)
 
 
-
 @click.command(help="Display the list of (portal) all-sky cameras.")
 @click.option(
     "-p",

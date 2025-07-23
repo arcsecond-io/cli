@@ -78,7 +78,9 @@ def api(state, name=None, fqdn=None):
     if name is None:
         name = "cloud"
     elif name == "cloud" and fqdn is not None:
-        raise ArcsecondError("You cannot change the server address of the 'cloud' API server.")
+        raise ArcsecondError(
+            "You cannot change the server address of the 'cloud' API server."
+        )
 
     # The setter below is normally handled by the option --api, but here, the DX is different,
     # because we manipulate the api and its address itself.
@@ -90,7 +92,9 @@ def api(state, name=None, fqdn=None):
         click.echo(config.all_apis)
     else:
         config.api_server = fqdn
-        click.echo(f" • Registering the API \"{name}\" with the server address \"{config.api_server}\".")
+        click.echo(
+            f' • Registering the API "{name}" with the server address "{config.api_server}".'
+        )
 
 
 @click.command(help="Get your complete user profile.")
