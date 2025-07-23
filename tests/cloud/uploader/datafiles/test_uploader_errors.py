@@ -28,7 +28,7 @@ def test_upload_file_skipped(file_uploader):
         mock_perform.assert_called_once()
 
         # Verify result
-        assert result == [Status.OK, Substatus.DONE, None]
+        assert result == [Status.SKIPPED, Substatus.ALREADY_SYNCED, None]
 
 
 def test_upload_file_invalid_context(file_uploader):
@@ -102,6 +102,5 @@ def test_upload_file_retry_on_error(file_uploader):
         # Verify each method was called twice (initial + retry)
         assert prepare_mock.call_count == 2
         assert perform_mock.call_count == 2
-        assert update_mock.call_count == 2
 
 

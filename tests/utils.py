@@ -2,13 +2,13 @@ import json
 import random
 import string
 
-import responses
+import respx
+from httpx import Response
 
 from arcsecond import ArcsecondConfig
 from arcsecond.api.constants import (
     API_AUTH_PATH_VERIFY,
     API_AUTH_PATH_VERIFY_PORTAL,
-    ARCSECOND_API_URL_DEV,
 )
 
 TEST_LOGIN_USERNAME = "robot1"
@@ -44,27 +44,23 @@ def make_profile_json(subdomain, role):
     return json.dumps(make_profile(subdomain, role))
 
 
-def prepare_successful_login(api_name, org_subdomain=""):
-    config = ArcsecondConfig(api_name=api_name)
-    config.api_server = ARCSECOND_API_URL_DEV
-    responses.post(
-        "/".join([ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY]) + "/",
-        status=204,
-    )
+def prepare_successful_login(config, org_subdomain=""):
+    respx.post(
+        "/".join([config.api_server, API_AUTH_PATH_VERIFY]) + "/",
+    ).mock(return_value=Response(204))
     if org_subdomain:
-        responses.post(
-            "/".join([ARCSECOND_API_URL_DEV, API_AUTH_PATH_VERIFY_PORTAL]) + "/",
-            status=204,
-        )
+        respx.post(
+            "/".join([config.api_server, API_AUTH_PATH_VERIFY_PORTAL]) + "/",
+        ).mock(return_value=Response(204))
 
 
-def prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain=""):
-    responses.get(
+def prepare_upload_files(config, dataset_uuid, telescope_uuid, org_subdomain=""):
+    respx.get(
         "/".join(
             [
                 part
                 for part in [
-                ARCSECOND_API_URL_DEV,
+                config.api_server,
                 org_subdomain,
                 "datasets",
                 dataset_uuid,
@@ -73,15 +69,13 @@ def prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain=""):
             ]
         )
         + "/",
-        status=200,
-        json={"uuid": dataset_uuid, "name": "dummy dataset"},
-    )
-    responses.get(
+    ).mock(return_value=Response(200, json={"uuid": dataset_uuid, "name": "dummy dataset"}))
+    respx.get(
         "/".join(
             [
                 part
                 for part in [
-                ARCSECOND_API_URL_DEV,
+                config.api_server,
                 org_subdomain,
                 "telescopes",
                 telescope_uuid,
@@ -89,42 +83,34 @@ def prepare_upload_files(dataset_uuid, telescope_uuid, org_subdomain=""):
                 if part
             ]
         )
-        + "/",
-        status=200,
-        json={"uuid": telescope_uuid, "name": "dummy telescope"},
-    )
+        + "/"
+    ).mock(return_value=Response(200, json={"uuid": telescope_uuid, "name": "dummy telescope"}))
     if org_subdomain:
-        responses.get(
-            "/".join([ARCSECOND_API_URL_DEV, "organisations", org_subdomain]) + "/",
-            status=200,
-            json={"subdomain": org_subdomain, "name": "dummy org"},
-        )
+        respx.get(
+            "/".join([config.api_server, "organisations", org_subdomain]) + "/",
+        ).mock(return_value=Response(200, json={"subdomain": org_subdomain, "name": "dummy org"}))
 
 
-def prepare_upload_allskyimage(camera_uuid, org_subdomain=""):
-    responses.get(
+def prepare_upload_allskyimages(config, camera_uuid, org_subdomain=""):
+    respx.get(
         "/".join(
             [
                 part
                 for part in [
-                ARCSECOND_API_URL_DEV,
+                config.api_server,
                 org_subdomain,
                 "allskycameras",
-                camera_uuid,
+                camera_uuid
             ]
                 if part
             ]
         )
-        + "/",
-        status=201,
-        json={"status": "success", "uuid": camera_uuid},
-    )
+        + "/"
+    ).mock(return_value=Response(201, json={"status": "success", "uuid": camera_uuid}))
     if org_subdomain:
-        responses.get(
-            "/".join([ARCSECOND_API_URL_DEV, "organisations", org_subdomain]) + "/",
-            status=200,
-            json={"subdomain": org_subdomain, "name": "dummy org"},
-        )
+        respx.get(
+            "/".join([config.api_server, "organisations", org_subdomain]) + "/"
+        ).mock(return_value=Response(200, json={"subdomain": org_subdomain, "name": "dummy org"},))
 
 
 def save_test_credentials(api_name, username, memberships=None):
@@ -138,27 +124,3 @@ def save_test_credentials(api_name, username, memberships=None):
 def clear_test_credentials(api_name):
     config = ArcsecondConfig(api_name=api_name)
     config.reset()
-
-
-def mock_url_path(method, path, body="", query="", status=200):
-    responses.add(
-        responses.Response(
-            method=method,
-            url="/".join([ARCSECOND_API_URL_DEV, path]) + query,
-            status=status,
-            body=body,
-            match_querystring=True,
-        )
-    )
-
-
-def mock_http_get(path, body="{}", status=200):
-    mock_url_path("GET", path, body, status=status)
-
-
-def mock_http_post(path, body="{}", status=201):
-    mock_url_path("POST", path, body, status=status)
-
-
-def mock_http_patch(path, body="{}", status=200):
-    mock_url_path("PATCH", path, body, status=status)

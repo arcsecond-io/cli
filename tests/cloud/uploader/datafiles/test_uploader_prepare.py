@@ -34,7 +34,7 @@ def test_prepare_upload_with_new_dataset(file_uploader):
             "name": file_uploader._context.dataset_name,
             "telescope": file_uploader._context.telescope_uuid,
         }
-        mock_func_create.assert_called_once_with(data=expected_data)
+        mock_func_create.assert_called_once_with(json=expected_data)
         mock_func_update.assert_not_called()
 
 

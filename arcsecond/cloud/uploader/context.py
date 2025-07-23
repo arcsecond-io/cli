@@ -5,7 +5,6 @@ import click
 from arcsecond.api.constants import API_AUTH_PATH_VERIFY_PORTAL
 from arcsecond.api.endpoint import ArcsecondAPIEndpoint
 from arcsecond.api.main import ArcsecondAPI
-
 from .errors import (
     InvalidAstronomerError,
     InvalidOrgMembershipError,
@@ -92,7 +91,7 @@ class BaseUploadContext(ABC):
     def _validate_astronomer_role_in_remote_organisation(self):
         endpoint = ArcsecondAPIEndpoint(self.config, API_AUTH_PATH_VERIFY_PORTAL)
         _, error = endpoint.create(
-            {
+            json={
                 "username": self._config.username,
                 "key": self._config.access_key or self._config.upload_key,
                 "organisation": self._subdomain,

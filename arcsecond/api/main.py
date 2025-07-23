@@ -57,7 +57,7 @@ class ArcsecondAPI(object):
 
         endpoint = ArcsecondAPIEndpoint(self.config, API_AUTH_PATH_VERIFY)
         _, error = endpoint.create(
-            {"username": username, "key": access_key or upload_key}
+            json={"username": username, "key": access_key or upload_key}
         )
         if error:
             click.echo(click.style(error, fg="red"))

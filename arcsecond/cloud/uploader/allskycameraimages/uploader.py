@@ -11,7 +11,7 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
         # Camera validation was already done in the context
         pass
 
-    def _get_upload_data_fields(self, **kwargs):
+    def _get_upload_data(self, **kwargs):
         fields = {
             "camera": self._context.camera_uuid
         }

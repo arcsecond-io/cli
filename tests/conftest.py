@@ -30,7 +30,7 @@ def mock_file_context(mock_config):
     context.dataset_name = "test-dataset"
     context.telescope_uuid = "test-telescope-uuid"
     context.is_raw_data = True
-    context.custom_tags = ["test_tag1", "test_tag2"]
+    context.custom_tags = None
     return context
 
 

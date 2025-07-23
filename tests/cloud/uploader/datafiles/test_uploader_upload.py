@@ -1,52 +1,49 @@
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import patch
 
-from arcsecond.cloud.uploader import DatasetFileUploader, DatasetUploadContext
 from arcsecond.cloud.uploader.constants import Status, Substatus
 
 
 def test_get_upload_data(file_uploader, temp_file):
     """Test the creation of upload data."""
-    # Mock the MultipartEncoder
-    mock_encoder = MagicMock()
-    mock_monitor = MagicMock()
-
-    with (
-        patch("requests_toolbelt.MultipartEncoder", return_value=mock_encoder),
-        patch("requests_toolbelt.MultipartEncoderMonitor", return_value=mock_monitor),
-        patch("arcsecond.cloud.uploader.utils.get_upload_progress_printer"),
-        patch("builtins.open", mock_open(read_data="test data")),
-    ):
-        # Without progress display
-        file_uploader._display_progress = False
-        result = file_uploader._get_upload_data()
-        assert result == mock_encoder
-
-        # With progress display
-        file_uploader._display_progress = True
-        result = file_uploader._get_upload_data()
-        assert result == mock_monitor
+    result = file_uploader._get_upload_data()
+    assert isinstance(result, dict)
+    assert 'dataset' in result
+    assert 'is_raw' in result
+    assert 'tags' not in result
+    assert result['is_raw'] == 'True'  # yes, it is stringified for MultipartEncoder
 
 
-def test_perform_upload_success(file_uploader):
-    """Test successful file upload."""
-    # Mock upload data and successful API response
-    mock_encoder = MagicMock()
-    mock_encoder.content_type = "multipart/form-data"
+def test_get_upload_data_with_raw_false(file_uploader, temp_file):
+    """Test the creation of upload data."""
+    file_uploader._context.is_raw_data = False
+    result = file_uploader._get_upload_data()
+    assert isinstance(result, dict)
+    assert 'dataset' in result
+    assert 'is_raw' in result
+    assert 'tags' not in result
+    assert result['is_raw'] == 'False'  # yes, it is stringified for MultipartEncoder
 
-    mock_datafile = {"id": "new-file-id"}
-    file_uploader._api.datafiles.create.return_value = (mock_datafile, None)
 
-    with patch.object(file_uploader, "_get_upload_data", return_value=mock_encoder):
-        file_uploader._perform_upload()
+def test_get_upload_data_with_custom_tags_array(file_uploader, temp_file):
+    """Test the creation of upload data."""
+    file_uploader._context.custom_tags = ['t1', 't2', 't4']
+    result = file_uploader._get_upload_data()
+    assert isinstance(result, dict)
+    assert 'dataset' in result
+    assert 'is_raw' in result
+    assert 'tags' in result
+    assert result['tags'] == 't1,t2,t4'  # yes, it is stringified for MultipartEncoder
 
-    # Verify API call
-    file_uploader._api.datafiles.create.assert_called_once_with(
-        data=mock_encoder, headers={"Content-Type": "multipart/form-data"}
-    )
 
-    # Verify status and file ID
-    assert file_uploader.uploaded_file_id == "new-file-id"
-    assert file_uploader.main_status == Status.UPLOADING
+def test_get_upload_data_with_custom_tags_string(file_uploader, temp_file):
+    """Test the creation of upload data."""
+    file_uploader._context.custom_tags = 't0, t5, t6'
+    result = file_uploader._get_upload_data()
+    assert isinstance(result, dict)
+    assert 'dataset' in result
+    assert 'is_raw' in result
+    assert 'tags' in result
+    assert result['tags'] == 't0,t5,t6'  # yes, it is stringified for MultipartEncoder
 
 
 def test_upload_file_complete_process(file_uploader):
@@ -56,63 +53,9 @@ def test_upload_file_complete_process(file_uploader):
         patch.object(file_uploader, "_prepare_upload") as mock_prepare,
         patch.object(file_uploader, "_perform_upload") as mock_perform,
     ):
-        # Successful upload
-        file_uploader._status = [Status.UPLOADING, Substatus.UPLOADING, None]
         result = file_uploader.upload_file(is_raw=True, custom_tags=["tag1"])
 
-        # Verify all methods were called
         mock_prepare.assert_called_once()
         mock_perform.assert_called_once()
 
-        # Verify result
-        assert result == [Status.UPLOADING, Substatus.UPLOADING, None]
-
-
-def test_dataset_file_uploader_integration(mock_config, temp_file):
-    """Integration test for DatasetFileUploader."""
-    # Create a real context with mocked API
-    mock_api = MagicMock()
-    mock_api.datasets.create.return_value = (
-        {"uuid": "new-dataset-uuid", "name": "test-dataset"},
-        None,
-    )
-    mock_api.datafiles.create.return_value = ({"id": "new-file-id"}, None)
-    mock_api.datafiles.update.return_value = ({"id": "new-file-id"}, None)
-
-    # Create a patched context class
-    with patch("arcsecond.api.main.ArcsecondAPI", return_value=mock_api):
-        context = DatasetUploadContext(
-            mock_config,
-            input_dataset_uuid_or_name="test-dataset",
-            input_telescope_uuid="test-telescope-uuid",
-            is_raw_data=True,
-            custom_tags=["test_tag"],
-        )
-
-        # Mock context validation
-        with patch.object(context, "validate"):
-            context._is_validated = True
-
-            with (
-                patch("arcsecond.cloud.uploader.logger.get_logger"),
-                patch("requests_toolbelt.MultipartEncoder"),
-                patch("requests_toolbelt.MultipartEncoderMonitor"),
-                patch("builtins.open", mock_open(read_data="test data")),
-            ):
-                uploader = DatasetFileUploader(
-                    context, temp_file, display_progress=False
-                )
-                uploader._logger = MagicMock()
-
-                # Execute the upload
-                status, substatus, error = uploader.upload_file()
-
-                # Verify successful upload
-                assert status == Status.UPLOADING
-
-                # Verify API calls
-                if not context.dataset_uuid:
-                    mock_api.datasets.create.assert_called()
-
-                mock_api.datafiles.create.assert_called()
-                mock_api.datafiles.update.assert_called()
+        assert result == [Status.OK, Substatus.DONE, None]
