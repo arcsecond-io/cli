@@ -9,7 +9,7 @@ from arcsecond.api.endpoint import ArcsecondAPIEndpoint, ArcsecondError
 @pytest.fixture
 def config():
     config = Mock(spec=ArcsecondConfig)
-    config.api_server = "https://api.arcsecond.io"
+    config.api_server = "https://fixture.example.io"
     config.verbose = False
     config.access_key = "test_access_key"
     config.upload_key = None
@@ -27,36 +27,36 @@ def test_init(config):
 
 
 def test_get_base_url(config):
-    config.api_server = "https://api.arcsecond.io/"
+    config.api_server = "https://text.example.io/"
     endpoint = ArcsecondAPIEndpoint(config=config, path="test", subdomain="sub")
 
     # Test with URL already ending with slash
-    assert endpoint._get_base_url() == "https://api.arcsecond.io/"
+    assert endpoint._get_base_url() == "https://text.example.io/"
 
 
 def test_build_url(endpoint):
     # Test basic URL building
     url = endpoint._build_url("resource")
-    assert url == "https://api.arcsecond.io/sub/resource/"
+    assert url == "https://fixture.example.io/sub/resource/"
 
     # Test with filters
     url = endpoint._build_url("resource", page=1, limit=10)
-    assert url == "https://api.arcsecond.io/sub/resource/?page=1&limit=10"
+    assert url == "https://fixture.example.io/sub/resource/?page=1&limit=10"
 
 
 def test_list_url(endpoint):
     # Test without filters
     url = endpoint._list_url()
-    assert url == "https://api.arcsecond.io/sub/test/"
+    assert url == "https://fixture.example.io/sub/test/"
 
     # Test with filters
     url = endpoint._list_url(page=1)
-    assert url == "https://api.arcsecond.io/sub/test/?page=1"
+    assert url == "https://fixture.example.io/sub/test/?page=1"
 
 
 def test_detail_url(endpoint):
     url = endpoint._detail_url("123")
-    assert url == "https://api.arcsecond.io/sub/test/123/"
+    assert url == "https://fixture.example.io/sub/test/123/"
 
 
 @patch('requests.get')
@@ -129,7 +129,7 @@ def test_check_and_set_auth_key_no_key(config):
     endpoint = ArcsecondAPIEndpoint(config=config, path="test")
 
     with pytest.raises(ArcsecondError) as exc_info:
-        endpoint._check_and_set_auth_key({}, "https://api.arcsecond.io/test")
+        endpoint._check_and_set_auth_key({}, "https://fixture.example.io/test")
     assert "Missing auth keys" in str(exc_info.value)
 
 
