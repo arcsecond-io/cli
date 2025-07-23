@@ -110,7 +110,9 @@ def me(state):
     if not username:
         msg = f"Invalid/missing username: {username}. Make sure to login first: $ arcsecond login"
         raise ArcsecondError(msg)
-    response, error = ArcsecondAPI(ArcsecondConfig.from_state(state)).profiles.read(username)
+    response, error = ArcsecondAPI(ArcsecondConfig.from_state(state)).profiles.read(
+        username
+    )
     if error:
         click.echo(str(error))
     else:

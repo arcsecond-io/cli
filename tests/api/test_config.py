@@ -69,7 +69,7 @@ def test_config_upload_key():
 def test_config_change_master_api_server():
     with pytest.raises(ArcsecondError):
         config = ArcsecondConfig()
-        config.api_server = 'http://dummy.com'
+        config.api_server = "http://dummy.com"
 
 
 def test_default_empty_state():
@@ -89,7 +89,11 @@ def test_default_logged_in_state():
 
 def test_default_logged_in_with_membership_state():
     random_api_name = random_string()
-    save_test_credentials(random_api_name, "cedric", [{"organisation": "saao", "role": "superadmin"}])
+    save_test_credentials(
+        random_api_name, "cedric", [{"organisation": "saao", "role": "superadmin"}]
+    )
     assert ArcsecondConfig(api_name=random_api_name).is_logged_in is True
     assert ArcsecondConfig(api_name=random_api_name).username == "cedric"
-    assert ArcsecondConfig(api_name=random_api_name).memberships == {"saao": "superadmin"}
+    assert ArcsecondConfig(api_name=random_api_name).memberships == {
+        "saao": "superadmin"
+    }

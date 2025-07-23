@@ -31,4 +31,3 @@ def __get_formatted_bytes_size(size):
     units = ["Bytes", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
     i = math.floor(math.log10(1.0 * size) / math.log10(k))
     return f"{(size / math.pow(k, i)):.2f} {units[i]}"
-

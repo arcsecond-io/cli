@@ -50,7 +50,9 @@ class DatasetUploadContext(BaseUploadContext):
             click.echo(
                 f" • Looking for a dataset with name {self._input_dataset_uuid_or_name}..."
             )
-            datasets_list, error = endpoint.list(**{"name": self._input_dataset_uuid_or_name})
+            datasets_list, error = endpoint.list(
+                **{"name": self._input_dataset_uuid_or_name}
+            )
             if len(datasets_list) == 0:
                 click.echo(
                     f" • No dataset with name {self._input_dataset_uuid_or_name} found. It will be created."

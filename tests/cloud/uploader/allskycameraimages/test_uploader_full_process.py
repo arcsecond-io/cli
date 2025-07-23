@@ -31,7 +31,7 @@ def mock_config():
     config.api_name = random_string()
     config.api_server = "http://mock.example.com"
     config.access_key = None  # very important, because access_key takes precedence on upload_key in headers setting.
-    config.upload_key = '1234567890'
+    config.upload_key = "1234567890"
     return config
 
 
@@ -46,13 +46,20 @@ def test_full_upload_process_allskyimages(mock_config):
     # file upload
     image_id = random.randint(1, 1000)
     respx.post(
-        "/".join([mock_config.api_server, org_subdomain, "allskycameras", camera_uuid, "images"]) + "/"
+        "/".join(
+            [
+                mock_config.api_server,
+                org_subdomain,
+                "allskycameras",
+                camera_uuid,
+                "images",
+            ]
+        )
+        + "/"
     ).mock(Response(201, json={"status": "success", "id": image_id}))
 
     context = AllSkyCameraImageUploadContext(
-        mock_config,
-        input_camera_uuid=camera_uuid,
-        org_subdomain=org_subdomain
+        mock_config, input_camera_uuid=camera_uuid, org_subdomain=org_subdomain
     )
 
     context.validate()  # important step to perform before uploading.
@@ -70,7 +77,9 @@ def test_full_upload_process_allskyimages(mock_config):
                 context, str(temp_path), display_progress=False
             )
 
-            status, substatus, error = uploader.upload_file(datetime.now(timezone.utc).timestamp())
+            status, substatus, error = uploader.upload_file(
+                datetime.now(timezone.utc).timestamp()
+            )
             assert status.value == Status.OK.value
             assert substatus.value == Substatus.DONE.value
             assert error is None

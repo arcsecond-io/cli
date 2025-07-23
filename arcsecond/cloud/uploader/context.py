@@ -85,7 +85,9 @@ class BaseUploadContext(ABC):
 
     def _validate_remote_organisation(self):
         click.echo(f" • Fetching details of organisation {self._subdomain}...")
-        _, error = ArcsecondAPI(self._config, self._subdomain).organisations.read(self._subdomain)
+        _, error = ArcsecondAPI(self._config, self._subdomain).organisations.read(
+            self._subdomain
+        )
         if error is not None:
             raise UnknownOrganisationError(self._subdomain, str(error))
 

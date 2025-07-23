@@ -18,7 +18,7 @@ TEST_UPLOAD_KEY = "b4ef5f4c8e53213e935e2b9e24c44581"
 
 def random_string(n=10):
     # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
-    return ''.join(random.choice(string.ascii_letters) for _ in range(n))
+    return "".join(random.choice(string.ascii_letters) for _ in range(n))
 
 
 def make_profile(subdomain, role):
@@ -60,35 +60,45 @@ def prepare_upload_files(config, dataset_uuid, telescope_uuid, org_subdomain="")
             [
                 part
                 for part in [
-                config.api_server,
-                org_subdomain,
-                "datasets",
-                dataset_uuid,
-            ]
+                    config.api_server,
+                    org_subdomain,
+                    "datasets",
+                    dataset_uuid,
+                ]
                 if part
             ]
         )
         + "/",
-    ).mock(return_value=Response(200, json={"uuid": dataset_uuid, "name": "dummy dataset"}))
+    ).mock(
+        return_value=Response(200, json={"uuid": dataset_uuid, "name": "dummy dataset"})
+    )
     respx.get(
         "/".join(
             [
                 part
                 for part in [
-                config.api_server,
-                org_subdomain,
-                "telescopes",
-                telescope_uuid,
-            ]
+                    config.api_server,
+                    org_subdomain,
+                    "telescopes",
+                    telescope_uuid,
+                ]
                 if part
             ]
         )
         + "/"
-    ).mock(return_value=Response(200, json={"uuid": telescope_uuid, "name": "dummy telescope"}))
+    ).mock(
+        return_value=Response(
+            200, json={"uuid": telescope_uuid, "name": "dummy telescope"}
+        )
+    )
     if org_subdomain:
         respx.get(
             "/".join([config.api_server, "organisations", org_subdomain]) + "/",
-        ).mock(return_value=Response(200, json={"subdomain": org_subdomain, "name": "dummy org"}))
+        ).mock(
+            return_value=Response(
+                200, json={"subdomain": org_subdomain, "name": "dummy org"}
+            )
+        )
 
 
 def prepare_upload_allskyimages(config, camera_uuid, org_subdomain=""):
@@ -97,11 +107,11 @@ def prepare_upload_allskyimages(config, camera_uuid, org_subdomain=""):
             [
                 part
                 for part in [
-                config.api_server,
-                org_subdomain,
-                "allskycameras",
-                camera_uuid
-            ]
+                    config.api_server,
+                    org_subdomain,
+                    "allskycameras",
+                    camera_uuid,
+                ]
                 if part
             ]
         )
@@ -110,7 +120,12 @@ def prepare_upload_allskyimages(config, camera_uuid, org_subdomain=""):
     if org_subdomain:
         respx.get(
             "/".join([config.api_server, "organisations", org_subdomain]) + "/"
-        ).mock(return_value=Response(200, json={"subdomain": org_subdomain, "name": "dummy org"},))
+        ).mock(
+            return_value=Response(
+                200,
+                json={"subdomain": org_subdomain, "name": "dummy org"},
+            )
+        )
 
 
 def save_test_credentials(api_name, username, memberships=None):

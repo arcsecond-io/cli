@@ -30,7 +30,7 @@ def mock_config():
     config.api_name = random_string()
     config.api_server = "http://mock.example.com"
     config.access_key = None  # very important, because access_key takes precedence on upload_key in headers setting.
-    config.upload_key = '1234567890'
+    config.upload_key = "1234567890"
     return config
 
 
@@ -44,7 +44,8 @@ def test_full_upload_process_datafiles(mock_config):
     prepare_upload_files(mock_config, dataset_uuid, telescope_uuid, org_subdomain)
 
     respx.get(
-        "/".join([mock_config.api_server, org_subdomain, "datasets", dataset_uuid]) + "/"
+        "/".join([mock_config.api_server, org_subdomain, "datasets", dataset_uuid])
+        + "/"
     ).mock(Response(201, json={"name": "dummy", "uuid": dataset_uuid}))
 
     datafile_id = random.randint(1, 1000)

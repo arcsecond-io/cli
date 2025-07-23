@@ -35,6 +35,7 @@ def main(ctx, version=False, v=False, h=False):
 def version():
     click.echo(__version__.__version__)
 
+
 # Read/set API server to use.
 main.add_command(api)
 

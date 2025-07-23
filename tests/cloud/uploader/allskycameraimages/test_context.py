@@ -21,21 +21,20 @@ def mock_config():
     config.api_name = random_string()
     config.api_server = "http://mock.example.com"
     config.access_key = None  # very important, because access_key takes precedence on upload_key in headers setting.
-    config.upload_key = '1234567890'
+    config.upload_key = "1234567890"
     return config
 
 
 @pytest.fixture
 def mock_api_endpoint():
-    with patch('arcsecond.api.ArcsecondAPIEndpoint') as mock:
+    with patch("arcsecond.api.ArcsecondAPIEndpoint") as mock:
         yield mock
 
 
 def test_init_with_valid_camera_uuid(mock_config):
     """Test initialization with valid camera UUID"""
     context = AllSkyCameraImageUploadContext(
-        config=mock_config,
-        input_camera_uuid="test-uuid-123"
+        config=mock_config, input_camera_uuid="test-uuid-123"
     )
     assert context._input_camera_uuid == "test-uuid-123"
     assert context._camera is None
@@ -43,22 +42,21 @@ def test_init_with_valid_camera_uuid(mock_config):
 
 def test_init_with_none_camera_uuid(mock_config):
     """Test initialization with None camera UUID"""
-    context = AllSkyCameraImageUploadContext(
-        config=mock_config,
-        input_camera_uuid=None
-    )
+    context = AllSkyCameraImageUploadContext(config=mock_config, input_camera_uuid=None)
     assert context._input_camera_uuid is None
     assert context._camera is None
 
 
 def test_validate_context_specific_with_valid_uuid(mock_config, mock_api_endpoint):
     """Test _validate_context_specific with valid UUID"""
-    with patch('arcsecond.api.endpoint.ArcsecondAPIEndpoint.read') as mock_func_read:
+    with patch("arcsecond.api.endpoint.ArcsecondAPIEndpoint.read") as mock_func_read:
         context = AllSkyCameraImageUploadContext(
-            config=mock_config,
-            input_camera_uuid="test-uuid-123"
+            config=mock_config, input_camera_uuid="test-uuid-123"
         )
-        mock_func_read.return_value = ({"uuid": "test-uuid-123", "name": "test-camera"}, None)
+        mock_func_read.return_value = (
+            {"uuid": "test-uuid-123", "name": "test-camera"},
+            None,
+        )
         context._validate_context_specific()
         mock_func_read.assert_called_once()
         assert context._camera == {"uuid": "test-uuid-123", "name": "test-camera"}
@@ -66,22 +64,18 @@ def test_validate_context_specific_with_valid_uuid(mock_config, mock_api_endpoin
 
 def test_validate_context_specific_without_uuid(mock_config):
     """Test _validate_context_specific without UUID"""
-    context = AllSkyCameraImageUploadContext(
-        config=mock_config,
-        input_camera_uuid=None
-    )
+    context = AllSkyCameraImageUploadContext(config=mock_config, input_camera_uuid=None)
     with pytest.raises(ValueError, match="Camera UUID is required for image uploads"):
         context._validate_context_specific()
 
 
 def test_validate_input_camera_uuid_with_error(mock_config, mock_api_endpoint):
     """Test _validate_input_camera_uuid with error response"""
-    with patch('arcsecond.api.endpoint.ArcsecondAPIEndpoint.read') as mock_func_read:
+    with patch("arcsecond.api.endpoint.ArcsecondAPIEndpoint.read") as mock_func_read:
         mock_func_read.return_value = (None, "Camera not found")
 
         context = AllSkyCameraImageUploadContext(
-            config=mock_config,
-            input_camera_uuid="invalid-uuid"
+            config=mock_config, input_camera_uuid="invalid-uuid"
         )
 
         with pytest.raises(InvalidCameraError):
@@ -90,13 +84,13 @@ def test_validate_input_camera_uuid_with_error(mock_config, mock_api_endpoint):
 
 def test_validate_input_camera_uuid_with_org_error(mock_config, mock_api_endpoint):
     """Test _validate_input_camera_uuid with organization error"""
-    with patch('arcsecond.api.endpoint.ArcsecondAPIEndpoint.read') as mock_func_read:
+    with patch("arcsecond.api.endpoint.ArcsecondAPIEndpoint.read") as mock_func_read:
         mock_func_read.return_value = (None, "Camera not found")
 
         context = AllSkyCameraImageUploadContext(
             config=mock_config,
             input_camera_uuid="invalid-uuid",
-            org_subdomain="test-org"
+            org_subdomain="test-org",
         )
 
         with pytest.raises(InvalidOrganisationCameraError):
@@ -106,8 +100,7 @@ def test_validate_input_camera_uuid_with_org_error(mock_config, mock_api_endpoin
 def test_camera_properties(mock_config):
     """Test camera-related properties"""
     context = AllSkyCameraImageUploadContext(
-        config=mock_config,
-        input_camera_uuid="test-uuid-123"
+        config=mock_config, input_camera_uuid="test-uuid-123"
     )
 
     # Test before camera data is set

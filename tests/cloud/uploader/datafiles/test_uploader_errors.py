@@ -50,7 +50,9 @@ def test_perform_upload_already_exists(file_uploader):
     error = MagicMock()
     error.__str__.return_value = "already exists in dataset"
 
-    with patch.object(file_uploader._context.upload_api_endpoint, "create") as mock_func:
+    with patch.object(
+        file_uploader._context.upload_api_endpoint, "create"
+    ) as mock_func:
         mock_func.return_value = (None, error)
 
         with patch.object(file_uploader, "_get_upload_data", return_value=mock_encoder):
@@ -69,7 +71,9 @@ def test_perform_upload_error(file_uploader):
     error = MagicMock()
     error.__str__.return_value = "API error"
     error.status = 400
-    with patch.object(file_uploader._context.upload_api_endpoint, "create") as mock_func:
+    with patch.object(
+        file_uploader._context.upload_api_endpoint, "create"
+    ) as mock_func:
         mock_func.return_value = (None, error)
 
         with patch.object(file_uploader, "_get_upload_data", return_value=mock_encoder):
@@ -102,5 +106,3 @@ def test_upload_file_retry_on_error(file_uploader):
         # Verify each method was called twice (initial + retry)
         assert prepare_mock.call_count == 2
         assert perform_mock.call_count == 2
-
-

@@ -22,7 +22,9 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
             self._logger.info(
                 f"{self.log_prefix} Creating dataset with name {dataset_name}..."
             )
-            endpoint = ArcsecondAPIEndpoint(self._context.config, 'datasets', self._context.subdomain)
+            endpoint = ArcsecondAPIEndpoint(
+                self._context.config, "datasets", self._context.subdomain
+            )
             dataset, error = endpoint.create(json=data)
 
             if error:
@@ -41,13 +43,18 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
             "is_raw": str(self._context.is_raw_data),
         }
         if self._context.custom_tags and len(self._context.custom_tags) > 0:
-            raw_tags = self._context.custom_tags if isinstance(self._context.custom_tags, list) \
-                else self._context.custom_tags.split(',')
+            raw_tags = (
+                self._context.custom_tags
+                if isinstance(self._context.custom_tags, list)
+                else self._context.custom_tags.split(",")
+            )
             tags = [t.strip() for t in raw_tags if len(t.strip()) > 0]
             fields["tags"] = ",".join(tags)
-        clean_kwargs = {k: kwargs[k] for k in ('is_raw', 'tags', 'dataset') if k in kwargs}
-        if 'tags' in clean_kwargs and not clean_kwargs['tags']:
+        clean_kwargs = {
+            k: kwargs[k] for k in ("is_raw", "tags", "dataset") if k in kwargs
+        }
+        if "tags" in clean_kwargs and not clean_kwargs["tags"]:
             # Tags must really be provided only when non-blank/null/empty
-            del clean_kwargs['tags']
+            del clean_kwargs["tags"]
         fields.update(**clean_kwargs)
         return fields

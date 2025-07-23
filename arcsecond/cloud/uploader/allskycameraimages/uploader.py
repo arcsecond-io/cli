@@ -13,13 +13,11 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
         pass
 
     def _get_upload_data(self, **kwargs):
-        fields = {
-            "camera": self._context.camera_uuid
-        }
-        clean_kwargs = {k: kwargs[k] for k in ('timestamp', 'camera') if k in kwargs}
+        fields = {"camera": self._context.camera_uuid}
+        clean_kwargs = {k: kwargs[k] for k in ("timestamp", "camera") if k in kwargs}
         fields.update(**clean_kwargs)
-        if 'timestamp' not in clean_kwargs:
-            raise ArcsecondError('Missing timestamp.')
+        if "timestamp" not in clean_kwargs:
+            raise ArcsecondError("Missing timestamp.")
         return fields
 
     def upload_file(self, timestamp, **kwargs):

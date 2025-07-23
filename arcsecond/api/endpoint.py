@@ -28,7 +28,9 @@ class ArcsecondAPIEndpoint(object):
 
     def _get_base_url(self):
         if not self.__config.api_server:
-            raise ArcsecondError(f"API server address for name \'{self.__config.api_name}\' is unknown/invalid.")
+            raise ArcsecondError(
+                f"API server address for name '{self.__config.api_name}' is unknown/invalid."
+            )
         url = self.__config.api_server
         if not url.endswith("/"):
             url += "/"
@@ -65,11 +67,7 @@ class ArcsecondAPIEndpoint(object):
 
     def create(self, json=None, files=None, headers=None):
         return self._perform_request(
-            self._list_url(),
-            "post",
-            json=json,
-            files=files,
-            headers=headers
+            self._list_url(), "post", json=json, files=files, headers=headers
         )
 
     def update(self, id_name_uuid, json=None, files=None, headers=None):
@@ -91,14 +89,14 @@ class ArcsecondAPIEndpoint(object):
         headers = self._check_and_set_auth_key(headers or {}, url)
         method = getattr(httpx, method_name.lower())
 
-        kwargs = {'headers': headers, 'timeout': 60}
+        kwargs = {"headers": headers, "timeout": 60}
         if files and json:
             # Do NOT set json=json, keep data=json, to avoid overriding Content-Type with `application/json`.
             kwargs.update(files=files, data=json)
         elif json and not files:
             kwargs.update(json=json)
         elif files and not json:
-            raise ArcsecondError('Files but no json?')
+            raise ArcsecondError("Files but no json?")
 
         try:
             response = method(url, **kwargs)

@@ -11,10 +11,10 @@ from .constants import ARCSECOND_API_URL_PROD
 
 class ArcsecondConfig(object):
     def __init__(self, **kwargs):
-        self.__api_name = kwargs.get('api_name', 'cloud') or 'cloud'
+        self.__api_name = kwargs.get("api_name", "cloud") or "cloud"
         self.__verbose = kwargs.get("verbose", 0) or 0
-        if 'config' in kwargs.keys():
-            self.__config = kwargs.get('config')
+        if "config" in kwargs.keys():
+            self.__config = kwargs.get("config")
         else:
             self.__config = ConfigParser()
             self.__config.read(str(ArcsecondConfig.file_path()))

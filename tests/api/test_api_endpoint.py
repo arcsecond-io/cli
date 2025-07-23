@@ -59,7 +59,7 @@ def test_detail_url(endpoint):
     assert url == "https://fixture.example.io/sub/test/123/"
 
 
-@patch('httpx.get')
+@patch("httpx.get")
 def test_list_success(mock_get, endpoint):
     mock_response = Mock()
     mock_response.status_code = 200
@@ -73,7 +73,7 @@ def test_list_success(mock_get, endpoint):
     mock_get.assert_called_once()
 
 
-@patch('httpx.get')
+@patch("httpx.get")
 def test_read_success(mock_get, endpoint):
     mock_response = Mock()
     mock_response.status_code = 200
@@ -86,7 +86,7 @@ def test_read_success(mock_get, endpoint):
     assert response == {"id": "123"}
 
 
-@patch('httpx.post')
+@patch("httpx.post")
 def test_create_success(mock_post, endpoint):
     mock_response = Mock()
     mock_response.status_code = 201
@@ -99,7 +99,7 @@ def test_create_success(mock_post, endpoint):
     assert response == {"id": "new"}
 
 
-@patch('httpx.patch')
+@patch("httpx.patch")
 def test_update_success(mock_patch, endpoint):
     mock_response = Mock()
     mock_response.status_code = 200
@@ -112,11 +112,11 @@ def test_update_success(mock_patch, endpoint):
     assert response == {"id": "123", "updated": True}
 
 
-@patch('httpx.delete')
+@patch("httpx.delete")
 def test_delete_success(mock_delete, endpoint):
     mock_response = Mock()
     mock_response.status_code = 204
-    mock_response.text = ''
+    mock_response.text = ""
     mock_delete.return_value = mock_response
 
     response, error = endpoint.delete("123")
@@ -133,7 +133,7 @@ def test_check_and_set_auth_key_no_key(config):
     assert "Missing auth keys" in str(exc_info.value)
 
 
-@patch('httpx.get')
+@patch("httpx.get")
 def test_error_response(mock_get, endpoint):
     mock_response = Mock()
     mock_response.status_code = 404

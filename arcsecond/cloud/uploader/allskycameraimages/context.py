@@ -10,11 +10,11 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
     """Upload context for all-sky camera image uploads"""
 
     def __init__(
-            self,
-            config,
-            input_camera_uuid,
-            org_subdomain=None,
-            custom_tags=None,
+        self,
+        config,
+        input_camera_uuid,
+        org_subdomain=None,
+        custom_tags=None,
     ):
         super().__init__(config, org_subdomain, custom_tags)
         self._input_camera_uuid = str(input_camera_uuid) if input_camera_uuid else None
@@ -23,7 +23,9 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
     @property
     def upload_api_endpoint(self):
         return ArcsecondAPIEndpoint(
-            self.config, f"allskycameras/{self._input_camera_uuid}/images", self.subdomain
+            self.config,
+            f"allskycameras/{self._input_camera_uuid}/images",
+            self.subdomain,
         )
 
     def _validate_context_specific(self):

@@ -62,11 +62,11 @@ def test_cli_api_write_valid():
 
 def test_cli_login_access_key():
     runner = CliRunner()
-    result = runner.invoke(cli.login, input='steve\naccess\n123')
+    result = runner.invoke(cli.login, input="steve\naccess\n123")
     assert result.exit_code == 0 and not result.exception
 
 
 def test_cli_login_upload_key():
     runner = CliRunner()
-    result = runner.invoke(cli.login, input='steve\nupload\n123')
+    result = runner.invoke(cli.login, input="steve\nupload\n123")
     assert result.exit_code == 0 and not result.exception

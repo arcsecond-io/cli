@@ -62,7 +62,7 @@ class KeygenClient(object):
                         "password": keygen_user_password,
                     },
                 }
-            }
+            },
         )
 
         keygen_user_id = None
@@ -120,7 +120,7 @@ class KeygenClient(object):
                         "user": {"data": {"type": "users", "id": user_id}},
                     },
                 }
-            }
+            },
         )
 
         # TODO: deal with failure.
@@ -141,7 +141,7 @@ class KeygenClient(object):
                     "key": license_key,
                     "scope": {"fingerprint": machine_fingerprint},
                 }
-            }
+            },
         )
 
         validation = res.json()
@@ -166,9 +166,9 @@ class KeygenClient(object):
         # we'll need to activate one.
         validation_code = validation["meta"]["code"]
         activation_is_required = (
-                validation_code == "FINGERPRINT_SCOPE_MISMATCH"
-                or validation_code == "NO_MACHINES"
-                or validation_code == "NO_MACHINE"
+            validation_code == "FINGERPRINT_SCOPE_MISMATCH"
+            or validation_code == "NO_MACHINES"
+            or validation_code == "NO_MACHINE"
         )
 
         if not activation_is_required:
@@ -194,7 +194,7 @@ class KeygenClient(object):
                         }
                     },
                 }
-            }
+            },
         )
 
         activation = res.json()
