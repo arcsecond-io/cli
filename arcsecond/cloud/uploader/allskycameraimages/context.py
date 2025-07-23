@@ -1,4 +1,5 @@
 import click
+from arcsecond.api import ArcsecondAPIEndpoint
 
 from arcsecond.cloud.uploader.context import BaseUploadContext
 
@@ -23,7 +24,9 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
 
     @property
     def api_endpoint(self):
-        return self._api.allskycameraimages
+        return ArcsecondAPIEndpoint(
+            self.config, f"allskycameras/{self._input_camera_uuid}/images", self.subdomain
+        )
 
     def _validate_context_specific(self):
         """Run validations specific to image uploads"""
@@ -35,7 +38,8 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
     def _validate_input_camera_uuid(self):
         """Validate the camera UUID exists"""
         click.echo(f" • Looking for a camera with UUID {self._input_camera_uuid}...")
-        self._camera, error = self._api.allskycameras.read(self._input_camera_uuid)
+        endpoint = ArcsecondAPIEndpoint(self.config, f"allskycameras", self.subdomain)
+        self._camera, error = endpoint.read(self._input_camera_uuid)
 
         if error is not None:
             if self._subdomain:
