@@ -29,7 +29,6 @@ def mock_context(mock_config, mock_api):
     """Create a mock upload context."""
     context = MagicMock(spec=DatasetUploadContext)
     context.config = mock_config
-    context._api = mock_api
     context.is_validated = True
     context.dataset_uuid = "test-dataset-uuid"
     context.dataset_name = "test-dataset"
