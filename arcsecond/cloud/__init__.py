@@ -8,6 +8,6 @@ from .uploader import (
 )
 from .uploader.constants import Status, Substatus
 from .uploads import (
-    upload_datafiles,
+    upload_data,
     upload_images,
 )

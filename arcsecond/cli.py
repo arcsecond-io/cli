@@ -7,7 +7,7 @@ from arcsecond.cloud import (
     login,
     me,
     telescopes,
-    upload_datafiles,
+    upload_data,
     upload_images,
 )
 from arcsecond.hosting import install
@@ -56,7 +56,7 @@ main.add_command(telescopes)
 main.add_command(allskycameras)
 
 # Upload a folder of files to a given dataset.
-main.add_command(upload_datafiles)
+main.add_command(upload_data)
 main.add_command(upload_images)
 
 # Allow to try arcsecond by installing a local version
