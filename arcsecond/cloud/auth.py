@@ -59,7 +59,7 @@ def login(state, username, type, key):
 @click.argument("fqdn", required=False, nargs=1)
 @pass_state
 def api(state, name=None, fqdn=None):
-    """List or configure the API server address (default: 'cloud').
+    """List or configure the API server address.
 
     By default, the Arcsecond CLI is using the "cloud" master server. But you can
     here configure other servers, by typing:
