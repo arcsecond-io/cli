@@ -21,12 +21,7 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
             "file": (filename, self._file, "application/octet-stream"),
             "camera": self._context.camera_uuid
         }
-        if self._context.custom_tags:
-            fields["tags"] = ",".join(self._context.custom_tags or [])  # will be split back in backend
-        clean_kwargs = {k: kwargs[k] for k in ('timestamp', 'camera')}
-        if 'tags' in clean_kwargs and not clean_kwargs['tags']:
-            # Tags must really be provided only when non-blank/null/empty
-            del clean_kwargs['tags']
+        clean_kwargs = {k: kwargs[k] for k in ('timestamp', 'camera') if k in kwargs}
         fields.update(**clean_kwargs)
         if 'timestamp' not in clean_kwargs:
             raise ArcsecondError('Missing timestamp.')

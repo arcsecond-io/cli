@@ -47,7 +47,7 @@ class DatasetFileUploader(BaseFileUploader[DatasetUploadContext]):
         }
         if self._context.custom_tags:
             fields["tags"] = ",".join(self._context.custom_tags or [])  # will be split back in backend
-        clean_kwargs = {k: kwargs[k] for k in ('is_raw', 'tags', 'dataset')}
+        clean_kwargs = {k: kwargs[k] for k in ('is_raw', 'tags', 'dataset') if k in kwargs}
         if 'tags' in clean_kwargs and not clean_kwargs['tags']:
             # Tags must really be provided only when non-blank/null/empty
             del clean_kwargs['tags']
