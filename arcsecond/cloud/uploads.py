@@ -19,7 +19,7 @@ from arcsecond.options import State, basic_options
 pass_state = click.make_pass_decorator(State, ensure=True)
 
 
-@click.command(help="Upload the content of a folder.")
+@click.command()
 @click.argument("folder", required=True, nargs=1)
 @click.option(
     "-d",
@@ -64,7 +64,7 @@ def upload_data(
     state, folder, dataset=None, telescope=None, raw=None, tags=None, portal=None
 ):
     """
-    Upload the content of a folder.
+    Upload the data files contained in a folder.
 
     You will be prompted for confirmation before the whole walking process actually
     start.
@@ -87,7 +87,7 @@ def upload_data(
     account or portal.
 
     Upon validation, Arcsecond will then start walking through the folder tree and uploads regular
-     files (hidden and empty files will always be skipped).
+    files (hidden and empty files will always be skipped).
     """
     config = ArcsecondConfig(state)
     context = DatasetUploadContext(
@@ -112,7 +112,7 @@ def upload_data(
         walk_folder_and_upload_files(DatasetFileUploader, context, folder)
 
 
-@click.command(help="Upload the content of a folder with all-sky camera images.")
+@click.command()
 @click.argument("folder", required=True, nargs=1)
 @click.option(
     "-c",
@@ -146,7 +146,7 @@ def upload_data(
 @pass_state
 def upload_images(state, folder, camera, timestamp=None, tags=None, portal=None):
     """
-    Upload the content of a folder with all-sky camera images.
+    Upload the all-sky images contained in a folder.
 
     You will be prompted for confirmation before the whole walking process actually
     starts.
