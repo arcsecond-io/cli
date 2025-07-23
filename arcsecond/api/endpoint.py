@@ -17,12 +17,10 @@ class ArcsecondAPIEndpoint(object):
         config: ArcsecondConfig,
         path: str,
         subdomain: str = "",
-        subresource: str = "",
     ):
         self.__config = config
         self.__path = path
         self.__subdomain = subdomain
-        self.__subresource = subresource
 
     @property
     def path(self):
@@ -41,9 +39,6 @@ class ArcsecondAPIEndpoint(object):
                 self.__subdomain,
             ]
             + list(args)
-            + [
-                self.__subresource,
-            ]
             if f and len(f) > 0
         ]
         url = self._get_base_url() + "/".join(fragments)
