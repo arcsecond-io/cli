@@ -2,6 +2,7 @@ from arcsecond.cloud.uploader.uploader import BaseFileUploader
 from arcsecond.errors import ArcsecondError
 
 from .context import AllSkyCameraImageUploadContext
+from .errors import MissingTimestampError
 
 
 class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadContext]):
@@ -13,15 +14,14 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
         pass
 
     def _get_upload_data(self, **kwargs):
+        # At that point, timestamp must have been provided (with upload_file(ts)).
         fields = {"camera": self._context.camera_uuid}
         clean_kwargs = {k: kwargs[k] for k in ("timestamp", "camera") if k in kwargs}
         fields.update(**clean_kwargs)
-        if "timestamp" not in clean_kwargs:
-            raise ArcsecondError("Missing timestamp.")
         return fields
 
     def upload_file(self, timestamp, **kwargs):
         if timestamp is None:
-            raise ArcsecondError("Missing timestamp for image.")
+            raise MissingTimestampError(self._file_path)
         kwargs.update(timestamp=timestamp)
         super().upload_file(**kwargs)
