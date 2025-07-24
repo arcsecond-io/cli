@@ -11,3 +11,9 @@ class InvalidOrganisationCameraError(ArcsecondError):
         super().__init__(
             f"Invalid camera UUID {camera_uuid} for organisation {org_subdomain}: {message}"
         )
+
+
+class MissingTimestampError(ArcsecondError):
+    def __init__(self, filename):
+        msg = f"Missing timestamp for camera image {filename}."
+        super().__init__(msg)
