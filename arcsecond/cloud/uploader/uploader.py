@@ -188,7 +188,7 @@ class BaseFileUploader(Generic[ContextT], ABC):
         if self._status[0] == Status.SKIPPED:
             self._logger.info(f"{self.log_prefix} Upload skipped.")
         else:
-            self._logger.info(f"{self.log_prefix} Upload done.")
+            self._logger.info(f"{self.log_prefix} Upload completed.")
             self._status = [Status.OK, Substatus.DONE, None]
 
         self._logger.info(f"{self.log_prefix} Closing upload sequence.")
