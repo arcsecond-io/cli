@@ -24,4 +24,4 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
         if timestamp is None:
             raise MissingTimestampError(self._file_path)
         kwargs.update(timestamp=timestamp)
-        super().upload_file(**kwargs)
+        return super().upload_file(**kwargs)
