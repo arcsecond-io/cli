@@ -1,10 +1,6 @@
 from arcsecond.errors import ArcsecondError
 
 
-class UploadRemoteDatasetCheckError(ArcsecondError):
-    pass
-
-
 class UploadRemoteDatasetPreparationError(ArcsecondError):
     pass
 
