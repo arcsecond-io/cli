@@ -16,7 +16,9 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
     def _get_upload_data(self, **kwargs):
         # At that point, timestamp must have been provided (with upload_file(ts)).
         fields = {"camera": self._context.camera_uuid}
-        clean_kwargs = {k: kwargs[k] for k in ("utc_timestamp", "camera") if k in kwargs}
+        clean_kwargs = {
+            k: kwargs[k] for k in ("utc_timestamp", "camera") if k in kwargs
+        }
         fields.update(**clean_kwargs)
         return fields
 
