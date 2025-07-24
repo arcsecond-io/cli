@@ -3,6 +3,9 @@ from datetime import datetime, timezone
 
 from arcsecond import ArcsecondConfig, AllSkyCameraImageUploadContext, AllSkyCameraImageFileUploader
 
+# You may type `arcsecond allskycameras` to get a list of your cameras (include -p <subdomain> for portals).
+# Alternatively, you can use `ArcsecondAPI(config).allskycameras.list()` to list them all in Python.
+
 config = ArcsecondConfig()  # it will read your config file.
 context = AllSkyCameraImageUploadContext(
     config,
