@@ -7,7 +7,7 @@ name = "arcsecond"
 # Make sure to update __version__.py too
 version = "3.6.0"
 authors = [
-    { name = "Cedric Foellmi", email = "acedric@arcsecond.io" },
+    { name = "Cedric Foellmi", email = "cedric@arcsecond.io" },
 ]
 description = "CLI for arcsecond.io"
 readme = "README.md"
