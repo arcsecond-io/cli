@@ -15,5 +15,5 @@ class InvalidOrganisationCameraError(ArcsecondError):
 
 class MissingTimestampError(ArcsecondError):
     def __init__(self, filename):
-        msg = f"Missing timestamp for camera image {filename}."
+        msg = f"Missing UTC timestamp for camera image {filename}."
         super().__init__(msg)

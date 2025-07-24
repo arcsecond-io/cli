@@ -16,12 +16,12 @@ class AllSkyCameraImageFileUploader(BaseFileUploader[AllSkyCameraImageUploadCont
     def _get_upload_data(self, **kwargs):
         # At that point, timestamp must have been provided (with upload_file(ts)).
         fields = {"camera": self._context.camera_uuid}
-        clean_kwargs = {k: kwargs[k] for k in ("timestamp", "camera") if k in kwargs}
+        clean_kwargs = {k: kwargs[k] for k in ("utc_timestamp", "camera") if k in kwargs}
         fields.update(**clean_kwargs)
         return fields
 
-    def upload_file(self, timestamp, **kwargs):
-        if timestamp is None:
+    def upload_file(self, utc_timestamp, **kwargs):
+        if utc_timestamp is None:
             raise MissingTimestampError(self._file_path)
-        kwargs.update(timestamp=timestamp)
+        kwargs.update(utc_timestamp=utc_timestamp)
         return super().upload_file(**kwargs)
