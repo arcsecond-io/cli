@@ -77,7 +77,6 @@ class BaseUploadContext(ABC):
         if not username:
             raise InvalidAstronomerError("Missing username")
 
-        upload_key = self._config.upload_key
         if not self._config.upload_key and not self._config.access_key:
             raise InvalidWatchOptionsError(
                 "Missing upload_key (or access_key). Make sure to login first."
