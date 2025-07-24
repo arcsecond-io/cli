@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "arcsecond"
 # Make sure to update __version__.py too
-version = "3.5.1"
+version = "3.6.0"
 authors = [
     { name = "Cedric Foellmi", email = "acedric@arcsecond.io" },
 ]
