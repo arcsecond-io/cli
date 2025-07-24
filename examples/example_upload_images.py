@@ -12,7 +12,8 @@ context = AllSkyCameraImageUploadContext(
 
 context.validate()
 
-for filepath in glob.glob('directory containing files'):
+# Make sure to include "/*" to encompass all directory files.
+for filepath in glob.glob('directory containing files/*'):
     uploader = AllSkyCameraImageFileUploader(context, filepath, display_progress=False)
     # You must provide timestamp for every file. Below is just an example for tests.
     timestamp = datetime.now(timezone.utc).timestamp()  # random.randint(0, 1000)
