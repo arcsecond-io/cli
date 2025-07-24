@@ -14,6 +14,7 @@ context.validate()
 
 for filepath in glob.glob('directory containing files'):
     uploader = AllSkyCameraImageFileUploader(context, filepath, display_progress=False)
-    # You must provide timestamp for every file.
-    status, substatus, error = uploader.upload_file(timestamp=datetime.now(timezone.utc).timestamp())
+    # You must provide timestamp for every file. Below is just an example for tests.
+    timestamp = datetime.now(timezone.utc).timestamp()  # random.randint(0, 1000)
+    status, substatus, error = uploader.upload_file(timestamp=timestamp)
     print(status, substatus, error)
