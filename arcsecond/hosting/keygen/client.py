@@ -4,21 +4,20 @@ import machineid
 
 from .utils import generate_password
 
+CONTENT_TYPE = "application/vnd.api+json"
+
 
 class KeygenClient(object):
     def __init__(self, config, email: str):
         self.__config = config
         self.__base_url = "https://api.keygen.sh/v1/accounts/arcsecond"
-        self.__default_headers = {
-            "Content-Type": "application/vnd.api+json",
-            "Accept": "application/vnd.api+json",
-        }
+        self.__default_headers = {"Content-Type": CONTENT_TYPE, "Accept": CONTENT_TYPE, }
         self.__email = email
 
     def __generate_user_token(self):
         res = httpx.post(
             self.__base_url + "/tokens",
-            headers={"Accept": "application/vnd.api+json"},
+            headers={"Accept": CONTENT_TYPE},
             auth=(self.__email, self.__config.read_key("keygen_user_password")),
         )
         if res.status_code == 201:
