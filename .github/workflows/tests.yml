@@ -28,16 +28,21 @@ jobs:
           pip install pytest pytest-cov respx
           pip install -e .
 
-      - name: Test with pytest
+      - name: Test with coverage (only on 3.12)
+        if: matrix.python-version == '3.12'
         run: |
-          pytest -xvs tests/ --cov=arcsecond --cov-report=xml
-          mv .coverage .coverage.${{ matrix.python-version }}
+          pytest -xvs tests/ --cov=arcsecond --cov-report=xml:coverage.xml
 
-      - name: Upload coverage artifact
+      - name: Test without coverage
+        if: matrix.python-version != '3.12'
+        run: pytest -xvs tests/
+
+      - name: Upload coverage artifact (only on 3.12)
+        if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.python-version }}
-          path: .coverage.${{ matrix.python-version }}
+          name: coverage
+          path: coverage.xml
 
   scan:
     runs-on: ubuntu-latest
@@ -46,23 +51,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-
-      - name: Download all coverage artifacts
+      - name: Download coverage artifact
         uses: actions/download-artifact@v4
         with:
-          path: coverages
-
-      - name: Install coverage.py
-        run: pip install coverage
-
-      - name: Merge coverage files
-        run: |
-          coverage combine coverages
-          coverage xml -o coverage.xml
+          name: coverage
+          path: .
 
       - name: SonarQube Scan
         uses: SonarSource/sonarcloud-github-action@master
