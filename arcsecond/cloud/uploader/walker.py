@@ -105,7 +105,7 @@ def walk_folder_and_upload_files(
         msg = f"{log_prefix} The following files have duplicate names (not allowed in the same dataset): "
         msg += f"{', '.join(duplicates)}"
         logger.error(msg)
-        logger.error(f"Exiting.")
+        logger.error("Exiting.")
         return
 
     uploads = _walk_second_pass(uploader_class, context, root_path, file_paths)

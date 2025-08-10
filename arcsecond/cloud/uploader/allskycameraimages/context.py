@@ -38,7 +38,7 @@ class AllSkyCameraImageUploadContext(BaseUploadContext):
     def _validate_input_camera_uuid(self):
         """Validate the camera UUID exists"""
         click.echo(f" • Looking for a camera with UUID {self._input_camera_uuid}...")
-        endpoint = ArcsecondAPIEndpoint(self.config, f"allskycameras", self.subdomain)
+        endpoint = ArcsecondAPIEndpoint(self.config, "allskycameras", self.subdomain)
         self._camera, error = endpoint.read(self._input_camera_uuid)
 
         if error is not None:

@@ -91,7 +91,7 @@ class BaseUploadContext(ABC):
             raise UnknownOrganisationError(self._subdomain, str(error))
 
     def _validate_astronomer_role_in_remote_organisation(self):
-        click.echo(f" • Verifying organisation membership...")
+        click.echo(" • Verifying organisation membership...")
         endpoint = ArcsecondAPIEndpoint(self.config, API_AUTH_PATH_VERIFY_PORTAL)
         _, error = endpoint.create(
             json={

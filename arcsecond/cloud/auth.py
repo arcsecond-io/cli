@@ -92,7 +92,7 @@ def api(state, name=None, fqdn=None):
     config = ArcsecondConfig.from_state(state)
 
     if fqdn is None:
-        click.echo(f" • All registered API servers:")
+        click.echo(" • All registered API servers:")
         click.echo(config.all_apis)
     else:
         config.api_server = fqdn
