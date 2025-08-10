@@ -7,7 +7,7 @@ on:
     branches: [ '*' ]
 
 jobs:
-  test:
+  tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -30,21 +30,41 @@ jobs:
 
       - name: Test with pytest
         run: |
-          pytest -xvs tests/ --cov=arcsecond --cov-report=xml
+          pytest -xvs tests/ --cov=arcsecond --cov-report=xml:coverage-${{ matrix.python-version }}.xml
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
         with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+          name: coverage-${{ matrix.python-version }}
+          path: coverage-${{ matrix.python-version }}.xml
 
   scan:
     runs-on: ubuntu-latest
+    needs: tests
+
     steps:
       - uses: actions/checkout@v4
-      
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: coverages
+
+      - name: Install coverage.py
+        run: pip install coverage
+
+      - name: Merge coverage files
+        run: |
+          coverage combine coverages
+          coverage xml -o coverage.xml
+
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
