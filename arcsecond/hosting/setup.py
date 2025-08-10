@@ -15,7 +15,7 @@ email_regex = re.compile(
 def _get_random_secret_key():
     # No '%' to avoid interpolation surprises
     chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$^&*(-_=+)"
-    return "".join(secrets.choice(chars) for i in range(50))
+    return "".join(secrets.choice(chars) for _ in range(50))
 
 
 def _validate_value_base(value):
@@ -43,7 +43,7 @@ def _validate_email_host_item(value):
 
 def __validate_email_host(value):
     value = _validate_email_host_item(value)
-    if not re.match(r"[a-z\-_]{1,}(\.[a-z\-_]{1,})?", value):
+    if not re.match(r"[a-z\-_]+(\.[a-z\-_]+)?", value):
         raise click.BadParameter(
             "Value must be a correct email host name (no http://, only the hostname)."
         )
@@ -59,7 +59,6 @@ def _validate_email_admin(value):
 
 def setup_hosting_variables(config: ArcsecondConfig, do_try=True):
     click.echo("\nWelcome to the setup of self-hosting Arcsecond.")
-    section = "hosting:try" if do_try else "hosting"
 
     # Django SECRET_KEY variable.
     if config.read_key("secret_key") is None:
