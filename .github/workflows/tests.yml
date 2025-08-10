@@ -38,6 +38,9 @@ jobs:
           file: ./coverage.xml
           fail_ci_if_error: false
 
+  scan:
+    runs-on: ubuntu-latest
+    steps:
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
