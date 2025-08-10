@@ -67,9 +67,9 @@ class BaseUploadContext(ABC):
             return
         if not isinstance(tags, list):
             raise TypeError("custom_tags must be a list")
-        if not all([isinstance(t, str) for t in tags]):
+        if not all(isinstance(t, str) for t in tags):
             raise TypeError("all custom_tags must be strings")
-        if any([t.startswith("arcsecond") for t in tags]):
+        if any(t.startswith("arcsecond") for t in tags):
             raise TypeError('none of custom_tags must start with "arcsecond"')
 
     def _validate_local_astronomer_credentials(self):
