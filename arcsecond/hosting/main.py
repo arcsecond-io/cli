@@ -56,7 +56,6 @@ def install(state, skip_setup=False):
         click.echo(PREFIX_SUB + msg)
     else:
         click.echo(PREFIX_SUB_FAIL + msg)
-        return
 
     # if not skip_setup:
     #     setup_hosting_variables(config, do_try=do_try)
