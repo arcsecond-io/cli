@@ -33,11 +33,11 @@ def update_docker_image(full_name: str):
 
 
 def has_all_arcsecond_docker_images():
-    image_names = set([im for (im, _, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()])
+    image_names = {im for (im, _, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()}
     return all([has_docker_image(name) for name in image_names])
 
 
 def pull_all_arcsecond_docker_images():
-    image_names = set([im for (im, _, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()])
+    image_names = {im for (im, _, _) in DOCKER_IMAGE_CONTAINERS_NAMES.values()}
     for image_name in image_names:
         update_docker_image(image_name)
