@@ -11,7 +11,10 @@ class KeygenClient(object):
     def __init__(self, config, email: str):
         self.__config = config
         self.__base_url = "https://api.keygen.sh/v1/accounts/arcsecond"
-        self.__default_headers = {"Content-Type": CONTENT_TYPE, "Accept": CONTENT_TYPE, }
+        self.__default_headers = {
+            "Content-Type": CONTENT_TYPE,
+            "Accept": CONTENT_TYPE,
+        }
         self.__email = email
 
     def __generate_user_token(self):

@@ -22,8 +22,11 @@ def _display_user_and_key(context: DatasetUploadContext):
 
 def _display_subdomain_info(context: DatasetUploadContext):
     """Displays subdomain upload information."""
-    msg = f" • Uploading to Observatory Portal '{context.subdomain}'." if context.subdomain else \
-        " • Uploading to your *personal* account."
+    msg = (
+        f" • Uploading to Observatory Portal '{context.subdomain}'."
+        if context.subdomain
+        else " • Uploading to your *personal* account."
+    )
     click.echo(msg)
 
 
@@ -46,8 +49,11 @@ def _display_data_type_info(context: DatasetUploadContext):
 
 def _display_custom_tags_info(context: DatasetUploadContext):
     """Displays custom tags information."""
-    msg = f" • Data files will be tagged with the following custom tags: {context.custom_tags}." \
-        if context.custom_tags else " • Data files will receive no custom tags."
+    msg = (
+        f" • Data files will be tagged with the following custom tags: {context.custom_tags}."
+        if context.custom_tags
+        else " • Data files will receive no custom tags."
+    )
     click.echo(msg)
 
 
@@ -104,7 +110,9 @@ def _display_folder_size(folder_path: pathlib.Path):
     click.echo(f"   > Estimated upload time: {__get_formatted_size_times(size)}")
 
 
-def display_upload_datafiles_command_summary(context: DatasetUploadContext, folders: list):
+def display_upload_datafiles_command_summary(
+    context: DatasetUploadContext, folders: list
+):
     """Displays a summary of the upload command."""
     click.echo("\n --- Upload summary --- ")
     _display_user_and_key(context)
