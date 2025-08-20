@@ -31,11 +31,11 @@ jobs:
       - name: Test with coverage (only on 3.12)
         if: matrix.python-version == '3.12'
         run: |
-          pytest -xvs tests/ --cov=arcsecond --cov-report=xml:coverage.xml
+          pytest -vvs tests/ --cov=arcsecond --cov-report=xml:coverage.xml
 
       - name: Test without coverage
         if: matrix.python-version != '3.12'
-        run: pytest -xvs tests/
+        run: pytest -vvs tests/
 
       - name: Upload coverage artifact (only on 3.12)
         if: matrix.python-version == '3.12'
