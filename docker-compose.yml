@@ -19,7 +19,6 @@ services:
 
   backend:
     image: ghcr.io/arcsecond-io/arcsecond-api:latest
-    platform: amd64
     container_name: arcsecond-api
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-server.sh
@@ -32,42 +31,42 @@ services:
       - .env
     volumes:
       - ${SHARED_DATA_PATH}:/home/app/data
+    stop_grace_period: 60s
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/healthcheck/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+      test: [ "CMD", "curl", "-f", "http://localhost:8800/healthcheck/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
 
   worker:
     image: ghcr.io/arcsecond-io/arcsecond-api:latest
-    platform: amd64
     container_name: arcsecond-worker
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-worker.sh
     depends_on:
       backend:
-        condition: service_started
-    volumes:
-      - ${SHARED_DATA_PATH}:/home/app/data
+        condition: service_healthy
     env_file:
       - .env
+    volumes:
+      - ${SHARED_DATA_PATH}:/home/app/data
+    stop_grace_period: 120s
 
   beat:
     image: ghcr.io/arcsecond-io/arcsecond-api:latest
-    platform: amd64
     container_name: arcsecond-beat
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-beat.sh
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
     env_file:
       - ./.env
+    stop_grace_period: 30s
 
   web:
     image: ghcr.io/arcsecond-io/arcsecond-web:latest
-    platform: amd64
     container_name: arcsecond-web
     restart: unless-stopped
     depends_on:
@@ -79,3 +78,4 @@ services:
 
 volumes:
   arcsecond_postgres_data:
+
