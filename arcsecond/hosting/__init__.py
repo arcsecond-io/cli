@@ -1,1 +1,2 @@
-from .main import install, status, stop
+# from .main import install, status, stop
+from .local import setup

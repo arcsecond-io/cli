@@ -9,7 +9,7 @@ from arcsecond.cloud import (
     telescopes,
     upload_data,
 )
-from arcsecond.hosting import install
+from arcsecond.hosting import setup
 
 from . import __version__
 from .options import State
@@ -58,4 +58,4 @@ main.add_command(allskycameras)
 main.add_command(upload_data)
 
 # Allow to try arcsecond by installing a local version
-main.add_command(install)
+main.add_command(setup)
