@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16
+    container_name: arcsecond-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - arcsecond_postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  broker:
+    image: redis:7.4
+    container_name: arcsecond-broker
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-api
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-server.sh
+    ports:
+      - "8800:8800"
+    depends_on:
+      - db
+      - broker
+    env_file:
+      - .env
+    volumes:
+      - ${SHARED_DATA_PATH}:/home/app/data
+    stop_grace_period: 60s
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8800/healthcheck/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+  worker:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-worker
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-worker.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ${SHARED_DATA_PATH}:/home/app/data
+    stop_grace_period: 120s
+
+  beat:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-beat
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-beat.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    stop_grace_period: 30s
+
+  web:
+    image: ghcr.io/arcsecond-io/arcsecond-web:latest
+    container_name: arcsecond-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "5555:5555"
+      - "5577:5577"
+
+volumes:
+  arcsecond_postgres_data:
+

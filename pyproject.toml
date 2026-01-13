@@ -39,3 +39,6 @@ arcsecond = "arcsecond.cli:main"
 Homepage = "https://github.com/arcsecond-io/cli"
 Issues = "https://github.com/arcsecond-io/cli/issues"
 Documentation = "https://docs.arcsecond.io"
+
+[tool.setuptools.package-data]
+"arcsecond.hosting.docker" = ["docker-compose.yml"]
