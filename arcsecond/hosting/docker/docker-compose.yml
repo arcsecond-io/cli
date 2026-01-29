@@ -80,6 +80,15 @@ services:
       - ./.env
     stop_grace_period: 30s
 
+  # Arcsecond plate solver service, for solving coordinates from raw images.
+  platesolver:
+    image: ghcr.io/arcsecond-io/arcsecond-service-platesolver-astrometry:latest
+    container_name: arcsecond-platesolver
+    ports: [ "8900:8900" ]
+    volumes:
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - ${SHARED_DATA_PATH}:/data
 
   # Arcsecond webapp.
   web:
