@@ -1,4 +1,9 @@
+# === Arcsecond.local config. ===
+# *** DO NOT change any name or port number. ***
+# Version 6.2
+
 services:
+  # Database (PostgresQL)
   db:
     image: postgres:16
     container_name: arcsecond-db
@@ -8,8 +13,10 @@ services:
     volumes:
       - arcsecond_postgres_data:/var/lib/postgresql/data
     env_file:
+      # You must have a .env file with database credentials beside this yml file.
       - .env
 
+  # Broker (Redis) - Shared messaging service between different services.
   broker:
     image: redis:7.4
     container_name: arcsecond-broker
@@ -17,6 +24,7 @@ services:
     ports:
       - "6379:6379"
 
+  # Arcsecond backend (REST APIs). Can be used for API calls and external pipelines, scripts etc.
   backend:
     image: ghcr.io/arcsecond-io/arcsecond-api:latest
     container_name: arcsecond-api
@@ -28,9 +36,12 @@ services:
       - db
       - broker
     env_file:
+      # You must have a .env file with secret keys beside this yml file.
       - .env
     volumes:
-      - ${SHARED_DATA_PATH}:/home/app/data
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - ${SHARED_DATA_PATH}:/data
     stop_grace_period: 60s
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8800/healthcheck/" ]
@@ -39,6 +50,7 @@ services:
       retries: 12
       start_period: 120s
 
+  # Arcsecond worker, for offloading background work.
   worker:
     image: ghcr.io/arcsecond-io/arcsecond-api:latest
     container_name: arcsecond-worker
@@ -50,9 +62,12 @@ services:
     env_file:
       - .env
     volumes:
-      - ${SHARED_DATA_PATH}:/home/app/data
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - ${SHARED_DATA_PATH}:/data
     stop_grace_period: 120s
 
+  # Arcsecond beat, to launch specific background tasks at specific times.
   beat:
     image: ghcr.io/arcsecond-io/arcsecond-api:latest
     container_name: arcsecond-beat
@@ -65,6 +80,8 @@ services:
       - ./.env
     stop_grace_period: 30s
 
+
+  # Arcsecond webapp.
   web:
     image: ghcr.io/arcsecond-io/arcsecond-web:latest
     container_name: arcsecond-web
