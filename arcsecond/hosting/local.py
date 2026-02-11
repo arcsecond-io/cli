@@ -31,25 +31,74 @@ def prompt_shared_data_path() -> str:
     return expand_path(chosen)
 
 
+def _required_env_values():
+    return {
+        "SECRET_KEY": _get_random_secret_key(),
+        "AUTH_JWT_SIGNING_KEY": _get_random_secret_key(),
+        "AGENT_JWT_SIGNING_KEY": _get_random_secret_key(),
+        "FIELD_ENCRYPTION_KEY": _get_encryption_key(),
+        "SHARED_DATA_PATH": prompt_shared_data_path(),
+        "POSTGRES_USER": POSTGRES_USER,
+        "POSTGRES_PASSWORD": POSTGRES_PASSWORD,
+        "POSTGRES_DB": POSTGRES_DB,
+    }
+
+
+def _parse_env_keys(lines):
+    keys = set()
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, _ = stripped.split("=", 1)
+        keys.add(key.strip())
+    return keys
+
+
+def _format_env_line(key, value):
+    if key == "SHARED_DATA_PATH":
+        return f'{key}="{value}"'
+    return f"{key}={value}"
+
+
 def write_env_file():
-    secret_key = _get_random_secret_key()
-    field_encryption_key = _get_encryption_key()
-    shared_data_path = prompt_shared_data_path()
+    env_path = Path.cwd() / ENV_FILENAME
+    required_values = _required_env_values()
+    ordered_required_keys = [
+        "SECRET_KEY",
+        "AUTH_JWT_SIGNING_KEY",
+        "AGENT_JWT_SIGNING_KEY",
+        "FIELD_ENCRYPTION_KEY",
+        "SHARED_DATA_PATH",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+    ]
+
+    if env_path.exists():
+        existing_lines = env_path.read_text(encoding="utf-8").splitlines()
+        existing_keys = _parse_env_keys(existing_lines)
+        missing_keys = [key for key in ordered_required_keys if key not in existing_keys]
+
+        if not missing_keys:
+            print(f"{ENV_FILENAME} already contains all required keys.")
+            return
+
+        if existing_lines and existing_lines[-1].strip():
+            existing_lines.append("")
+        for key in missing_keys:
+            existing_lines.append(_format_env_line(key, required_values[key]))
+
+        env_path.write_text("\n".join(existing_lines) + "\n", encoding="utf-8")
+        print(
+            f"Updated {ENV_FILENAME} at: {env_path} (added keys: {', '.join(missing_keys)})"
+        )
+        return
 
     env_contents = "\n".join(
-        [
-            f"SECRET_KEY={secret_key}",
-            f"FIELD_ENCRYPTION_KEY={field_encryption_key}",
-            f'SHARED_DATA_PATH="{shared_data_path}"',
-            f"POSTGRES_USER={POSTGRES_USER}",
-            f"POSTGRES_PASSWORD={POSTGRES_PASSWORD}",
-            f"POSTGRES_DB={POSTGRES_DB}",
-            "",
-        ]
+        [_format_env_line(key, required_values[key]) for key in ordered_required_keys]
     )
-
-    env_path = Path.cwd() / ENV_FILENAME
-    env_path.write_text(env_contents, encoding="utf-8")
+    env_path.write_text(env_contents + "\n", encoding="utf-8")
     print(f"Wrote {ENV_FILENAME} to: {env_path}")
 
 
@@ -63,9 +112,25 @@ def write_docker_compose_file() -> Path:
     # arcsecond/hosting/docker/docker-compose.yml
     compose = resources.files("arcsecond.hosting.docker").joinpath("docker-compose.yml")
 
-    with compose.open("rb") as src, dest.open("wb") as dst:
-        dst.write(src.read())
+    with compose.open("rb") as src:
+        expected_content = src.read()
 
+    if not dest.exists():
+        dest.write_bytes(expected_content)
+        print(f"Wrote docker-compose.yml to: {dest}")
+        return dest
+
+    current_content = dest.read_bytes()
+    if current_content == expected_content:
+        print("docker-compose.yml is already up to date.")
+        return dest
+
+    latest_dest = Path.cwd() / "docker-compose.latest.yml"
+    latest_dest.write_bytes(expected_content)
+    print(
+        "docker-compose.yml differs from the latest packaged version. "
+        f"Wrote new template to: {latest_dest}"
+    )
     return dest
 
 
