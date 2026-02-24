@@ -41,7 +41,11 @@ services:
     volumes:
       # Leave /data as is, it's a path inside the container, not in the host machine.
       # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
-      - ${SHARED_DATA_PATH}:/data
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
     stop_grace_period: 60s
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8800/healthcheck/" ]
@@ -64,7 +68,11 @@ services:
     volumes:
       # Leave /data as is, it's a path inside the container, not in the host machine.
       # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
-      - ${SHARED_DATA_PATH}:/data
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
     stop_grace_period: 120s
 
   # Arcsecond beat, to launch specific background tasks at specific times.
@@ -88,7 +96,11 @@ services:
     volumes:
       # Leave /data as is, it's a path inside the container, not in the host machine.
       # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
-      - ${SHARED_DATA_PATH}:/data
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
 
   # Arcsecond webapp.
   web:
