@@ -32,7 +32,7 @@ jobs:
 
           tag = "${{ github.event.release.tag_name }}"
 
-          data = tomllib.loads(pathlib.Path("pyproject.toml").read_bytes())
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
           py_ver = data["project"]["version"]
 
           print(f"pyproject.toml version: {py_ver}")
