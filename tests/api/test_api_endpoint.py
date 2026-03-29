@@ -99,6 +99,21 @@ def test_create_success(mock_post, endpoint):
     assert response == {"id": "new"}
 
 
+@patch("httpx.post")
+def test_create_success_with_keyword_fields(mock_post, endpoint):
+    mock_response = Mock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {"id": "new"}
+    mock_response.text = '{"id": "new"}'
+    mock_post.return_value = mock_response
+
+    response, error = endpoint.create(name="test", enabled=True)
+    assert error is None
+    assert response == {"id": "new"}
+    _, kwargs = mock_post.call_args
+    assert kwargs["json"] == {"name": "test", "enabled": True}
+
+
 @patch("httpx.patch")
 def test_update_success(mock_patch, endpoint):
     mock_response = Mock()
@@ -110,6 +125,41 @@ def test_update_success(mock_patch, endpoint):
     response, error = endpoint.update("123", json={"name": "updated"})
     assert error is None
     assert response == {"id": "123", "updated": True}
+
+
+@patch("httpx.get")
+def test_find_one_success(mock_get, endpoint):
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"results": [{"id": "123", "name": "single"}]}
+    mock_response.text = '{"results": [{"id": "123", "name": "single"}]}'
+    mock_get.return_value = mock_response
+
+    response, error = endpoint.find_one(name="single")
+    assert error is None
+    assert response == {"id": "123", "name": "single"}
+
+
+@patch("httpx.patch")
+@patch("httpx.get")
+def test_upsert_updates_existing_match(mock_get, mock_patch, endpoint):
+    mock_list_response = Mock()
+    mock_list_response.status_code = 200
+    mock_list_response.json.return_value = {"results": [{"id": "123", "name": "existing"}]}
+    mock_list_response.text = '{"results": [{"id": "123", "name": "existing"}]}'
+    mock_get.return_value = mock_list_response
+
+    mock_patch_response = Mock()
+    mock_patch_response.status_code = 200
+    mock_patch_response.json.return_value = {"id": "123", "name": "existing"}
+    mock_patch_response.text = '{"id": "123", "name": "existing"}'
+    mock_patch.return_value = mock_patch_response
+
+    response, error = endpoint.upsert(name="existing", enabled=False)
+    assert error is None
+    assert response == {"id": "123", "name": "existing"}
+    _, kwargs = mock_patch.call_args
+    assert kwargs["json"] == {"name": "existing", "enabled": False}
 
 
 @patch("httpx.delete")
