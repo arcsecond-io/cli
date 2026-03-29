@@ -8,6 +8,7 @@ from arcsecond.options import State
 from .config import ArcsecondConfig
 from .constants import API_AUTH_PATH_VERIFY
 from .endpoint import ArcsecondAPIEndpoint
+from .resources import ArcsecondTargetListsResource
 
 __all__ = [
     "ArcsecondAPI",
@@ -39,6 +40,10 @@ class ArcsecondAPI(object):
         )
         self.calibrations = ArcsecondAPIEndpoint(
             self.config, "calibrations", self.subdomain
+        )
+        self.targets = ArcsecondAPIEndpoint(self.config, "targets", self.subdomain)
+        self.targetlists = ArcsecondTargetListsResource(
+            self.config, "targetlists", self.subdomain
         )
 
         self.datapackages = ArcsecondAPIEndpoint(

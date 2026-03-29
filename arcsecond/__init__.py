@@ -1,4 +1,9 @@
-from .api import ArcsecondAPI, ArcsecondAPIEndpoint, ArcsecondConfig
+from .api import (
+    ArcsecondAPI,
+    ArcsecondAPIEndpoint,
+    ArcsecondConfig,
+    ArcsecondTargetListsResource,
+)
 from .cloud.uploader import (
     AllSkyCameraImageFileUploader,
     AllSkyCameraImageUploadContext,
@@ -15,6 +20,7 @@ __all__ = [
     "ArcsecondError",
     "ArcsecondConfig",
     "ArcsecondAPIEndpoint",
+    "ArcsecondTargetListsResource",
     "DatasetUploadContext",
     "DatasetFileUploader",
     "AllSkyCameraImageFileUploader",
