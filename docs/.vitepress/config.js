@@ -6,8 +6,16 @@ module.exports = {
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Arcsecond Docs', link: 'https://docs.arcsecond.io' }
+    ],
+    sidebar: [
+      {
+        text: 'Guide',
+        items: [
+          { text: 'Install', link: '/install' },
+          { text: 'Targets & Target Lists', link: '/targets' }
+        ]
+      }
     ]
   }
 }
-
 
