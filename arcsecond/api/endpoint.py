@@ -12,6 +12,13 @@ WRITABLE_MEMBERSHIPS = ["superadmin", "admin", "member"]
 
 
 class ArcsecondAPIEndpoint(object):
+    """
+    Generic REST endpoint wrapper for Arcsecond resources.
+
+    It owns transport-level CRUD plus resource-agnostic conveniences such as
+    payload merging, `find_one()`, and `upsert()`.
+    """
+
     def __init__(
         self,
         config: ArcsecondConfig,
@@ -57,6 +64,30 @@ class ArcsecondAPIEndpoint(object):
     def _detail_url(self, uuid_or_id):
         return self._build_url(self.__path, str(uuid_or_id))
 
+    def _build_payload(self, json=None, **fields):
+        payload = {}
+        if json:
+            payload.update(json)
+        payload.update({key: value for key, value in fields.items() if value is not None})
+        return payload or None
+
+    def _extract_results(self, response):
+        if isinstance(response, dict):
+            if isinstance(response.get("results"), list):
+                return response["results"]
+            if response:
+                return [response]
+        elif isinstance(response, list):
+            return response
+        return []
+
+    def _extract_identifier(self, resource, identifier_fields=("uuid", "id", "pk")):
+        for key in identifier_fields:
+            value = resource.get(key)
+            if value is not None:
+                return value
+        return None
+
     def list(self, **filters):
         return self._perform_request(self._list_url(**filters), "get")
 
@@ -65,22 +96,64 @@ class ArcsecondAPIEndpoint(object):
             self._detail_url(id_name_uuid), "get", headers=headers
         )
 
-    def create(self, json=None, files=None, headers=None):
+    def create(self, json=None, files=None, headers=None, **fields):
         return self._perform_request(
-            self._list_url(), "post", json=json, files=files, headers=headers
+            self._list_url(),
+            "post",
+            json=self._build_payload(json=json, **fields),
+            files=files,
+            headers=headers,
         )
 
-    def update(self, id_name_uuid, json=None, files=None, headers=None):
+    def update(self, id_name_uuid, json=None, files=None, headers=None, **fields):
         return self._perform_request(
             self._detail_url(id_name_uuid),
             "patch",
-            json=json,
+            json=self._build_payload(json=json, **fields),
             files=files,
             headers=headers,
         )
 
     def delete(self, id_name_uuid):
         return self._perform_request(self._detail_url(id_name_uuid), "delete")
+
+    def find_one(self, **filters):
+        response, error = self.list(**filters)
+        if error:
+            return None, error
+
+        results = self._extract_results(response)
+        if len(results) == 0:
+            return None, None
+        if len(results) > 1:
+            return (
+                None,
+                ArcsecondError(
+                    f"Expected one '{self.path}' match for filters {filters}, got {len(results)}."
+                ),
+            )
+        return results[0], None
+
+    def upsert(self, match_field="name", json=None, **fields):
+        payload = self._build_payload(json=json, **fields)
+        if payload is None:
+            return None, ArcsecondError("Cannot upsert an empty payload.")
+
+        match_value = payload.get(match_field)
+        if match_value in (None, ""):
+            return self.create(json=payload)
+
+        existing, error = self.find_one(**{match_field: match_value})
+        if error:
+            return None, error
+        if existing is None:
+            return self.create(json=payload)
+
+        identifier = self._extract_identifier(existing)
+        if identifier is None:
+            return None, ArcsecondError(f"Could not find an identifier for '{match_value}'.")
+
+        return self.update(identifier, json=payload)
 
     def _perform_request(self, url, method_name, json=None, files=None, headers=None):
         if self.__config.verbose:
