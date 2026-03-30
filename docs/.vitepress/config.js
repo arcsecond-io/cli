@@ -12,10 +12,10 @@ module.exports = {
         text: 'Guide',
         items: [
           { text: 'Install', link: '/install' },
-          { text: 'Targets & Target Lists', link: '/targets' }
+          { text: 'API Basics', link: '/api-basics' },
+          { text: 'Resources', link: '/resources' }
         ]
       }
     ]
   }
 }
-
