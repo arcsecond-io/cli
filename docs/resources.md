@@ -64,10 +64,9 @@ For many resources, `upsert()` is convenient when your script wants create-or-up
 semantics:
 
 ```python
-target, error = api.targets.upsert(
-    name="M 42",
-    ra_deg=83.82208,
-    dec_deg=-5.39111,
+dataset, error = api.datasets.upsert(
+    name="My dataset",
+    description="Synced from Python",
 )
 ```
 
@@ -170,26 +169,25 @@ JSON payloads yourself.
 
 ```python
 target, error = api.targets.create(
-    name="47 Tuc",
-    ra_deg=6.023625,
-    dec_deg=-72.08128,
+    name="51 Peg b",
+    target_class="Exoplanet",
 )
 ```
 
 ```python
 target, error = api.targets.update(
-    "6d7f9f0b-2d67-4d3d-9e74-2d6d0e749b91",
-    description="Globular cluster in Tucana",
+    42,
+    notes="Globular cluster in Tucana",
 )
 ```
 
 ```python
-target, error = api.targets.upsert(
+plan = plan_target_payload(
     name="M 42",
-    ra_deg=83.82208,
-    dec_deg=-5.39111,
-    source_name="Orion Nebula",
+    inferred_target_class="AstronomicalObject",
 )
+
+target, error = api.targets.upsert(json=plan.payload)
 
 if error:
     raise error
@@ -222,16 +220,34 @@ if error:
 `api.targetlists` supports the generic CRUD methods above, and also a few helpers for
 managing the list membership.
 
+Targets are managed through integer target IDs on `api.targets`, but target lists
+themselves are managed through UUIDs on `api.targetlists`.
+
+When you create or update a target list, the `targets` field must contain target
+payload dictionaries, not target IDs or UUIDs. The easiest inputs are:
+
+- payloads returned by `plan_target_payload(...).payload`
+- target objects returned by `api.targets.read()`, `api.targets.list()`, or `api.targets.upsert()`
+
 You can create a target list and attach targets in the same call:
 
 ```python
+from arcsecond import plan_target_payload
+
+m42 = plan_target_payload(
+    name="M 42",
+    inferred_target_class="AstronomicalObject",
+).payload
+
+pegb = plan_target_payload(
+    name="51 Peg b",
+    inferred_target_class="Exoplanet",
+).payload
+
 target_list, error = api.targetlists.create(
     name="Tonight candidates",
     description="Targets imported for Night Explorer",
-    targets=[
-        "6d7f9f0b-2d67-4d3d-9e74-2d6d0e749b91",
-        "c17cb272-5ed6-4a6f-a219-0ff4727863c2",
-    ],
+    targets=[m42, pegb],
 )
 
 if error:
@@ -241,12 +257,12 @@ if error:
 To replace the full content of a list:
 
 ```python
+target_a, error = api.targets.read(42)
+target_b, error = api.targets.read(314)
+
 target_list, error = api.targetlists.set_targets(
     "a0e974a6-6f2d-4b7a-b9d2-3a3f7d7ef61a",
-    [
-        "6d7f9f0b-2d67-4d3d-9e74-2d6d0e749b91",
-        "c17cb272-5ed6-4a6f-a219-0ff4727863c2",
-    ],
+    [target_a, target_b],
 )
 ```
 
@@ -255,24 +271,31 @@ To incrementally manage membership:
 ```python
 target_list, error = api.targetlists.add_targets(
     "a0e974a6-6f2d-4b7a-b9d2-3a3f7d7ef61a",
-    ["c17cb272-5ed6-4a6f-a219-0ff4727863c2"],
+    [
+        plan_target_payload(
+            name="M 31",
+            inferred_target_class="AstronomicalObject",
+        ).payload
+    ],
 )
 ```
 
 ```python
 target_list, error = api.targetlists.remove_target(
     "a0e974a6-6f2d-4b7a-b9d2-3a3f7d7ef61a",
-    "c17cb272-5ed6-4a6f-a219-0ff4727863c2",
+    target_b,
 )
 ```
 
 If you want create-or-update semantics for a list name:
 
 ```python
+target_a, error = api.targets.read(42)
+
 target_list, error = api.targetlists.upsert(
     name="Tonight candidates",
     description="Synced from Python",
-    targets=["6d7f9f0b-2d67-4d3d-9e74-2d6d0e749b91"],
+    targets=[target_a],
 )
 ```
 
@@ -287,7 +310,7 @@ deleted, error = api.targetlists.delete("a0e974a6-6f2d-4b7a-b9d2-3a3f7d7ef61a")
 ## Target Lists With Planned Targets
 
 When you import a target list from an external source, apply the same planning rule to
-each individual target first, then create the list from the created target UUIDs.
+each individual target first, then create the list from the resulting target payloads.
 
 ```python
 from arcsecond import ArcsecondAPI, ArcsecondConfig, plan_target_payload
@@ -307,7 +330,7 @@ candidates = [
     },
 ]
 
-target_ids = []
+targets = []
 for candidate in candidates:
     plan = plan_target_payload(**candidate)
     if not plan.is_valid:
@@ -317,11 +340,11 @@ for candidate in candidates:
     if error:
         raise error
 
-    target_ids.append(target["uuid"])
+    targets.append(target)
 
 target_list, error = api.targetlists.create(
     name="Imported targets",
-    targets=target_ids,
+    targets=targets,
 )
 ```
 

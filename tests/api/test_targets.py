@@ -122,7 +122,19 @@ def test_targetlists_create_accepts_targets(mock_post):
 
     response, error = ArcsecondTargetListsResource(
         config, "targetlists", "demo"
-    ).create(name="Tonight", description="Best objects", targets=["a", {"uuid": "b"}])
+    ).create(
+        name="Tonight",
+        description="Best objects",
+        targets=[
+            {"name": "M 42", "target_class": "AstronomicalObject"},
+            {
+                "id": 8,
+                "name": "51 Peg b",
+                "target_class": "Exoplanet",
+                "is_free": False,
+            },
+        ],
+    )
 
     assert error is None
     assert response == {"uuid": "list-1"}
@@ -130,7 +142,10 @@ def test_targetlists_create_accepts_targets(mock_post):
     assert kwargs["json"] == {
         "name": "Tonight",
         "description": "Best objects",
-        "targets": ["a", "b"],
+        "targets": [
+            {"name": "M 42", "target_class": "AstronomicalObject"},
+            {"id": 8, "name": "51 Peg b", "target_class": "Exoplanet"},
+        ],
     }
 
 
@@ -143,10 +158,14 @@ def test_targetlists_add_targets_merges_existing_targets(mock_patch, mock_get):
     mock_read_response.status_code = 200
     mock_read_response.json.return_value = {
         "uuid": "list-1",
-        "targets": ["target-1", {"uuid": "target-2"}],
+        "targets": [
+            {"id": 1, "name": "M 42", "target_class": "AstronomicalObject"},
+            {"id": 2, "name": "51 Peg b", "target_class": "Exoplanet"},
+        ],
     }
     mock_read_response.text = (
-        '{"uuid": "list-1", "targets": ["target-1", {"uuid": "target-2"}]}'
+        '{"uuid": "list-1", "targets": [{"id": 1, "name": "M 42", "target_class": "AstronomicalObject"}, '
+        '{"id": 2, "name": "51 Peg b", "target_class": "Exoplanet"}]}'
     )
     mock_get.return_value = mock_read_response
 
@@ -158,26 +177,46 @@ def test_targetlists_add_targets_merges_existing_targets(mock_patch, mock_get):
 
     response, error = ArcsecondTargetListsResource(
         config, "targetlists", "demo"
-    ).add_targets("list-1", [{"uuid": "target-2"}, "target-3"])
+    ).add_targets(
+        "list-1",
+        [
+            {"id": 2, "name": "51 Peg b", "target_class": "Exoplanet"},
+            {"name": "M 31", "target_class": "AstronomicalObject"},
+        ],
+    )
 
     assert error is None
     assert response == {"uuid": "list-1"}
     _, kwargs = mock_patch.call_args
-    assert kwargs["json"] == {"targets": ["target-1", "target-2", "target-3"]}
+    assert kwargs["json"] == {
+        "targets": [
+            {"id": 1, "name": "M 42", "target_class": "AstronomicalObject"},
+            {"id": 2, "name": "51 Peg b", "target_class": "Exoplanet"},
+            {"name": "M 31", "target_class": "AstronomicalObject"},
+        ]
+    }
 
 
 @patch("httpx.get")
 @patch("httpx.patch")
-def test_targetlists_remove_targets_uses_existing_target_key(mock_patch, mock_get):
+def test_targetlists_remove_targets_uses_target_payloads(mock_patch, mock_get):
     config = make_config()
 
     mock_read_response = Mock()
     mock_read_response.status_code = 200
     mock_read_response.json.return_value = {
         "uuid": "list-1",
-        "target_ids": [1, 2, 3],
+        "targets": [
+            {"id": 1, "name": "M 42", "target_class": "AstronomicalObject"},
+            {"id": 2, "name": "51 Peg b", "target_class": "Exoplanet"},
+            {"name": "M 31", "target_class": "AstronomicalObject"},
+        ],
     }
-    mock_read_response.text = '{"uuid": "list-1", "target_ids": [1, 2, 3]}'
+    mock_read_response.text = (
+        '{"uuid": "list-1", "targets": [{"id": 1, "name": "M 42", "target_class": "AstronomicalObject"}, '
+        '{"id": 2, "name": "51 Peg b", "target_class": "Exoplanet"}, '
+        '{"name": "M 31", "target_class": "AstronomicalObject"}]}'
+    )
     mock_get.return_value = mock_read_response
 
     mock_patch_response = Mock()
@@ -188,9 +227,17 @@ def test_targetlists_remove_targets_uses_existing_target_key(mock_patch, mock_ge
 
     response, error = ArcsecondTargetListsResource(
         config, "targetlists", "demo"
-    ).remove_targets("list-1", [2])
+    ).remove_targets(
+        "list-1",
+        [{"id": 2, "name": "51 Peg b", "target_class": "Exoplanet"}],
+    )
 
     assert error is None
     assert response == {"uuid": "list-1"}
     _, kwargs = mock_patch.call_args
-    assert kwargs["json"] == {"target_ids": [1, 3]}
+    assert kwargs["json"] == {
+        "targets": [
+            {"id": 1, "name": "M 42", "target_class": "AstronomicalObject"},
+            {"name": "M 31", "target_class": "AstronomicalObject"},
+        ]
+    }
