@@ -1,6 +1,6 @@
 {
   "name": "arcsecond-cli",
-  "version": "1.3.8",
+  "version": "1.4.0",
   "description": "The Command Line Interface (CLI) for Arcsecond.io. Can be used as a Python module too.",
   "main": "index.js",
   "directories": {
