@@ -22,6 +22,8 @@
   },
   "homepage": "https://github.com/arcsecond-io/cli#readme",
   "devDependencies": {
-    "vitepress": "^1.0.1"
+    "@vitejs/plugin-vue": "^6.0.5",
+    "vite": "^7.3.1",
+    "vitepress": "^2.0.0-alpha.17"
   }
 }
