@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "docs:dev": "vitepress dev docs",
+    "docs:dev": "vitepress dev docs --port 5179",
     "docs:build": "vitepress build docs",
     "docs:serve": "vitepress serve docs"
   },
