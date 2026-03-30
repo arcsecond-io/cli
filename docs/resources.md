@@ -5,6 +5,7 @@ sidebar: true
 # Resources
 
 Most resources exposed by `ArcsecondAPI` use the generic `ArcsecondAPIEndpoint` helpers.
+Start by configuring `ArcsecondAPI` as described in [API Basics](/api-basics).
 
 ## CRUD Operations
 

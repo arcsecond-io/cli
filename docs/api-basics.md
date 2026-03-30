@@ -25,7 +25,7 @@ api = ArcsecondAPI(config, subdomain="my-observatory")
 
 Authentication with the Python module currently relies on your Arcsecond keys.
 
-### With the CLI
+### Reuse CLI credentials
 
 Login once from the command line:
 
@@ -33,18 +33,19 @@ Login once from the command line:
 arcsecond login
 ```
 
-This stores your credentials locally in `~/.config/arcsecond/config.ini`.
+This stores your credentials locally in `~/.config/arcsecond/config.ini`, which
+`ArcsecondConfig()` will load automatically.
 
 To skip prompts:
 
 ```bash
-arcsecond login --username <username> --access_key <key>
+arcsecond login --username <username> --type access --key <access-key>
 ```
 
 or:
 
 ```bash
-arcsecond login --username <username> --upload_key <key>
+arcsecond login --username <username> --type upload --key <upload-key>
 ```
 
 Once that is done, Python code can reuse the stored configuration:
@@ -56,7 +57,7 @@ config = ArcsecondConfig()
 api = ArcsecondAPI(config)
 ```
 
-### In Python Code
+### Authenticate in Python code
 
 You can also authenticate directly in Python code:
 
@@ -89,3 +90,8 @@ backend or local automation contexts, never in browser-side code.
 
 For Python scripts that only need to upload data, prefer an Upload Key. For broader
 resource management, use an Access Key.
+
+## Next Step
+
+Once authenticated, move to [Resources](/resources) for the generic CRUD helpers,
+target planning utilities, and target list management helpers.

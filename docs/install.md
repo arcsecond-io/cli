@@ -2,66 +2,77 @@
 sidebar: true
 ---
 
-## Install
+# Install & Login
 
 Simply issue the following in a Terminal:
 
 ```bash
-$ pip install arcsecond
+pip install arcsecond
 ```
 
 To upgrade an existing Arcsecond installation:
 
 ```bash
-$ pip install --upgrade arcsecond
+pip install --upgrade arcsecond
 ```
 
-The help is accessible like any other command line:
+The help is available like any other command-line tool:
 
 ```bash
-$ arcsecond --help
+arcsecond --help
 ```
 
-or, for subcommand
+For subcommands:
 
 ```bash
-$ arcsecond <command> --help
-````
-
-The Arcsecond CLI usage is similar to a utility like `git`. That is,
-`arcsecond` is the main entry point, followed by a command. Most of the
-commands are simply the name of API resources.
-
-## Setup
-
-To use the CLI, you need an Arcsecond account (it is entirely free to
-create one). In your Settings page in https://www.arcsecond.io you will
-find your Access Key and your Upload Key. They give a different access
-level to your resources.
-
-Use the Access Key to have a complete access to your resources. **Use
-your Access Key only on trusted computers.**. If you simply want to
-use the CLI for uploading files, use the Upload Key, which has just enough
-permissions to upload data to your account, or your observatory portals.
-
-Then, you can login, providing answers to the prompts.
-
-```bash
-$ arcsecond login 
+arcsecond <command> --help
 ```
 
-To skip prompts:
+The Arcsecond CLI works like a tool such as `git`: `arcsecond` is the main entry
+point, followed by a command. Many commands directly map to Arcsecond resources.
+
+## Authentication
+
+To use the CLI, you need an Arcsecond account. In your settings page on
+[arcsecond.io](https://www.arcsecond.io) you will find two kinds of credentials:
+
+- an Access Key for broad access to your resources
+- an Upload Key for upload-only workflows
+
+Use an Access Key only on trusted computers. If you only need to upload files,
+prefer an Upload Key.
+
+### Interactive login
+
+Run:
 
 ```bash
-$ arcsecond login --username <username> --upload_key <key>
+arcsecond login
 ```
 
-By logging in, **your private Access key or your Upload Key will be stored locally**
-in the config file in `~/.config/arcsecond/config.ini`.
+The CLI will prompt for:
 
-Logging in again will overwrite the current key with the new one
-(assuming login is a success, of course).
+- `username`
+- `type` (`access` or `upload`)
+- `key`
 
-If you think your key is compromised, you can regenerate one in your profile
-settings in https://www.arcsecond.io. You cannot regenerate a key with
-the cli.
+Your credential is stored locally in `~/.config/arcsecond/config.ini`.
+
+### Non-interactive login
+
+To skip prompts, pass all values explicitly:
+
+```bash
+arcsecond login --username <username> --type access --key <access-key>
+```
+
+or:
+
+```bash
+arcsecond login --username <username> --type upload --key <upload-key>
+```
+
+Logging in again overwrites the stored credential if the login succeeds.
+
+If you think a key is compromised, regenerate it from your profile settings on
+[arcsecond.io](https://www.arcsecond.io). The CLI cannot regenerate keys for you.

@@ -2,16 +2,22 @@ module.exports = {
   title: 'Arcsecond CLI',
   description: 'The command-line / Python module of Arcsecond.',
   base: '/cli/',
+  cleanUrls: true,
   themeConfig: {
     nav: [
-      { text: 'Home', link: '/' },
       { text: 'Arcsecond Docs', link: 'https://docs.arcsecond.io' }
     ],
     sidebar: [
       {
-        text: 'Guide',
+        text: 'Getting Started',
         items: [
-          { text: 'Install', link: '/install' },
+          { text: 'Install & Login', link: '/install' },
+          { text: 'Data Upload', link: '/upload' }
+        ]
+      },
+      {
+        text: 'Python API',
+        items: [
           { text: 'API Basics', link: '/api-basics' },
           { text: 'Resources', link: '/resources' }
         ]
