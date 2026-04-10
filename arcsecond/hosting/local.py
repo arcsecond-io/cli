@@ -125,12 +125,8 @@ def write_docker_compose_file() -> Path:
         print("docker-compose.yml is already up to date.")
         return dest
 
-    latest_dest = Path.cwd() / "docker-compose.latest.yml"
-    latest_dest.write_bytes(expected_content)
-    print(
-        "docker-compose.yml differs from the latest packaged version. "
-        f"Wrote new template to: {latest_dest}"
-    )
+    dest.write_bytes(expected_content)
+    print("docker-compose.yml has been updated to the latest version.")
     return dest
 
 
