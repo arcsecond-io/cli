@@ -115,9 +115,12 @@ async def handle_stream(request):
             b64 = await loop.run_in_executor(None, _read_and_encode)
             if b64 is None:
                 logger.warning("Webcam proxy: cap.read() failed for device %d, stopping.", index)
+                await ws.send_str(json.dumps({'type': 'error', 'message': f'Device lost at index {index}.'}))
                 break
             await ws.send_str(json.dumps({'type': 'frame', 'format': 'jpeg/base64', 'data': b64}))
             await asyncio.sleep(_FRAME_INTERVAL)
+    except (ConnectionResetError, ConnectionError):
+        logger.info("Webcam proxy: client disconnected from device %d.", index)
     finally:
         await loop.run_in_executor(None, cap.release)
         logger.info("Webcam proxy: device %d released.", index)
