@@ -30,9 +30,12 @@ dependencies = [
     "tqdm (>=4.67.1,<5.0.0)",
     'py-machineid',
     'wait-for-it',
-    # Webcam proxy: native host process that lets Docker containers reach USB webcams.
-    # aiohttp serves /detect (HTTP) and /stream/{index} (WebSocket) endpoints.
-    # opencv-python-headless captures USB webcams on Windows / macOS / Linux.
+]
+
+[project.optional-dependencies]
+# Webcam proxy: native host process that lets Docker containers reach USB webcams.
+# Install with: pip install arcsecond[webcam]
+webcam = [
     'aiohttp>=3.9',
     'opencv-python-headless>=4.10,<5',
 ]
