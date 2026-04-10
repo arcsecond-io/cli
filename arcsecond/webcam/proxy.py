@@ -68,6 +68,12 @@ def _detect_webcams_sync(max_index: int = _MAX_PROBE) -> list[WebcamInfo]:
 # aiohttp request handlers
 # ---------------------------------------------------------------------------
 
+async def handle_health(request):
+    """GET /health — simple liveness check."""
+    from aiohttp import web
+    return web.json_response({'status': 'ok'})
+
+
 async def handle_detect(request):
     """GET /detect — return JSON list of attached webcams."""
     from aiohttp import web
@@ -128,6 +134,7 @@ def run(host: str = '0.0.0.0', port: int = 8765):
     from aiohttp import web
 
     app = web.Application()
+    app.router.add_get('/health', handle_health)
     app.router.add_get('/detect', handle_detect)
     app.router.add_get('/stream/{index}', handle_stream)
 
