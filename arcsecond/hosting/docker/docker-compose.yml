@@ -37,8 +37,6 @@ services:
       - broker
     # Allows the backend to reach the host machine via host.docker.internal.
     # Required on Linux; Docker Desktop on Windows/macOS adds this automatically.
-    # Used by the webcam proxy: set WEBCAM_PROXY_URL=http://host.docker.internal:8765
-    # in your .env file and run `arcsecond webcam start` on the host.
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file:

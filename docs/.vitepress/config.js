@@ -16,6 +16,12 @@ module.exports = {
         ]
       },
       {
+        text: 'Self-Hosting',
+        items: [
+          { text: 'Webcam Proxy', link: '/webcam' }
+        ]
+      },
+      {
         text: 'Python API',
         items: [
           { text: 'API Basics', link: '/api-basics' },
