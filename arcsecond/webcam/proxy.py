@@ -77,7 +77,7 @@ async def handle_health(request):
 async def handle_detect(request):
     """GET /detect — return JSON list of attached webcams."""
     from aiohttp import web
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     webcams = await loop.run_in_executor(None, _detect_webcams_sync)
     return web.json_response([asdict(w) for w in webcams])
 
@@ -92,7 +92,7 @@ async def handle_stream(request):
     await ws.prepare(request)
     logger.info("Webcam proxy: client connected to stream for device index %d", index)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     cap: cv2.VideoCapture = await loop.run_in_executor(None, cv2.VideoCapture, index)
 
     if not await loop.run_in_executor(None, cap.isOpened):
