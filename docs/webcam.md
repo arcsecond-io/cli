@@ -39,6 +39,20 @@ pip install 'arcsecond[webcam]'
 
 :::
 
+::: warning Windows users — use PowerShell, not WSL
+On Windows, the Arcsecond CLI **must be installed and run natively using
+PowerShell** (or the standard Windows Command Prompt). Do **not** use the Bash
+shell that comes with WSL (Windows Subsystem for Linux).
+
+WSL runs in a virtualised Linux environment that does not have direct access to
+the host's USB devices. As a result, the webcam proxy cannot see cameras
+attached to the Windows machine when launched from inside WSL.
+
+Install Python and the Arcsecond CLI with the native Windows Python installer
+(from [python.org](https://www.python.org/downloads/windows/)) and run all
+`arcsecond webcam` commands from a **PowerShell** or **cmd.exe** window.
+:::
+
 ## Detecting webcams
 
 To scan for locally attached webcams:
