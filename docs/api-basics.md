@@ -21,6 +21,12 @@ If you are targeting an observatory portal, pass its subdomain:
 api = ArcsecondAPI(config, subdomain="my-observatory")
 ```
 
+On a self-hosted Arcsecond.local install, the subdomain is always `"local"`:
+
+```python
+api = ArcsecondAPI(config, subdomain="local")
+```
+
 ## Authentication
 
 Authentication with the Python module currently relies on your Arcsecond keys.
