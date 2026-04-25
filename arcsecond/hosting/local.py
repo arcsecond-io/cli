@@ -110,7 +110,16 @@ def write_env_file():
 
 def write_docker_compose_file() -> Path:
     """
-    Copy the packaged docker-compose.yml to the current directory.
+    Materialise the packaged docker-compose.yml in the current directory.
+
+    Three cases:
+      1. No file present → write the packaged version as docker-compose.yml.
+      2. File present and identical to the packaged version → no-op.
+      3. File present but different → leave the operator's file untouched
+         (it may carry local customisations) and drop the packaged
+         version next to it as docker-compose.latest.yml so they can
+         diff and merge intentionally.
+
     Works from any CWD and when installed from a wheel/sdist.
     """
     dest = Path.cwd() / "docker-compose.yml"
@@ -131,8 +140,12 @@ def write_docker_compose_file() -> Path:
         print("docker-compose.yml is already up to date.")
         return dest
 
-    dest.write_bytes(expected_content)
-    print("docker-compose.yml has been updated to the latest version.")
+    latest = dest.with_name("docker-compose.latest.yml")
+    latest.write_bytes(expected_content)
+    print(
+        "docker-compose.yml differs from the packaged version; "
+        f"leaving it untouched and writing the latest packaged copy to: {latest}"
+    )
     return dest
 
 
