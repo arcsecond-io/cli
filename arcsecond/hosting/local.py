@@ -5,12 +5,14 @@ from pathlib import Path
 import click
 
 from arcsecond.options import basic_options
-from .utils import _get_encryption_key, _get_random_secret_key
+from .utils import _get_encryption_key, _get_random_postgres_password, _get_random_secret_key
 
 ENV_FILENAME = ".env"
 
+# Stable across installs — operators connect with this username when running
+# manual psql / pg_dump commands. The actual security boundary is the password
+# (generated per-install) and the network exposure (localhost-only).
 POSTGRES_USER = "arcsecond_docker"
-POSTGRES_PASSWORD = "arcsecond_docker"
 POSTGRES_DB = "arcsecond_docker"
 
 
@@ -39,7 +41,11 @@ def _required_env_values():
         "FIELD_ENCRYPTION_KEY": _get_encryption_key(),
         "SHARED_DATA_PATH": prompt_shared_data_path(),
         "POSTGRES_USER": POSTGRES_USER,
-        "POSTGRES_PASSWORD": POSTGRES_PASSWORD,
+        # Per-install random; never overwritten on repeat runs (see write_env_file).
+        # Postgres only reads this on first container boot to bootstrap the role,
+        # so the .env value and the live DB password must stay in sync — that's
+        # why we never regenerate it after the .env exists.
+        "POSTGRES_PASSWORD": _get_random_postgres_password(),
         "POSTGRES_DB": POSTGRES_DB,
     }
 
