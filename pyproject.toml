@@ -32,8 +32,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Webcam proxy: native host process that lets Docker containers reach USB webcams.
-# Install with: pip install arcsecond[webcam]
+# Live-image proxy: native host process that lets Docker containers reach USB
+# webcams and all-sky camera images on the host. Install with:
+#     pip install arcsecond[webcam]
+# (extra name kept as `webcam` for backward compatibility; covers all-sky too.)
 webcam = [
     'aiohttp>=3.9',
     'opencv-python-headless>=4.10,<5',

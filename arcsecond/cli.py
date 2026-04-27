@@ -10,7 +10,7 @@ from arcsecond.cloud import (
     upload_data,
 )
 from arcsecond.hosting import setup
-from arcsecond.webcam import commands as webcam
+from arcsecond.imagesources import commands as imagesources
 
 from . import __version__
 from .options import State
@@ -61,5 +61,7 @@ main.add_command(upload_data)
 # Allow to try arcsecond by installing a local version
 main.add_command(setup)
 
-# Native webcam proxy — lets Docker containers reach USB webcams on the host.
-main.add_command(webcam.webcam)
+# Native live-image proxy — exposes USB webcams and all-sky cameras to
+# Arcsecond.local Docker containers via host.docker.internal.
+main.add_command(imagesources.webcam)
+main.add_command(imagesources.allsky)

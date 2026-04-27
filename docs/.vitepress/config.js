@@ -18,7 +18,7 @@ module.exports = {
       {
         text: 'Self-Hosting',
         items: [
-          { text: 'Webcam Proxy', link: '/webcam' }
+          { text: 'Live-Image Proxy', link: '/webcam' }
         ]
       },
       {
