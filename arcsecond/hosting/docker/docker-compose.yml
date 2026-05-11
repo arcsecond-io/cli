@@ -102,15 +102,8 @@ services:
   platesolver:
     image: ghcr.io/arcsecond-io/arcsecond-service-platesolver-astrometry:latest
     container_name: arcsecond-platesolver
+    restart: unless-stopped
     ports: [ "8900:8900" ]
-    volumes:
-      # Leave /data as is, it's a path inside the container, not in the host machine.
-      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
-      - type: bind
-        source: ${SHARED_DATA_PATH}
-        target: /data
-        bind:
-          create_host_path: true
 
   # Arcsecond webapp.
   web:
