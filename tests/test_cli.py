@@ -18,13 +18,13 @@ def test_cli_version():
     runner = CliRunner()
     result = runner.invoke(cli.main, ["-V"])
     assert result.exit_code == 0 and not result.exception
-    assert re.match("[0-9].[0-9].[0-9]", result.output)
+    assert re.match(r"\d+\.\d+\.\d+", result.output)
     result = runner.invoke(cli.main, ["--version"])
     assert result.exit_code == 0 and not result.exception
-    assert re.match("[0-9].[0-9].[0-9]", result.output)
+    assert re.match(r"\d+\.\d+\.\d+", result.output)
     result = runner.invoke(cli.version)
     assert result.exit_code == 0 and not result.exception
-    assert re.match("[0-9].[0-9].[0-9]", result.output)
+    assert re.match(r"\d+\.\d+\.\d+", result.output)
 
 
 def test_cli_global_help():
