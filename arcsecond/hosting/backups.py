@@ -4,6 +4,7 @@ import re
 import subprocess
 import sys
 import time
+import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,6 +30,9 @@ STATUS_OK = "compatible"
 STATUS_FORWARD = "forward-migrate"
 STATUS_INCOMPAT = "incompatible"
 STATUS_UNKNOWN = "unknown"
+STATUS_BROKEN = "broken"
+
+GZIP_MAGIC = b"\x1f\x8b"
 
 
 def _cwd_env_path():
@@ -114,10 +118,39 @@ def _container_running(name):
     return out.returncode == 0 and out.stdout.strip() == "true"
 
 
+def _classify_dump_health(backup_path):
+    """Quick check that a dump file looks usable before we try to parse it.
+
+    Returns (True, None) for a readable gzip whose first decompressed bytes
+    look like the start of a pg_dump, or (False, reason) for anything that's
+    obviously broken: missing gzip magic bytes, truncated, or empty.
+    """
+    try:
+        size = backup_path.stat().st_size
+    except OSError as e:
+        return False, f"stat failed: {e}"
+    if size < len(GZIP_MAGIC):
+        return False, f"too small ({size} B)"
+    try:
+        with open(backup_path, "rb") as f:
+            header = f.read(len(GZIP_MAGIC))
+        if header != GZIP_MAGIC:
+            return False, "not a gzip file (bad magic bytes)"
+        with gzip.open(backup_path, "rb") as f:
+            chunk = f.read(64)
+        if not chunk:
+            return False, "gzip is empty"
+    except (OSError, EOFError, zlib.error) as e:
+        return False, f"unreadable: {e}"
+    return True, None
+
+
 def _extract_backup_migrations(backup_path):
     """Stream the gzipped SQL dump and pull the django_migrations COPY block.
 
     Returns a set of (app, name) tuples, or None if the table block wasn't found.
+    Callers should pre-screen with _classify_dump_health() to avoid spending
+    decompression time on obviously-broken files.
     """
     migrations = set()
     in_copy = False
@@ -198,6 +231,7 @@ _STATUS_BADGE = {
     STATUS_FORWARD: click.style("⚠️  forward-migrate", fg="yellow"),
     STATUS_INCOMPAT: click.style("❌ incompatible", fg="red"),
     STATUS_UNKNOWN: click.style("?  unknown", fg="white"),
+    STATUS_BROKEN: click.style("💥 broken", fg="red"),
 }
 
 
@@ -278,15 +312,32 @@ def list_cmd():
     click.echo("")
     click.echo(f"{'#':>3}  {'Timestamp (UTC)':<20}  {'Size':>10}  Status")
     click.echo("-" * 70)
+    broken_count = 0
     for i, (path, ts) in enumerate(items, start=1):
-        backup_migs = _extract_backup_migrations(path) if code_migs else None
-        status, _, _ = _compute_compat(backup_migs, code_migs)
+        healthy, reason = _classify_dump_health(path)
+        if not healthy:
+            status = STATUS_BROKEN
+            broken_count += 1
+        elif code_migs is None:
+            status = STATUS_UNKNOWN
+        else:
+            backup_migs = _extract_backup_migrations(path)
+            status, _, _ = _compute_compat(backup_migs, code_migs)
         click.echo(
             f"{i:>3}  {ts.strftime('%Y-%m-%d %H:%M:%S'):<20}  "
             f"{_human_size(path.stat().st_size):>10}  {_STATUS_BADGE[status]}"
         )
     click.echo("")
     click.echo(f"{len(items)} backup(s) in {backups_dir}")
+    if broken_count:
+        click.echo(
+            click.style(
+                f"{broken_count} broken dump(s) detected — run "
+                "`arcsecond backups inspect <#>` for details, "
+                "or delete them to clean up.",
+                fg="yellow",
+            )
+        )
 
 
 @backups.command(name="inspect", help="Show detailed info about a backup.")
@@ -310,6 +361,15 @@ def inspect_cmd(ref):
     click.echo(
         f"Modified:    {datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()}"
     )
+
+    healthy, reason = _classify_dump_health(path)
+    if not healthy:
+        click.echo(f"Health:      {_STATUS_BADGE[STATUS_BROKEN]} — {reason}")
+        click.echo(
+            "             This file is not a usable backup. Delete it "
+            "(`rm <file>`) and rely on a more recent dump."
+        )
+        return
 
     backup_migs = _extract_backup_migrations(path)
     if backup_migs is None:
@@ -535,6 +595,18 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
 
     if path is None:
         click.echo("No backup selected.")
+        sys.exit(1)
+
+    # Refuse outright if the file isn't even a valid gzip dump.
+    healthy, reason = _classify_dump_health(path)
+    if not healthy:
+        click.echo(
+            click.style(
+                f"Refusing to restore {path.name}: {reason}. "
+                "This file is not a usable backup.",
+                fg="red",
+            )
+        )
         sys.exit(1)
 
     # Compatibility check
