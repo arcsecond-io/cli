@@ -21,6 +21,7 @@ _MAX_PROBE      = 10    # device indices to probe during detection
 class OpenCVWebcamSource(FrameSource):
     kind = "webcam"
     poll_interval = _FRAME_INTERVAL
+    shareable = True   # USB webcams can only be opened once at a time.
 
     def __init__(self, index: int):
         self.index = index
@@ -41,9 +42,15 @@ class OpenCVWebcamSource(FrameSource):
         def _read_and_encode():
             ok, frame = self._cap.read()
             if not ok:
-                return None
+                # Raise rather than return None: per FrameSource contract, None
+                # means "no new frame available". A failed grab indicates the
+                # device is unhealthy (unplugged, claimed by another process,
+                # DirectShow contention, ...) and the proxy needs to know.
+                raise RuntimeError(f"cap.read() failed for webcam index {self.index}")
             ok2, buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, _JPEG_QUALITY])
-            return buf.tobytes() if ok2 else None
+            if not ok2:
+                raise RuntimeError(f"JPEG encode failed for webcam index {self.index}")
+            return buf.tobytes()
 
         return await loop.run_in_executor(None, _read_and_encode)
 

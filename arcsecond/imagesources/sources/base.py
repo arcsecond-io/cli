@@ -28,6 +28,13 @@ class FrameSource(ABC):
     kind: str
     poll_interval: float
 
+    # Whether multiple concurrent consumers may share one instance of this
+    # source. True when the underlying device cannot be opened twice (e.g. a
+    # USB webcam on Windows/DirectShow). False when each consumer must keep
+    # its own per-instance state (e.g. file-watch sources whose "has this
+    # frame changed?" check is per-reader).
+    shareable: bool = False
+
     @abstractmethod
     async def open(self) -> None:
         """Acquire the underlying device / file handle."""

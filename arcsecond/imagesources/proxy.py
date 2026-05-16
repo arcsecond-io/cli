@@ -60,27 +60,48 @@ async def handle_stream(request):
 
     ws = web.WebSocketResponse()
     await ws.prepare(request)
-    logger.info("Live-image proxy: client connected to stream %s", source_id)
 
     try:
-        source = registry.open_source(source_id)
+        acquired = await registry.acquire(source_id)
     except KeyError as e:
         logger.error("Live-image proxy: %s", e)
         await ws.send_str(json.dumps({'type': 'error', 'message': str(e)}))
         await ws.close()
         return ws
-
-    try:
-        await source.open()
     except Exception as e:
         logger.error("Live-image proxy: cannot open %s: %s", source_id, e)
         await ws.send_str(json.dumps({'type': 'error', 'message': str(e)}))
         await ws.close()
         return ws
 
+    logger.info(
+        "Live-image proxy: client connected to stream %s (refcount=%d)",
+        source_id, acquired.refcount,
+    )
+
+    # Tolerate a few transient read failures before giving up. ~2 s at the
+    # source's poll rate covers most one-off DirectShow hiccups.
+    max_consecutive_failures = max(1, int(2.0 / max(acquired.poll_interval, 0.01)))
+    consecutive_failures = 0
+
     try:
         while not ws.closed:
-            jpeg: Optional[bytes] = await source.read()
+            try:
+                jpeg: Optional[bytes] = await acquired.read()
+            except Exception as e:
+                consecutive_failures += 1
+                if consecutive_failures >= max_consecutive_failures:
+                    msg = f"frame read failed for {source_id}: {e}"
+                    logger.warning(
+                        "Live-image proxy: %s (after %d attempts)",
+                        msg, consecutive_failures,
+                    )
+                    await ws.send_str(json.dumps({'type': 'error', 'message': msg}))
+                    break
+                await asyncio.sleep(acquired.poll_interval)
+                continue
+
+            consecutive_failures = 0
             if jpeg is not None:
                 b64 = base64.b64encode(jpeg).decode('ascii')
                 await ws.send_str(json.dumps({
@@ -88,12 +109,15 @@ async def handle_stream(request):
                     'format': 'jpeg/base64',
                     'data': b64,
                 }))
-            await asyncio.sleep(source.poll_interval)
+            await asyncio.sleep(acquired.poll_interval)
     except (ConnectionResetError, ConnectionError):
-        logger.info("Live-image proxy: client disconnected from %s.", source_id)
+        pass
     finally:
-        await source.close()
-        logger.info("Live-image proxy: %s released.", source_id)
+        remaining = await acquired.release()
+        logger.info(
+            "Live-image proxy: client disconnected from %s (refcount=%d).",
+            source_id, remaining,
+        )
 
     return ws
 
