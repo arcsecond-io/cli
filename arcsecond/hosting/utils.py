@@ -10,7 +10,7 @@ def _get_random_secret_key():
 
 
 def _get_encryption_key():
-    return base64.urlsafe_b64encode(os.urandom(32)).decode('UTF8')
+    return base64.urlsafe_b64encode(os.urandom(32)).decode("UTF8")
 
 
 def _get_random_postgres_password():
@@ -21,4 +21,4 @@ def _get_random_postgres_password():
     bytes → 43 chars, ~256 bits of entropy. Trailing '=' padding is
     stripped because it triggers shell parsing weirdness in some setups.
     """
-    return base64.urlsafe_b64encode(os.urandom(32)).decode('UTF8').rstrip('=')
+    return base64.urlsafe_b64encode(os.urandom(32)).decode("UTF8").rstrip("=")
