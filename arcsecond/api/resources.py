@@ -90,7 +90,9 @@ class ArcsecondTargetListsResource(ArcsecondAPIEndpoint):
         )
         return ArcsecondAPIEndpoint.update(self, id_name_uuid, json=payload)
 
-    def upsert(self, match_field="name", json=None, targets=None, target_key=None, **fields):
+    def upsert(
+        self, match_field="name", json=None, targets=None, target_key=None, **fields
+    ):
         payload = self._build_payload(
             json=json, targets=targets, target_key=target_key, **fields
         )
@@ -104,7 +106,9 @@ class ArcsecondTargetListsResource(ArcsecondAPIEndpoint):
 
     def set_targets(self, id_name_uuid, targets, target_key=None):
         target_key = target_key or self.target_relation_key
-        return self.update(id_name_uuid, **{target_key: self._normalise_target_payloads(targets)})
+        return self.update(
+            id_name_uuid, **{target_key: self._normalise_target_payloads(targets)}
+        )
 
     def clear_targets(self, id_name_uuid, target_key=None):
         return self.set_targets(id_name_uuid, [], target_key=target_key)

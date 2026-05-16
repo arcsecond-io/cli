@@ -103,11 +103,13 @@ def detect_allsky() -> list[SourceInfo]:
             while any(s.id == sid for s in found):
                 n += 1
                 sid = f"{base}-{n}"
-            found.append(SourceInfo(
-                id=sid,
-                kind="allsky",
-                label=f"All-sky camera ({path})",
-                extra={"path": str(path)},
-            ))
+            found.append(
+                SourceInfo(
+                    id=sid,
+                    kind="allsky",
+                    label=f"All-sky camera ({path})",
+                    extra={"path": str(path)},
+                )
+            )
             logger.debug("Discovered all-sky source at %s", path)
     return found

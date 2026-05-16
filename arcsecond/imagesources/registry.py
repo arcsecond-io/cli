@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AllskyOverride:
-    id: str          # bare id, will be prefixed with "allsky:"
-    path: str        # file path or glob
+    id: str  # bare id, will be prefixed with "allsky:"
+    path: str  # file path or glob
     label: Optional[str] = None
 
 
@@ -41,7 +41,9 @@ class AcquiredSource:
     the underlying device when the last holder is done.
     """
 
-    def __init__(self, registry: "Registry", source_id: str, source: FrameSource, refcount: int):
+    def __init__(
+        self, registry: "Registry", source_id: str, source: FrameSource, refcount: int
+    ):
         self._registry = registry
         self.source_id = source_id
         self.source = source
@@ -128,7 +130,9 @@ class Registry:
                 self._shared[source_id] = entry
                 logger.info("Live-image proxy: %s opened.", source_id)
             entry.refcount += 1
-            return AcquiredSource(self, source_id, entry.source, refcount=entry.refcount)
+            return AcquiredSource(
+                self, source_id, entry.source, refcount=entry.refcount
+            )
 
     async def _read(self, source_id: str, source: FrameSource) -> Optional[bytes]:
         if not source.shareable:

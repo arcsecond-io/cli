@@ -39,14 +39,17 @@ logger = logging.getLogger(__name__)
 # aiohttp request handlers
 # ---------------------------------------------------------------------------
 
+
 async def handle_health(request):
     from aiohttp import web
-    return web.json_response({'status': 'ok'})
+
+    return web.json_response({"status": "ok"})
 
 
 async def handle_detect(request):
     from aiohttp import web
-    registry: Registry = request.app['registry']
+
+    registry: Registry = request.app["registry"]
     loop = asyncio.get_running_loop()
     infos = await loop.run_in_executor(None, registry.detect)
     return web.json_response([asdict(i) for i in infos])
@@ -55,8 +58,8 @@ async def handle_detect(request):
 async def handle_stream(request):
     from aiohttp import web
 
-    registry: Registry = request.app['registry']
-    source_id = request.match_info['id']
+    registry: Registry = request.app["registry"]
+    source_id = request.match_info["id"]
 
     ws = web.WebSocketResponse()
     await ws.prepare(request)
@@ -65,18 +68,19 @@ async def handle_stream(request):
         acquired = await registry.acquire(source_id)
     except KeyError as e:
         logger.error("Live-image proxy: %s", e)
-        await ws.send_str(json.dumps({'type': 'error', 'message': str(e)}))
+        await ws.send_str(json.dumps({"type": "error", "message": str(e)}))
         await ws.close()
         return ws
     except Exception as e:
         logger.error("Live-image proxy: cannot open %s: %s", source_id, e)
-        await ws.send_str(json.dumps({'type': 'error', 'message': str(e)}))
+        await ws.send_str(json.dumps({"type": "error", "message": str(e)}))
         await ws.close()
         return ws
 
     logger.info(
         "Live-image proxy: client connected to stream %s (refcount=%d)",
-        source_id, acquired.refcount,
+        source_id,
+        acquired.refcount,
     )
 
     # Tolerate a few transient read failures before giving up. ~2 s at the
@@ -94,21 +98,26 @@ async def handle_stream(request):
                     msg = f"frame read failed for {source_id}: {e}"
                     logger.warning(
                         "Live-image proxy: %s (after %d attempts)",
-                        msg, consecutive_failures,
+                        msg,
+                        consecutive_failures,
                     )
-                    await ws.send_str(json.dumps({'type': 'error', 'message': msg}))
+                    await ws.send_str(json.dumps({"type": "error", "message": msg}))
                     break
                 await asyncio.sleep(acquired.poll_interval)
                 continue
 
             consecutive_failures = 0
             if jpeg is not None:
-                b64 = base64.b64encode(jpeg).decode('ascii')
-                await ws.send_str(json.dumps({
-                    'type': 'frame',
-                    'format': 'jpeg/base64',
-                    'data': b64,
-                }))
+                b64 = base64.b64encode(jpeg).decode("ascii")
+                await ws.send_str(
+                    json.dumps(
+                        {
+                            "type": "frame",
+                            "format": "jpeg/base64",
+                            "data": b64,
+                        }
+                    )
+                )
             await asyncio.sleep(acquired.poll_interval)
     except (ConnectionResetError, ConnectionError):
         pass
@@ -116,7 +125,8 @@ async def handle_stream(request):
         remaining = await acquired.release()
         logger.info(
             "Live-image proxy: client disconnected from %s (refcount=%d).",
-            source_id, remaining,
+            source_id,
+            remaining,
         )
 
     return ws
@@ -126,8 +136,9 @@ async def handle_stream(request):
 # Server entry-point
 # ---------------------------------------------------------------------------
 
+
 def run(
-    host: str = '0.0.0.0',
+    host: str = "0.0.0.0",
     port: int = 8765,
     allsky_overrides: Optional[list[AllskyOverride]] = None,
 ):
@@ -135,11 +146,11 @@ def run(
     from aiohttp import web
 
     app = web.Application()
-    app['registry'] = Registry(allsky_overrides=allsky_overrides)
+    app["registry"] = Registry(allsky_overrides=allsky_overrides)
 
-    app.router.add_get('/health', handle_health)
-    app.router.add_get('/detect', handle_detect)
-    app.router.add_get('/stream/{id}', handle_stream)
+    app.router.add_get("/health", handle_health)
+    app.router.add_get("/detect", handle_detect)
+    app.router.add_get("/stream/{id}", handle_stream)
 
     logger.info("Live-image proxy starting on %s:%d", host, port)
     web.run_app(app, host=host, port=port, print=lambda msg: logger.info(msg))

@@ -57,16 +57,16 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 #     else:
 #         click.echo(PREFIX_SUB_FAIL + msg)
 
-    # if not skip_setup:
-    #     setup_hosting_variables(config, do_try=do_try)
-    # if not docker.has_all_arcsecond_docker_images():
-    #     docker.pull_all_arcsecond_docker_images()
-    #
-    # docker.setup_network()
-    # docker.run_db_container(restart=False)
-    # docker.run_broker_container(restart=False)
-    # docker.run_api_container(config, restart=False, do_try=do_try)
-    # docker.run_web_container(restart=True)
+# if not skip_setup:
+#     setup_hosting_variables(config, do_try=do_try)
+# if not docker.has_all_arcsecond_docker_images():
+#     docker.pull_all_arcsecond_docker_images()
+#
+# docker.setup_network()
+# docker.run_db_container(restart=False)
+# docker.run_broker_container(restart=False)
+# docker.run_api_container(config, restart=False, do_try=do_try)
+# docker.run_web_container(restart=True)
 
 #
 # def stop():

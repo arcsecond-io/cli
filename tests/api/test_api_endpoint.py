@@ -145,7 +145,9 @@ def test_find_one_success(mock_get, endpoint):
 def test_upsert_updates_existing_match(mock_get, mock_patch, endpoint):
     mock_list_response = Mock()
     mock_list_response.status_code = 200
-    mock_list_response.json.return_value = {"results": [{"id": "123", "name": "existing"}]}
+    mock_list_response.json.return_value = {
+        "results": [{"id": "123", "name": "existing"}]
+    }
     mock_list_response.text = '{"results": [{"id": "123", "name": "existing"}]}'
     mock_get.return_value = mock_list_response
 

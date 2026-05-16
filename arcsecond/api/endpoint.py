@@ -68,7 +68,9 @@ class ArcsecondAPIEndpoint(object):
         payload = {}
         if json:
             payload.update(json)
-        payload.update({key: value for key, value in fields.items() if value is not None})
+        payload.update(
+            {key: value for key, value in fields.items() if value is not None}
+        )
         return payload or None
 
     def _extract_results(self, response):
@@ -151,7 +153,9 @@ class ArcsecondAPIEndpoint(object):
 
         identifier = self._extract_identifier(existing)
         if identifier is None:
-            return None, ArcsecondError(f"Could not find an identifier for '{match_value}'.")
+            return None, ArcsecondError(
+                f"Could not find an identifier for '{match_value}'."
+            )
 
         return self.update(identifier, json=payload)
 

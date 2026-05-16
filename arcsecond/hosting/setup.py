@@ -1,7 +1,8 @@
 import click
 
 from arcsecond import ArcsecondConfig
-from .utils import _get_random_secret_key, _get_encryption_key
+
+from .utils import _get_encryption_key, _get_random_secret_key
 
 
 def setup_hosting_variables(config: ArcsecondConfig, do_try=True):

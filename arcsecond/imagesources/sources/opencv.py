@@ -13,15 +13,15 @@ from .base import FrameSource, SourceInfo
 
 logger = logging.getLogger(__name__)
 
-_FRAME_INTERVAL = 0.1   # seconds  → ~10 fps
-_JPEG_QUALITY   = 60    # 0-100
-_MAX_PROBE      = 10    # device indices to probe during detection
+_FRAME_INTERVAL = 0.1  # seconds  → ~10 fps
+_JPEG_QUALITY = 60  # 0-100
+_MAX_PROBE = 10  # device indices to probe during detection
 
 
 class OpenCVWebcamSource(FrameSource):
     kind = "webcam"
     poll_interval = _FRAME_INTERVAL
-    shareable = True   # USB webcams can only be opened once at a time.
+    shareable = True  # USB webcams can only be opened once at a time.
 
     def __init__(self, index: int):
         self.index = index
@@ -30,6 +30,7 @@ class OpenCVWebcamSource(FrameSource):
 
     async def open(self) -> None:
         import cv2
+
         loop = asyncio.get_running_loop()
         self._cap = await loop.run_in_executor(None, cv2.VideoCapture, self.index)
         if not await loop.run_in_executor(None, self._cap.isOpened):
@@ -37,6 +38,7 @@ class OpenCVWebcamSource(FrameSource):
 
     async def read(self) -> Optional[bytes]:
         import cv2
+
         loop = asyncio.get_running_loop()
 
         def _read_and_encode():
@@ -47,7 +49,9 @@ class OpenCVWebcamSource(FrameSource):
                 # device is unhealthy (unplugged, claimed by another process,
                 # DirectShow contention, ...) and the proxy needs to know.
                 raise RuntimeError(f"cap.read() failed for webcam index {self.index}")
-            ok2, buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, _JPEG_QUALITY])
+            ok2, buf = cv2.imencode(
+                ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, _JPEG_QUALITY]
+            )
             if not ok2:
                 raise RuntimeError(f"JPEG encode failed for webcam index {self.index}")
             return buf.tobytes()
@@ -70,6 +74,7 @@ class OpenCVWebcamSource(FrameSource):
 def detect_webcams(max_index: int = _MAX_PROBE) -> list[SourceInfo]:
     """Blocking probe of device indices 0..max_index-1."""
     import cv2
+
     found: list[SourceInfo] = []
     for i in range(max_index):
         cap = cv2.VideoCapture(i)

@@ -55,7 +55,9 @@ def test_targets_upsert_updates_existing_match(mock_patch, mock_get):
 
     mock_list_response = Mock()
     mock_list_response.status_code = 200
-    mock_list_response.json.return_value = {"results": [{"uuid": "target-1", "name": "M42"}]}
+    mock_list_response.json.return_value = {
+        "results": [{"uuid": "target-1", "name": "M42"}]
+    }
     mock_list_response.text = '{"results": [{"uuid": "target-1", "name": "M42"}]}'
     mock_get.return_value = mock_list_response
 

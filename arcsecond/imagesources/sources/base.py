@@ -15,9 +15,10 @@ from typing import Optional
 @dataclass
 class SourceInfo:
     """Metadata returned by ``/detect`` for a single source."""
-    id: str                       # e.g. "webcam:0", "allsky:roof"
-    kind: str                     # "webcam" | "allsky"
-    label: str                    # human-readable
+
+    id: str  # e.g. "webcam:0", "allsky:roof"
+    kind: str  # "webcam" | "allsky"
+    label: str  # human-readable
     extra: Optional[dict] = None  # kind-specific fields (resolution, path, ...)
 
 

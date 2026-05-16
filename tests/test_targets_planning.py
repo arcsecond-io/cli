@@ -29,7 +29,10 @@ def test_plan_target_payload_rejects_non_astro_manual_coordinates():
     )
 
     assert plan.is_valid is False
-    assert "Manual coordinates are currently supported only for 'AstronomicalObject'." in plan.errors[0]
+    assert (
+        "Manual coordinates are currently supported only for 'AstronomicalObject'."
+        in plan.errors[0]
+    )
 
 
 def test_plan_target_payload_uses_user_target_class_over_inferred_one():

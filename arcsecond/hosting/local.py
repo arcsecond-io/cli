@@ -5,7 +5,12 @@ from pathlib import Path
 import click
 
 from arcsecond.options import basic_options
-from .utils import _get_encryption_key, _get_random_postgres_password, _get_random_secret_key
+
+from .utils import (
+    _get_encryption_key,
+    _get_random_postgres_password,
+    _get_random_secret_key,
+)
 
 ENV_FILENAME = ".env"
 
@@ -27,7 +32,9 @@ def prompt_shared_data_path() -> str:
 
     print("SHARED_DATA_PATH configuration")
     print(f"Default (current folder): {default_path}")
-    user_input = input("Press Enter to accept, or type a different path (supports ~ and $VARS): ").strip()
+    user_input = input(
+        "Press Enter to accept, or type a different path (supports ~ and $VARS): "
+    ).strip()
 
     chosen = user_input if user_input else default_path
     return expand_path(chosen)
@@ -84,7 +91,9 @@ def write_env_file():
     if env_path.exists():
         existing_lines = env_path.read_text(encoding="utf-8").splitlines()
         existing_keys = _parse_env_keys(existing_lines)
-        missing_keys = [key for key in ordered_required_keys if key not in existing_keys]
+        missing_keys = [
+            key for key in ordered_required_keys if key not in existing_keys
+        ]
 
         if not missing_keys:
             print(f"{ENV_FILENAME} already contains all required keys.")
@@ -153,7 +162,9 @@ def write_docker_compose_file() -> Path:
 @basic_options
 def setup():
     click.echo("\nWelcome to Arcsecond.local setup.")
-    click.echo("\nThis will write two new files in this folder (.env and docker-compose.yml),")
+    click.echo(
+        "\nThis will write two new files in this folder (.env and docker-compose.yml),"
+    )
     click.echo("as well as asking you one question where to store the data.\n")
     write_env_file()
     write_docker_compose_file()

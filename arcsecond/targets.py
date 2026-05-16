@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional
 
-
 TARGET_CLASS_ASTRONOMICAL_OBJECT = "AstronomicalObject"
 TARGET_CLASS_EXOPLANET = "Exoplanet"
 TARGET_CLASS_STANDARD_STAR = "StandardStar"
@@ -55,19 +54,19 @@ def _clean_string(value: Optional[str]) -> str:
     return (value or "").strip()
 
 
-def _normalise_coordinates(coordinates: Optional[Mapping[str, Any]]) -> Optional[dict[str, Any]]:
+def _normalise_coordinates(
+    coordinates: Optional[Mapping[str, Any]],
+) -> Optional[dict[str, Any]]:
     if coordinates is None:
         return None
-    return {
-        key: value
-        for key, value in dict(coordinates).items()
-        if value is not None
-    }
+    return {key: value for key, value in dict(coordinates).items() if value is not None}
 
 
 def _validate_target_class(target_class: str, label: str, errors: list[str]) -> None:
     if target_class and target_class not in TARGET_CLASSES:
-        errors.append(f"{label} '{target_class}' is not a supported Arcsecond target class.")
+        errors.append(
+            f"{label} '{target_class}' is not a supported Arcsecond target class."
+        )
 
 
 def plan_target_payload(
@@ -115,7 +114,11 @@ def plan_target_payload(
     if not effective_name and not effective_identifier:
         errors.append("One of name or identifier must be provided.")
 
-    if user_target_class and inferred_target_class and user_target_class != inferred_target_class:
+    if (
+        user_target_class
+        and inferred_target_class
+        and user_target_class != inferred_target_class
+    ):
         warnings.append(
             f"User-provided target_class '{user_target_class}' overrides inferred target_class '{inferred_target_class}'."
         )
@@ -134,7 +137,13 @@ def plan_target_payload(
         if value is not None:
             payload[key] = value
     if extra_fields:
-        payload.update({key: value for key, value in dict(extra_fields).items() if value is not None})
+        payload.update(
+            {
+                key: value
+                for key, value in dict(extra_fields).items()
+                if value is not None
+            }
+        )
 
     if effective_coordinates is not None:
         if user_target_class and user_target_class != TARGET_CLASS_ASTRONOMICAL_OBJECT:
@@ -147,7 +156,11 @@ def plan_target_payload(
         target_class_source = "user" if user_target_class else "default"
         coordinates_source = "user"
 
-        if inferred_target_class and not user_target_class and inferred_target_class != TARGET_CLASS_ASTRONOMICAL_OBJECT:
+        if (
+            inferred_target_class
+            and not user_target_class
+            and inferred_target_class != TARGET_CLASS_ASTRONOMICAL_OBJECT
+        ):
             warnings.append(
                 f"Inferred target_class '{inferred_target_class}' is ignored because user-provided coordinates "
                 "require a manual 'AstronomicalObject' payload with the current backend."
@@ -188,11 +201,19 @@ def plan_target_payload(
     else:
         payload["target_class"] = effective_target_class
 
-        if effective_target_class in TARGET_CLASSES_REQUIRING_NAME and not effective_name:
+        if (
+            effective_target_class in TARGET_CLASSES_REQUIRING_NAME
+            and not effective_name
+        ):
             errors.append(f"Target class '{effective_target_class}' requires a name.")
 
-        if effective_target_class in TARGET_CLASSES_REQUIRING_IDENTIFIER and not effective_identifier:
-            errors.append(f"Target class '{effective_target_class}' requires an identifier.")
+        if (
+            effective_target_class in TARGET_CLASSES_REQUIRING_IDENTIFIER
+            and not effective_identifier
+        ):
+            errors.append(
+                f"Target class '{effective_target_class}' requires an identifier."
+            )
 
     if effective_target_class and "object" not in payload:
         warnings.append(
