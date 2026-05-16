@@ -1,6 +1,30 @@
 import base64
 import os
 import secrets
+from pathlib import Path
+
+
+def _read_env_value(key, env_path=None):
+    """Read a single value from a KEY=value / KEY="value" .env file.
+
+    Returns None if the file or key is missing. Mirrors the parsing
+    shape used by _parse_env_keys in hosting/local.py.
+    """
+    path = Path(env_path) if env_path else Path.cwd() / ".env"
+    if not path.exists():
+        return None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        k, v = stripped.split("=", 1)
+        if k.strip() != key:
+            continue
+        v = v.strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ('"', "'"):
+            v = v[1:-1]
+        return v
+    return None
 
 
 def _get_random_secret_key():

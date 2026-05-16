@@ -9,7 +9,7 @@ from arcsecond.cloud import (
     telescopes,
     upload_data,
 )
-from arcsecond.hosting import setup
+from arcsecond.hosting import backups, setup
 from arcsecond.imagesources import commands as imagesources
 
 from . import __version__
@@ -60,6 +60,9 @@ main.add_command(upload_data)
 
 # Allow to try arcsecond by installing a local version
 main.add_command(setup)
+
+# Browse and restore Arcsecond.local DB backups.
+main.add_command(backups)
 
 # Native live-image proxy — exposes USB webcams and all-sky cameras to
 # Arcsecond.local Docker containers via host.docker.internal.
