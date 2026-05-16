@@ -1,7 +1,8 @@
 # Backups on a self-hosted install
 
-Self-hosted Arcsecond automatically creates a compressed Postgres dump every
-time the backend container boots. This page covers where backups live, how to
+Self-hosted Arcsecond runs a Celery periodic task that writes a compressed
+Postgres dump **every hour**, plus a daily cleanup task that prunes dumps
+older than 14 days. This page covers where backups live, how to
 list / inspect / restore them with the `arcsecond backups` command, and what
 else you should copy off-host for full disaster recovery.
 
@@ -12,18 +13,19 @@ Backups are written by the backend to the host directory you picked as
 
 ```
 $SHARED_DATA_PATH/db_backups/
-├── backup-20260514-031502.sql.gz       # auto, on every backend boot
+├── backup-20260514-031502.sql.gz       # auto, hourly
 ├── backup-20260515-021100.sql.gz
 └── pre-restore-20260515-104230.sql.gz  # auto, before any restore
 ```
 
 - `backup-YYYYMMDD-HHMMSS.sql.gz` — gzipped plain-SQL dump of the entire DB
-  (`arcsecond_docker` database, owned by user `arcsecond_docker`).
+  (`arcsecond_docker` database, owned by user `arcsecond_docker`). The
+  timestamp is in **UTC**.
 - `pre-restore-YYYYMMDD-HHMMSS.sql.gz` — safety snapshot taken automatically
   just before any `arcsecond backups restore`.
 
-The directory is created on first backend boot. Nothing else cleans it up —
-prune old files yourself when disk space matters.
+A daily cleanup task removes dumps older than 14 days. If you want longer
+retention, ship them off-host (see below).
 
 ## Listing and inspecting backups
 

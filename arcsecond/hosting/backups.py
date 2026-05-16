@@ -64,10 +64,10 @@ def _ensure_install_dir():
         return None
     if not backups_dir.exists():
         click.echo(
-            f"No backups directory found at: {backups_dir}\n"
+            f"No backups directory found at: {backups_dir.resolve()}\n"
             "Make sure you run this command from the Arcsecond.local working directory "
             "(the one with docker-compose.yml and .env), and that the backend has been "
-            "started at least once — backups are created automatically on every boot."
+            "running long enough for the hourly backup task to fire at least once."
         )
         return None
     return backups_dir
@@ -254,12 +254,15 @@ def list_cmd():
     if backups_dir is None:
         sys.exit(1)
 
+    click.echo(f"Reading from: {backups_dir.resolve()}")
+
     items = _list_backup_files(backups_dir)
     if not items:
         click.echo(f"No backups found in {backups_dir}.")
         click.echo(
-            "Backups are created automatically on every backend boot. "
-            "If the backend has been running, check the directory's permissions."
+            "Backups are created hourly by the backend (Celery periodic task). "
+            "If the backend has been running for at least an hour, check the "
+            "directory's permissions."
         )
         return
 
