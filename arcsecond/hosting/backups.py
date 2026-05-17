@@ -228,11 +228,71 @@ def _compute_compat(backup_migs, code_migs):
 
 _STATUS_BADGE = {
     STATUS_OK: click.style("✅ compatible", fg="green"),
-    STATUS_FORWARD: click.style("⚠️  forward-migrate", fg="yellow"),
+    STATUS_FORWARD: click.style("⚠️  older snapshot", fg="yellow"),
     STATUS_INCOMPAT: click.style("❌ incompatible", fg="red"),
     STATUS_UNKNOWN: click.style("?  unknown", fg="white"),
     STATUS_BROKEN: click.style("💥 broken", fg="red"),
 }
+
+
+def _format_status(status, only_in_backup, only_in_code):
+    """Render the status badge plus an inline migration-delta hint.
+
+    Without a hint, "older snapshot" and "incompatible" look identical to the
+    eye even though they describe very different situations. The counts make
+    the shape of the diff visible at a glance from the `list` table.
+    """
+    badge = _STATUS_BADGE[status]
+    if status == STATUS_FORWARD:
+        return f"{badge} (+{len(only_in_code)} migration(s) applied since)"
+    if status == STATUS_INCOMPAT:
+        parts = []
+        if only_in_backup:
+            parts.append(f"-{len(only_in_backup)} not in code")
+        if only_in_code:
+            parts.append(f"+{len(only_in_code)} applied since")
+        return f"{badge} ({', '.join(parts)})"
+    return badge
+
+
+def _most_recent_context(status, only_in_backup, only_in_code):
+    """Plain-English footer for the most recent backup when it isn't ✅.
+
+    The boot-time pre-migration snapshot is the common reason a fresh `list`
+    shows the top entry as "older snapshot" (or sometimes "incompatible"
+    when migrations have been renamed/removed during development). Spell
+    that out so the operator doesn't have to.
+    """
+    if status == STATUS_FORWARD:
+        n = len(only_in_code)
+        return (
+            f"The most recent backup is a pre-migration snapshot — the {n} "
+            f"migration(s) it lacks have already been applied to the running "
+            f"DB. This is the normal state right after a successful upgrade. "
+            f"Restoring it would roll the database back to its pre-upgrade "
+            f"state; the next post-migration backup (boot or hourly) will be "
+            f"`compatible`."
+        )
+    if status == STATUS_INCOMPAT:
+        lines = ["The most recent backup is not directly restorable as-is:"]
+        if only_in_backup:
+            lines.append(
+                f"  - it records {len(only_in_backup)} migration(s) no longer "
+                f"in the running code (renamed, removed, or squashed during "
+                f"development);"
+            )
+        if only_in_code:
+            lines.append(
+                f"  - the code has applied {len(only_in_code)} migration(s) "
+                f"on top of what the backup recorded."
+            )
+        lines.append(
+            "Restoring will only succeed if you also roll the code back to a "
+            "commit that knew the missing migrations. Use `arcsecond backups "
+            "inspect 1` to see the exact list."
+        )
+        return "\n".join(lines)
+    return None
 
 
 def _select_backup(items, ref):
@@ -313,8 +373,10 @@ def list_cmd():
     click.echo(f"{'#':>3}  {'Timestamp (UTC)':<20}  {'Size':>10}  Status")
     click.echo("-" * 70)
     broken_count = 0
+    most_recent = None  # (status, only_in_backup, only_in_code) for items[0]
     for i, (path, ts) in enumerate(items, start=1):
-        healthy, reason = _classify_dump_health(path)
+        healthy, _reason = _classify_dump_health(path)
+        only_in_backup, only_in_code = set(), set()
         if not healthy:
             status = STATUS_BROKEN
             broken_count += 1
@@ -322,10 +384,15 @@ def list_cmd():
             status = STATUS_UNKNOWN
         else:
             backup_migs = _extract_backup_migrations(path)
-            status, _, _ = _compute_compat(backup_migs, code_migs)
+            status, only_in_backup, only_in_code = _compute_compat(
+                backup_migs, code_migs
+            )
+        if i == 1:
+            most_recent = (status, only_in_backup, only_in_code)
         click.echo(
             f"{i:>3}  {ts.strftime('%Y-%m-%d %H:%M:%S'):<20}  "
-            f"{_human_size(path.stat().st_size):>10}  {_STATUS_BADGE[status]}"
+            f"{_human_size(path.stat().st_size):>10}  "
+            f"{_format_status(status, only_in_backup, only_in_code)}"
         )
     click.echo("")
     click.echo(f"{len(items)} backup(s) in {backups_dir}")
@@ -338,6 +405,11 @@ def list_cmd():
                 fg="yellow",
             )
         )
+    if most_recent is not None:
+        context = _most_recent_context(*most_recent)
+        if context:
+            click.echo("")
+            click.echo(click.style(context, fg="yellow"))
 
 
 @backups.command(name="inspect", help="Show detailed info about a backup.")
@@ -383,19 +455,26 @@ def inspect_cmd(ref):
         return
 
     status, only_in_backup, only_in_code = _compute_compat(backup_migs, code_migs)
-    click.echo(f"Compat:      {_STATUS_BADGE[status]}")
+    click.echo(f"Compat:      {_format_status(status, only_in_backup, only_in_code)}")
     if only_in_code:
         click.echo(
-            f"  + {len(only_in_code)} migration(s) will be applied on next backend boot:"
+            f"  + {len(only_in_code)} migration(s) applied in the running code "
+            f"after this backup was taken:"
         )
         for app, name in sorted(only_in_code):
             click.echo(f"      {app}.{name}")
     if only_in_backup:
         click.echo(
-            f"  - {len(only_in_backup)} migration(s) in backup not in current code:"
+            f"  - {len(only_in_backup)} migration(s) recorded in this backup "
+            f"but no longer in the running code:"
         )
         for app, name in sorted(only_in_backup):
             click.echo(f"      {app}.{name}")
+
+    context = _most_recent_context(status, only_in_backup, only_in_code)
+    if context:
+        click.echo("")
+        click.echo(click.style(context, fg="yellow"))
 
 
 # ---------------------------------------------------------------------------

@@ -46,12 +46,25 @@ the currently running backend image. The badge reflects the diff between the
 the image:
 
 - **compatible** — same migration set; restore is safe.
-- **forward-migrate** — the running image has newer migrations; restoring is
-  safe, the backend will apply them on the next boot.
-- **incompatible** — the dump contains migrations the image does not know
-  about. Restoring would require downgrading the backend first (or using
-  `--force`, which you should not).
+- **older snapshot** — the running code has migrations the backup doesn't.
+  This is the normal state for the boot-time backup taken just before an
+  upgrade: the backup is fine, it's simply older than the live DB.
+  Restoring it rolls back to the pre-upgrade state. The CLI annotates this
+  with `(+N migration(s) applied since)` so you know how far behind it is.
+- **incompatible** — the dump contains migrations the running code does not
+  know about (most often because migrations were renamed, removed, or
+  squashed during development). Restoring would also require rolling the
+  code back to a commit that knew those migrations. The CLI annotates with
+  `(-N not in code, +M applied since)` to make the shape of the diff
+  obvious.
 - **unknown** — backend container is not running, so no diff is possible.
+- **broken** — the file isn't a valid gzip (truncated, wrong magic bytes,
+  or empty). Not restorable; delete it.
+
+After the table, `list` prints a one-paragraph footer about the most
+recent backup when it isn't `compatible` — typically explaining the
+"older snapshot" case so a fresh post-upgrade `list` doesn't look
+alarming.
 
 ```bash
 arcsecond backups inspect backup-20260515-021100.sql.gz   # or just the index
