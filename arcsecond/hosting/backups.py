@@ -740,7 +740,13 @@ def _restore_dump(backup_path, dry_run):
     # swallow the IO error here and let the rc / stderr check below surface
     # the *real* cause — surfacing the Python-side IO error instead just
     # hides what psql actually complained about.
+    #
+    # We deliberately do NOT use Popen.communicate() to drain stderr: once
+    # we've closed stdin ourselves, communicate() tries to flush it again on
+    # its way through and raises ValueError("flush of closed file"). Reading
+    # stderr directly and then wait()ing sidesteps the whole interaction.
     write_err = None
+    stderr_bytes = b""
     try:
         assert psql.stdin is not None
         try:
@@ -753,32 +759,45 @@ def _restore_dump(backup_path, dry_run):
                 psql.stdin.close()
             except (BrokenPipeError, OSError, ValueError):
                 pass
+
+        if psql.stderr is not None:
+            try:
+                stderr_bytes = psql.stderr.read() or b""
+            except (OSError, ValueError):
+                stderr_bytes = b""
+            finally:
+                try:
+                    psql.stderr.close()
+                except (OSError, ValueError):
+                    pass
+
         try:
-            _, stderr_bytes = psql.communicate(timeout=300)
+            rc = psql.wait(timeout=300)
         except subprocess.TimeoutExpired:
             psql.kill()
-            _, stderr_bytes = psql.communicate(timeout=5)
-        rc = psql.returncode
+            rc = psql.wait(timeout=5)
     finally:
         if psql.poll() is None:
             psql.kill()
             psql.wait(timeout=5)
 
-    stderr_text = (stderr_bytes or b"").decode("utf-8", errors="replace").strip()
-    if rc != 0 or write_err is not None:
-        # Always show psql's stderr if we have it — it's the only place the
-        # actual SQL error message lives.
+    stderr_text = stderr_bytes.decode("utf-8", errors="replace").strip()
+    if rc != 0:
         if stderr_text:
             click.echo(click.style(stderr_text, fg="red"))
         first_err = stderr_text.splitlines()[0] if stderr_text else None
-        if rc != 0:
-            detail = f"psql exited {rc}"
-            if first_err:
-                detail += f": {first_err}"
-        else:
-            # psql exited 0 yet we hit a write error — extremely unusual.
-            detail = f"write to psql failed: {write_err!r}"
+        detail = f"psql exited {rc}"
+        if first_err:
+            detail += f": {first_err}"
         raise RuntimeError(detail)
+    if write_err is not None:
+        # psql exited 0 yet we hit a write error mid-stream. Worth flagging:
+        # the dump may not have applied in full.
+        if stderr_text:
+            click.echo(click.style(stderr_text, fg="yellow"))
+        raise RuntimeError(
+            f"psql exited 0 but write to its stdin failed: {write_err!r}"
+        )
 
 
 @backups.command(
