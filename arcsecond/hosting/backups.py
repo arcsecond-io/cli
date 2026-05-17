@@ -212,18 +212,32 @@ def _current_code_migrations():
 
 
 def _compute_compat(backup_migs, code_migs):
-    """Return (status, only_in_backup, only_in_code)."""
+    """Return (status, only_in_backup, only_in_code, stale_apps).
+
+    `stale_apps` is the subset of backup migrations whose *app label* is
+    entirely absent from the running code (e.g. `health_check_db.0001_initial`
+    when django-health-check has been removed from INSTALLED_APPS). The
+    `django_migrations` row stays in the DB forever, but the migration is
+    not actually incompatible with the running code — it's a benign
+    leftover. Splitting these out keeps the boot-time backup from being
+    permanently flagged red because of a long-uninstalled app.
+    """
     if code_migs is None or backup_migs is None:
-        return STATUS_UNKNOWN, set(), set()
-    only_in_backup = backup_migs - code_migs
+        return STATUS_UNKNOWN, set(), set(), set()
+    only_in_backup_raw = backup_migs - code_migs
     only_in_code = code_migs - backup_migs
+    code_apps = {app for app, _ in code_migs}
+    stale_apps = {
+        (app, name) for app, name in only_in_backup_raw if app not in code_apps
+    }
+    only_in_backup = only_in_backup_raw - stale_apps
     if only_in_backup:
         status = STATUS_INCOMPAT
     elif only_in_code:
         status = STATUS_FORWARD
     else:
         status = STATUS_OK
-    return status, only_in_backup, only_in_code
+    return status, only_in_backup, only_in_code, stale_apps
 
 
 _STATUS_BADGE = {
@@ -235,12 +249,14 @@ _STATUS_BADGE = {
 }
 
 
-def _format_status(status, only_in_backup, only_in_code):
+def _format_status(status, only_in_backup, only_in_code, stale_apps=None):
     """Render the status badge plus an inline migration-delta hint.
 
     Without a hint, "older snapshot" and "incompatible" look identical to the
     eye even though they describe very different situations. The counts make
-    the shape of the diff visible at a glance from the `list` table.
+    the shape of the diff visible at a glance from the `list` table. Stale
+    leftover migrations from uninstalled apps don't appear here — they're
+    benign and would only add noise.
     """
     badge = _STATUS_BADGE[status]
     if status == STATUS_FORWARD:
@@ -255,7 +271,7 @@ def _format_status(status, only_in_backup, only_in_code):
     return badge
 
 
-def _most_recent_context(status, only_in_backup, only_in_code):
+def _most_recent_context(status, only_in_backup, only_in_code, stale_apps=None):
     """Plain-English footer for the most recent backup when it isn't ✅.
 
     The boot-time pre-migration snapshot is the common reason a fresh `list`
@@ -293,6 +309,21 @@ def _most_recent_context(status, only_in_backup, only_in_code):
         )
         return "\n".join(lines)
     return None
+
+
+def _stale_apps_note(stale_apps):
+    """Short note shown alongside list/inspect when uninstalled apps still
+    have rows in django_migrations. Mentions the app label(s) so the
+    operator can decide whether to clean them up."""
+    if not stale_apps:
+        return None
+    app_labels = sorted({app for app, _ in stale_apps})
+    apps_str = ", ".join(app_labels)
+    return (
+        f"Note: {len(stale_apps)} migration(s) from uninstalled app(s) "
+        f"[{apps_str}] are present in the backup's django_migrations table. "
+        f"They're harmless leftovers, ignored for compatibility purposes."
+    )
 
 
 def _select_backup(items, ref):
@@ -373,10 +404,13 @@ def list_cmd():
     click.echo(f"{'#':>3}  {'Timestamp (UTC)':<20}  {'Size':>10}  Status")
     click.echo("-" * 70)
     broken_count = 0
-    most_recent = None  # (status, only_in_backup, only_in_code) for items[0]
+    most_recent = (
+        None  # (status, only_in_backup, only_in_code, stale_apps) for items[0]
+    )
+    most_recent_stale = set()
     for i, (path, ts) in enumerate(items, start=1):
         healthy, _reason = _classify_dump_health(path)
-        only_in_backup, only_in_code = set(), set()
+        only_in_backup, only_in_code, stale_apps = set(), set(), set()
         if not healthy:
             status = STATUS_BROKEN
             broken_count += 1
@@ -384,15 +418,16 @@ def list_cmd():
             status = STATUS_UNKNOWN
         else:
             backup_migs = _extract_backup_migrations(path)
-            status, only_in_backup, only_in_code = _compute_compat(
+            status, only_in_backup, only_in_code, stale_apps = _compute_compat(
                 backup_migs, code_migs
             )
         if i == 1:
-            most_recent = (status, only_in_backup, only_in_code)
+            most_recent = (status, only_in_backup, only_in_code, stale_apps)
+            most_recent_stale = stale_apps
         click.echo(
             f"{i:>3}  {ts.strftime('%Y-%m-%d %H:%M:%S'):<20}  "
             f"{_human_size(path.stat().st_size):>10}  "
-            f"{_format_status(status, only_in_backup, only_in_code)}"
+            f"{_format_status(status, only_in_backup, only_in_code, stale_apps)}"
         )
     click.echo("")
     click.echo(f"{len(items)} backup(s) in {backups_dir}")
@@ -410,6 +445,10 @@ def list_cmd():
         if context:
             click.echo("")
             click.echo(click.style(context, fg="yellow"))
+        stale_note = _stale_apps_note(most_recent_stale)
+        if stale_note:
+            click.echo("")
+            click.echo(click.style(stale_note, fg="bright_black"))
 
 
 @backups.command(name="inspect", help="Show detailed info about a backup.")
@@ -454,8 +493,12 @@ def inspect_cmd(ref):
         click.echo("Compat:      backend not running — skip migration diff.")
         return
 
-    status, only_in_backup, only_in_code = _compute_compat(backup_migs, code_migs)
-    click.echo(f"Compat:      {_format_status(status, only_in_backup, only_in_code)}")
+    status, only_in_backup, only_in_code, stale_apps = _compute_compat(
+        backup_migs, code_migs
+    )
+    click.echo(
+        f"Compat:      {_format_status(status, only_in_backup, only_in_code, stale_apps)}"
+    )
     if only_in_code:
         click.echo(
             f"  + {len(only_in_code)} migration(s) applied in the running code "
@@ -470,8 +513,15 @@ def inspect_cmd(ref):
         )
         for app, name in sorted(only_in_backup):
             click.echo(f"      {app}.{name}")
+    if stale_apps:
+        click.echo(
+            f"  ~ {len(stale_apps)} migration(s) from uninstalled app(s) "
+            f"(harmless leftovers, ignored for compatibility):"
+        )
+        for app, name in sorted(stale_apps):
+            click.echo(f"      {app}.{name}")
 
-    context = _most_recent_context(status, only_in_backup, only_in_code)
+    context = _most_recent_context(status, only_in_backup, only_in_code, stale_apps)
     if context:
         click.echo("")
         click.echo(click.style(context, fg="yellow"))
@@ -691,11 +741,15 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
     # Compatibility check
     code_migs = _current_code_migrations()
     backup_migs = _extract_backup_migrations(path) if code_migs is not None else None
-    status, only_in_backup, only_in_code = _compute_compat(backup_migs, code_migs)
+    status, only_in_backup, only_in_code, stale_apps = _compute_compat(
+        backup_migs, code_migs
+    )
 
     click.echo("")
     click.echo(f"Selected backup: {path.name}")
-    click.echo(f"Compatibility:   {_STATUS_BADGE[status]}")
+    click.echo(
+        f"Compatibility:   {_format_status(status, only_in_backup, only_in_code, stale_apps)}"
+    )
     if only_in_code:
         click.echo(
             f"  + {len(only_in_code)} migration(s) will be applied after restore."
@@ -705,6 +759,13 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
             f"  - {len(only_in_backup)} migration(s) in backup absent from current code:"
         )
         for app, name in sorted(only_in_backup):
+            click.echo(f"      {app}.{name}")
+    if stale_apps:
+        click.echo(
+            f"  ~ {len(stale_apps)} stale migration(s) from uninstalled app(s) "
+            f"(ignored):"
+        )
+        for app, name in sorted(stale_apps):
             click.echo(f"      {app}.{name}")
 
     if status == STATUS_INCOMPAT and not force:
