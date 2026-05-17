@@ -657,9 +657,17 @@ _FORWARD_INCOMPAT_SET_RE = re.compile(
 def _iter_filtered_dump_lines(backup_path):
     """Yield dump bytes line-by-line, dropping forward-incompat SET lines.
 
-    Only filters at the head of the file (before the first non-SET line) —
-    SET statements deeper in the dump are unusual and probably meaningful;
-    if we find ourselves needing to strip them too, this can be widened.
+    Only filters at the head of the file — SET statements deeper in the dump
+    are unusual and probably meaningful. "Head" here means everything up to
+    the first real DDL/DML statement; SQL/PSQL header noise that does NOT
+    close the header window:
+      - blank lines
+      - SQL comments (`--`)
+      - SET statements (we may strip these)
+      - psql meta-commands (backslash-prefixed), notably "\\restrict <token>"
+        which pg_dump 17.5+ emits; treating that line as "the first real
+        statement" would leak the very SET transaction_timeout we exist to
+        strip.
     """
     skipped = []
     with gzip.open(backup_path, "rb") as f:
@@ -672,7 +680,13 @@ def _iter_filtered_dump_lines(backup_path):
                     if m:
                         skipped.append(m.group(1).decode())
                         continue
-                elif stripped and not stripped.startswith(b"--"):
+                elif (
+                    not stripped
+                    or stripped.startswith(b"--")
+                    or stripped.startswith(b"\\")
+                ):
+                    pass
+                else:
                     header_done = True
             yield line
     if skipped:
