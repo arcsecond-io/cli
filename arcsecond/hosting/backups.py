@@ -721,22 +721,29 @@ def _restore_dump(backup_path, dry_run):
         stdin=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    pipe_err = None
+    # Any IO error from writing to / closing psql's stdin almost always means
+    # psql already exited (e.g. ON_ERROR_STOP=1 tripped on a SQL error). We
+    # swallow the IO error here and let the rc / stderr check below surface
+    # the *real* cause — surfacing the Python-side IO error instead just
+    # hides what psql actually complained about.
+    write_err = None
     try:
         assert psql.stdin is not None
         try:
             for line in _iter_filtered_dump_lines(backup_path):
                 psql.stdin.write(line)
-        except BrokenPipeError as e:
-            # psql already exited (error during apply). Drain its stderr
-            # below and surface that as the real cause rather than the EPIPE.
-            pipe_err = e
+        except (BrokenPipeError, OSError, ValueError) as e:
+            write_err = e
         finally:
             try:
                 psql.stdin.close()
-            except BrokenPipeError:
+            except (BrokenPipeError, OSError, ValueError):
                 pass
-        _, stderr_bytes = psql.communicate(timeout=300)
+        try:
+            _, stderr_bytes = psql.communicate(timeout=300)
+        except subprocess.TimeoutExpired:
+            psql.kill()
+            _, stderr_bytes = psql.communicate(timeout=5)
         rc = psql.returncode
     finally:
         if psql.poll() is None:
@@ -744,20 +751,20 @@ def _restore_dump(backup_path, dry_run):
             psql.wait(timeout=5)
 
     stderr_text = (stderr_bytes or b"").decode("utf-8", errors="replace").strip()
-    if rc != 0:
-        # Always show psql's stderr — without it, all the operator sees is
-        # the wrapper's exit code (or, worse, a Broken pipe from our side
-        # that obscures the actual SQL error).
+    if rc != 0 or write_err is not None:
+        # Always show psql's stderr if we have it — it's the only place the
+        # actual SQL error message lives.
         if stderr_text:
             click.echo(click.style(stderr_text, fg="red"))
-        raise RuntimeError(
-            f"psql restore failed with exit code {rc}"
-            + (": " + stderr_text.splitlines()[0] if stderr_text else "")
-        )
-    if pipe_err is not None:
-        # psql exited 0 but we got EPIPE — almost impossible in practice,
-        # but surface it for visibility.
-        raise RuntimeError(f"unexpected EPIPE despite psql success: {pipe_err}")
+        first_err = stderr_text.splitlines()[0] if stderr_text else None
+        if rc != 0:
+            detail = f"psql exited {rc}"
+            if first_err:
+                detail += f": {first_err}"
+        else:
+            # psql exited 0 yet we hit a write error — extremely unusual.
+            detail = f"write to psql failed: {write_err!r}"
+        raise RuntimeError(detail)
 
 
 @backups.command(
