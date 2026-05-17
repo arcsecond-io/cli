@@ -635,6 +635,57 @@ def _drop_and_recreate_db(dry_run):
         if res.returncode != 0:
             raise RuntimeError(f"psql failed: {res.stderr.strip()}")
 
+    # Top-level `SET name = value;` parameters that a newer pg_dump emits but
+    # older Postgres servers don't recognize. They're session-level DBA
+    # settings, not schema, so dropping them is safe. Add to this list as new
+    # forward-incompat parameters appear.
+
+
+#
+# `transaction_timeout` was introduced in PostgreSQL 17, so PG 17 dumps
+# break PG 16 restores at the very first SET statement. Filtering it lets
+# the rest of the dump apply normally.
+_FORWARD_INCOMPAT_SET_PARAMS = ("transaction_timeout",)
+_FORWARD_INCOMPAT_SET_RE = re.compile(
+    rb"^\s*SET\s+("
+    + b"|".join(re.escape(p.encode()) for p in _FORWARD_INCOMPAT_SET_PARAMS)
+    + rb")\b",
+    re.IGNORECASE,
+)
+
+
+def _iter_filtered_dump_lines(backup_path):
+    """Yield dump bytes line-by-line, dropping forward-incompat SET lines.
+
+    Only filters at the head of the file (before the first non-SET line) —
+    SET statements deeper in the dump are unusual and probably meaningful;
+    if we find ourselves needing to strip them too, this can be widened.
+    """
+    skipped = []
+    with gzip.open(backup_path, "rb") as f:
+        header_done = False
+        for line in f:
+            if not header_done:
+                stripped = line.lstrip()
+                if stripped.startswith(b"SET "):
+                    m = _FORWARD_INCOMPAT_SET_RE.match(line)
+                    if m:
+                        skipped.append(m.group(1).decode())
+                        continue
+                elif stripped and not stripped.startswith(b"--"):
+                    header_done = True
+            yield line
+    if skipped:
+        click.echo(
+            click.style(
+                f"Skipped {len(skipped)} forward-incompat SET line(s) "
+                f"({', '.join(sorted(set(skipped)))}) — these are PostgreSQL "
+                f"parameters the destination doesn't recognize. Schema and "
+                f"data are unaffected.",
+                fg="yellow",
+            )
+        )
+
 
 def _restore_dump(backup_path, dry_run):
     db_user = _read_env_value("POSTGRES_USER") or "arcsecond_docker"
@@ -668,22 +719,45 @@ def _restore_dump(backup_path, dry_run):
             db_name,
         ],
         stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
+    pipe_err = None
     try:
-        with gzip.open(backup_path, "rb") as f:
-            assert psql.stdin is not None
-            while True:
-                chunk = f.read(65536)
-                if not chunk:
-                    break
-                psql.stdin.write(chunk)
-            psql.stdin.close()
-        rc = psql.wait()
+        assert psql.stdin is not None
+        try:
+            for line in _iter_filtered_dump_lines(backup_path):
+                psql.stdin.write(line)
+        except BrokenPipeError as e:
+            # psql already exited (error during apply). Drain its stderr
+            # below and surface that as the real cause rather than the EPIPE.
+            pipe_err = e
+        finally:
+            try:
+                psql.stdin.close()
+            except BrokenPipeError:
+                pass
+        _, stderr_bytes = psql.communicate(timeout=300)
+        rc = psql.returncode
     finally:
         if psql.poll() is None:
-            psql.terminate()
+            psql.kill()
+            psql.wait(timeout=5)
+
+    stderr_text = (stderr_bytes or b"").decode("utf-8", errors="replace").strip()
     if rc != 0:
-        raise RuntimeError(f"psql restore failed with exit code {rc}")
+        # Always show psql's stderr — without it, all the operator sees is
+        # the wrapper's exit code (or, worse, a Broken pipe from our side
+        # that obscures the actual SQL error).
+        if stderr_text:
+            click.echo(click.style(stderr_text, fg="red"))
+        raise RuntimeError(
+            f"psql restore failed with exit code {rc}"
+            + (": " + stderr_text.splitlines()[0] if stderr_text else "")
+        )
+    if pipe_err is not None:
+        # psql exited 0 but we got EPIPE — almost impossible in practice,
+        # but surface it for visibility.
+        raise RuntimeError(f"unexpected EPIPE despite psql success: {pipe_err}")
 
 
 @backups.command(
