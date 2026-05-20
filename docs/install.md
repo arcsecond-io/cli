@@ -10,6 +10,13 @@ Simply issue the following in a Terminal:
 pip install arcsecond
 ```
 
+::: tip Windows users
+Installing on Windows has a few extra steps (Python on `PATH`, the
+`Scripts` directory on `PATH`, app-execution aliases). See the dedicated
+[Installing on Windows](/install-windows) page if `pip` or `arcsecond`
+are "not recognized" in PowerShell.
+:::
+
 To upgrade an existing Arcsecond installation:
 
 ```bash

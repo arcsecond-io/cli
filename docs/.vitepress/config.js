@@ -12,6 +12,7 @@ module.exports = {
         text: 'Getting Started',
         items: [
           { text: 'Install & Login', link: '/install' },
+          { text: 'Installing on Windows', link: '/install-windows' },
           { text: 'Data Upload', link: '/upload' }
         ]
       },
