@@ -1,5 +1,6 @@
 import click
 
+from arcsecond.alpaca.commands import alpaca_group
 from arcsecond.cloud import (
     allskycameras,
     api,
@@ -68,3 +69,6 @@ main.add_command(backups)
 # Arcsecond.local Docker containers via host.docker.internal.
 main.add_command(imagesources.webcam)
 main.add_command(imagesources.allsky)
+
+# Local ASCOM Alpaca diagnostics (e.g. `arcsecond alpaca probe dome ...`).
+main.add_command(alpaca_group)
