@@ -42,6 +42,16 @@ webcam = [
     'opencv-python-headless>=4.10,<5',
 ]
 
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "respx",
+    "flake8",
+    "black",
+    "isort",
+]
+
 [project.scripts]
 arcsecond = "arcsecond.cli:main"
 

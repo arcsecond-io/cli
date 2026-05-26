@@ -21,4 +21,3 @@ node_modules
 /coverage.xml
 .env
 .claude
-uv.lock

@@ -11,20 +11,19 @@ public and private ones.
 
 # Development
 
-To start developing the arcsecond CLI, fork the project, `git clone` it, 
-then, in the arcsecond-cli folder, do 
-(assuming [virtualenv](https://virtualenv.pypa.io/en/stable/) is installed):
+The project uses [uv](https://docs.astral.sh/uv/) for environment and
+dependency management. After forking and cloning:
 
 ```bash
 $ cd ~/arcsecond-cli
-$ virtualenv --python=pythonX.Y env
-$ source env/bin/activate
-$ pip install -e .
-``` 
+$ uv sync --extra webcam --group dev
+$ uv run arcsecond --help
+$ uv run pytest
+```
 
-The last line ensure you can call the "locally installed" version of the 
-code of that folder. Once done one first time, only the `source 
-env/bin/activate` is needed when you restart a debugging session.
+`uv sync` creates `.venv/` and installs the project with its `webcam` extra
+and the `dev` dependency group (pytest, black, flake8, isort). Prefix
+commands with `uv run` or activate the venv with `source .venv/bin/activate`.
 
 
 ## License
