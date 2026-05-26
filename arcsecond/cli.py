@@ -2,7 +2,6 @@ import click
 
 from arcsecond.alpaca.commands import alpaca_group
 from arcsecond.cloud import (
-    allskycameras,
     api,
     datasets,
     login,
@@ -52,9 +51,6 @@ main.add_command(datasets)
 
 # Read the list of existing telescopes (for upload purposes).
 main.add_command(telescopes)
-
-# Read the list of existing allskycameras (for upload purposes).
-main.add_command(allskycameras)
 
 # Upload a folder of files to a given dataset.
 main.add_command(upload_data)

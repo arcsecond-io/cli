@@ -101,33 +101,6 @@ def prepare_upload_files(config, dataset_uuid, telescope_uuid, org_subdomain="")
         )
 
 
-def prepare_upload_allskyimages(config, camera_uuid, org_subdomain=""):
-    respx.get(
-        "/".join(
-            [
-                part
-                for part in [
-                    config.api_server,
-                    org_subdomain,
-                    "allskycameras",
-                    camera_uuid,
-                ]
-                if part
-            ]
-        )
-        + "/"
-    ).mock(return_value=Response(201, json={"status": "success", "uuid": camera_uuid}))
-    if org_subdomain:
-        respx.get(
-            "/".join([config.api_server, "organisations", org_subdomain]) + "/"
-        ).mock(
-            return_value=Response(
-                200,
-                json={"subdomain": org_subdomain, "name": "dummy org"},
-            )
-        )
-
-
 def save_test_credentials(api_name, username, memberships=None):
     config = ArcsecondConfig(api_name=api_name)
     config.save(username=username)

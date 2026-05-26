@@ -30,7 +30,6 @@ These methods are available on resources such as:
 - `api.datafiles`
 - `api.datapackages`
 - `api.observingsites`
-- `api.allskycameras`
 
 ## Generic CRUD Example
 

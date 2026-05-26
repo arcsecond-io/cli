@@ -78,38 +78,3 @@ def telescopes(state, portal=None):
         s += f"(uuid: {telescope_dict['uuid']}) "
         s += f"[ObservingSite UUID: {telescope_dict['observing_site']}]"
         click.echo(s)
-
-
-@click.command(help="Display the list of (portal) all-sky cameras.")
-@click.option(
-    "-p",
-    "--portal",
-    required=False,
-    nargs=1,
-    help="The portal subdomain, if uploading for an Observatory Portal.",
-)
-@basic_options
-@pass_state
-def allskycameras(state, portal=None):
-    org_subdomain = portal or ""
-    if org_subdomain:
-        click.echo(f" • Fetching allskycameras for portal '{org_subdomain}'...")
-    else:
-        click.echo(" • Fetching allskycameras...")
-
-    cameras_list, error = ArcsecondAPI(
-        ArcsecondConfig.from_state(state), org_subdomain
-    ).allskycameras.list()
-    if error is not None:
-        raise ArcsecondError(str(error))
-
-    if isinstance(cameras_list, dict) and "results" in cameras_list.keys():
-        cameras_list = cameras_list["results"]
-
-    click.echo(
-        f" • Found {len(cameras_list)} all-sky camera{'s' if len(cameras_list) > 1 else ''}."
-    )
-    for camera_list in cameras_list:
-        s = f" 💾 \"{camera_list['name']}\" "
-        s += f"(uuid: {camera_list['uuid']}) "
-        click.echo(s)

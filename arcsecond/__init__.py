@@ -5,8 +5,6 @@ from .api import (
     ArcsecondTargetListsResource,
 )
 from .cloud.uploader import (
-    AllSkyCameraImageFileUploader,
-    AllSkyCameraImageUploadContext,
     DatasetFileUploader,
     DatasetUploadContext,
 )
@@ -25,8 +23,6 @@ __all__ = [
     "ArcsecondTargetPayloadPlan",
     "DatasetUploadContext",
     "DatasetFileUploader",
-    "AllSkyCameraImageFileUploader",
-    "AllSkyCameraImageUploadContext",
     "plan_target_payload",
     "walk_folder_and_upload_files",
 ]

@@ -120,7 +120,7 @@ def _add_options(options):
 # ---------------------------------------------------------------------------
 
 
-@click.group(help="Manage the native live-image proxy (USB webcams + all-sky).")
+@click.group(help="Manage the native live-image proxy for USB webcams.")
 def webcam():
     pass
 

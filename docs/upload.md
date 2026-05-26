@@ -4,8 +4,8 @@ sidebar: true
 
 # Data Upload
 
-Arcsecond CLI makes it easy to upload dataset files and all-sky camera images to
-your account or to an observatory portal.
+Arcsecond CLI makes it easy to upload dataset files to your account or to an
+observatory portal.
 
 All non-hidden files are uploaded. Choose folders carefully so you only send the
 data you actually want in Arcsecond Cloud Storage.
@@ -33,7 +33,6 @@ Useful discovery commands:
 
 - `arcsecond datasets`
 - `arcsecond telescopes`
-- `arcsecond allskycameras`
 
 ## Upload Dataset Files With Python
 
@@ -85,43 +84,6 @@ for file_path in Path("/folder/path").glob("**/*"):
         is_raw=False,
         tags=["science"],
     )
-
-    if error:
-        raise error
-```
-
-## Upload All-Sky Camera Images With Python
-
-```python
-from datetime import datetime, timezone
-from pathlib import Path
-
-from arcsecond import (
-    AllSkyCameraImageFileUploader,
-    AllSkyCameraImageUploadContext,
-    ArcsecondConfig,
-)
-
-config = ArcsecondConfig()
-context = AllSkyCameraImageUploadContext(
-    config,
-    input_camera_uuid="camera-uuid",
-    org_subdomain="my-portal",
-)
-
-context.validate()
-
-for file_path in Path("/folder/path").glob("*"):
-    if not file_path.is_file():
-        continue
-
-    uploader = AllSkyCameraImageFileUploader(
-        context,
-        str(file_path),
-        display_progress=False,
-    )
-    timestamp = datetime.now(timezone.utc).timestamp()
-    status, substatus, error = uploader.upload_file(utc_timestamp=timestamp)
 
     if error:
         raise error
