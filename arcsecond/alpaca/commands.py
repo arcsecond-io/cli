@@ -167,20 +167,14 @@ def probe_dome_cmd(
             json.dump(result.report, fp, indent=2, sort_keys=False)
             fp.write("\n")
     except OSError as exc:
-        raise ArcsecondError(
-            f"Could not write report to {output_path}: {exc}"
-        ) from exc
+        raise ArcsecondError(f"Could not write report to {output_path}: {exc}") from exc
 
     counts = result.counts
     supported = result.report.get("supported_actions", {})
-    supported_n = (
-        len(supported.get("value") or []) if supported.get("ok") else 0
-    )
+    supported_n = len(supported.get("value") or []) if supported.get("ok") else 0
 
     click.echo("")
     click.echo(click.style("Summary", bold=True))
     click.echo(f"  Probes:           {counts.ok}/{counts.total} OK")
     click.echo(f"  SupportedActions: {supported_n} entries")
-    click.echo(
-        f"  Report written to {click.style(os.fspath(output_path), fg='cyan')}"
-    )
+    click.echo(f"  Report written to {click.style(os.fspath(output_path), fg='cyan')}")

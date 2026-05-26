@@ -200,7 +200,12 @@ def test_probe_dome_function_default_is_readonly(fake_dome_factory):
     dome = registry[0]
 
     # Top-level shape.
-    for key in ("environment", "device_metadata", "supported_actions", "command_passthrough"):
+    for key in (
+        "environment",
+        "device_metadata",
+        "supported_actions",
+        "command_passthrough",
+    ):
         assert key in result.report
     assert "host_hints" not in result.report
 
@@ -255,7 +260,9 @@ def test_probe_dome_function_allow_active_sends_blind(fake_dome_factory):
     )
 
     dome = registry[0]
-    assert dome.command_blind_calls, "CommandBlind should have been invoked under --allow-active"
+    assert (
+        dome.command_blind_calls
+    ), "CommandBlind should have been invoked under --allow-active"
     blind_commands = {cmd for cmd, _ in dome.command_blind_calls}
     assert "XQ#STATUS" in blind_commands
 
@@ -303,9 +310,8 @@ def test_cli_writes_json_report(tmp_path):
     # Default invocation: no host_hints, no CommandBlind block populated.
     assert "host_hints" not in data
     assert data["command_passthrough"]["command_blind"] == []
-    assert (
-        data["command_passthrough"]["command_blind_skipped_reason"]
-        .startswith("CommandBlind is fire-and-forget")
+    assert data["command_passthrough"]["command_blind_skipped_reason"].startswith(
+        "CommandBlind is fire-and-forget"
     )
 
 
@@ -353,9 +359,7 @@ def test_cli_progress_lines_emitted(tmp_path):
     assert "Summary" in result.output
 
 
-def test_cli_fatal_connection_error_becomes_arcsecond_error(
-    monkeypatch, tmp_path
-):
+def test_cli_fatal_connection_error_becomes_arcsecond_error(monkeypatch, tmp_path):
     """
     Construction failures (e.g. unreachable host) must surface as
     ``ArcsecondError`` — clean message, non-zero exit, no stack trace.

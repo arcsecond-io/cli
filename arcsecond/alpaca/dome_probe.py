@@ -71,9 +71,7 @@ _READ_ONLY_COMMANDS: tuple[str, ...] = (
 # Active commands: kept separate and only sent when allow_active=True.
 # ``XQ#STATUS`` jumps to a label called STATUS if it exists; whether that
 # label has side effects depends on the driver, hence "active".
-_ACTIVE_COMMANDS: tuple[str, ...] = (
-    "XQ#STATUS",
-)
+_ACTIVE_COMMANDS: tuple[str, ...] = ("XQ#STATUS",)
 
 _RESPONSE_TRUNCATE = 2000
 
@@ -116,6 +114,7 @@ def _coerce_jsonable(value: Any) -> Any:
     # IntEnum is a subclass of int, so check it *before* the primitive branch.
     # We want {"name": "shutterClosed", "value": 1} not just 1.
     from enum import Enum
+
     if isinstance(value, Enum):
         return {"name": value.name, "value": value.value}
     if isinstance(value, (str, int, float, bool)) or value is None:
@@ -384,15 +383,15 @@ def probe_dome(
         raise RuntimeError(
             f"Could not construct Alpaca Dome client for "
             f"{protocol}://{address} (device {device_number}): "
-            f"{type(exc).__name__}: {exc}\n"
-            + traceback.format_exc()
+            f"{type(exc).__name__}: {exc}\n" + traceback.format_exc()
         ) from exc
 
     connected_outcome = _capture(lambda: dome.Connected)
     counts.total += 1
     counts.ok += 1 if connected_outcome["ok"] else 0
     progress.emit(
-        "Connected", connected_outcome["ok"],
+        "Connected",
+        connected_outcome["ok"],
         connected_outcome.get("error") or str(connected_outcome.get("value")),
     )
 
