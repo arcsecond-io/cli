@@ -20,6 +20,7 @@ module.exports = {
         text: 'Self-Hosting',
         items: [
           { text: 'Live-Image Proxy', link: '/webcam' },
+          { text: 'All-Sky Cameras', link: '/webcam#all-sky-cameras' },
           { text: 'Backups', link: '/backups' },
           { text: 'Rotate Postgres Password', link: '/rotate-postgres-password' }
         ]
