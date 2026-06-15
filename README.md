@@ -1,4 +1,4 @@
-[![Deploy Docs](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml/badge.svg)](https://github.com/arcsecond-io/cli/actions/workflows/docsdeploy.yml) [![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
+[![Downloads](http://pepy.tech/badge/arcsecond)](http://pepy.tech/project/arcsecond)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Farcsecond-io%2Fcli.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Farcsecond-io%2Fcli?ref=badge_shield)
 
 # Arcsecond CLI
