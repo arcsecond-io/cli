@@ -39,7 +39,7 @@ dependencies = [
 # (extra name kept as `webcam` for backward compatibility; covers all-sky too.)
 webcam = [
     'aiohttp>=3.9',
-    'opencv-python-headless>=4.10,<5',
+    'opencv-python-headless>=4.10,<6',
 ]
 
 [dependency-groups]
