@@ -1,7 +1,21 @@
 import base64
 import os
 import secrets
+import subprocess
 from pathlib import Path
+
+
+def _container_running(name):
+    try:
+        out = subprocess.run(
+            ["docker", "inspect", "-f", "{{.State.Running}}", name],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return False
+    return out.returncode == 0 and out.stdout.strip() == "true"
 
 
 def _read_env_value(key, env_path=None):

@@ -12,7 +12,7 @@ import click
 
 from arcsecond.options import basic_options
 
-from .utils import _read_env_value
+from .utils import _container_running, _read_env_value
 
 DB_CONTAINER = "arcsecond-db"
 API_CONTAINER = "arcsecond-api"
@@ -103,19 +103,6 @@ def _human_size(num_bytes):
             return f"{num_bytes:.1f} {unit}" if unit != "B" else f"{num_bytes} B"
         num_bytes /= 1024
     return f"{num_bytes:.1f} PB"
-
-
-def _container_running(name):
-    try:
-        out = subprocess.run(
-            ["docker", "inspect", "-f", "{{.State.Running}}", name],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except FileNotFoundError:
-        return False
-    return out.returncode == 0 and out.stdout.strip() == "true"
 
 
 def _classify_dump_health(backup_path):
