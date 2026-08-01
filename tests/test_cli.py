@@ -5,13 +5,19 @@ from click.testing import CliRunner
 from arcsecond import cli
 from tests.utils import random_string
 
+# Click renders the usage line slightly differently across versions: a group
+# that may be invoked without a subcommand prints COMMAND in 8.1 and [COMMAND]
+# from 8.2 on. Match either, so a click upgrade does not fail the suite over
+# punctuation.
+USAGE_LINE = re.compile(r"Usage: main \[OPTIONS\] \[?COMMAND\]? \[ARGS\]")
+
 
 def test_cli_basic():
     runner = CliRunner()
     result = runner.invoke(cli.main)
     assert result.exit_code == 0 and not result.exception
     # Here 'arcsecond' is replaced by 'main' ??
-    assert "Usage: main [OPTIONS] COMMAND [ARGS]" in result.output
+    assert USAGE_LINE.search(result.output)
 
 
 def test_cli_version():
@@ -31,10 +37,10 @@ def test_cli_global_help():
     runner = CliRunner()
     result = runner.invoke(cli.main, ["-h"])
     assert result.exit_code == 0 and not result.exception
-    assert "Usage: main [OPTIONS] COMMAND [ARGS]" in result.output
+    assert USAGE_LINE.search(result.output)
     result = runner.invoke(cli.main, ["--help"])
     assert result.exit_code == 0 and not result.exception
-    assert "Usage: main [OPTIONS] COMMAND [ARGS]" in result.output
+    assert USAGE_LINE.search(result.output)
 
 
 def test_cli_api_read():

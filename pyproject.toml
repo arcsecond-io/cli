@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arcsecond"
-version = "3.14.0"
+version = "3.14.1"
 authors = [
     { name = "Cedric Foellmi", email = "cedric@arcsecond.io" },
 ]
@@ -62,3 +62,12 @@ Documentation = "https://docs.arcsecond.io"
 
 [tool.setuptools.package-data]
 "arcsecond.hosting.docker" = ["docker-compose.yml"]
+
+[tool.uv]
+# Resolve the lock file only for the Python versions that are actually tested
+# (see .github/workflows/tests.yml). Without this, uv keeps a second, parallel
+# set of pins for Python 3.9 — which is end-of-life — and those older pins are
+# what security scanners flag, even though nothing builds or tests against them.
+# This does not change `requires-python` above, so what users may install is
+# untouched.
+environments = ["python_version >= '3.10'"]
