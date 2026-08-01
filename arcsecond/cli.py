@@ -64,10 +64,11 @@ main.add_command(backups)
 # Manage the Arcsecond.local database (e.g. `arcsecond db set-password`).
 main.add_command(db)
 
-# Native live-image proxy — exposes USB webcams and all-sky cameras to
-# Arcsecond.local Docker containers via host.docker.internal.
+# Native live-image proxy — exposes USB webcams, all-sky cameras and network
+# cameras to Arcsecond.local Docker containers via host.docker.internal.
 main.add_command(imagesources.webcam)
 main.add_command(imagesources.allsky)
+main.add_command(imagesources.netcam)
 
 # Local ASCOM Alpaca diagnostics (e.g. `arcsecond alpaca probe dome ...`).
 main.add_command(alpaca_group)
