@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arcsecond"
-version = "3.14.1"
+version = "3.15.0"
 authors = [
     { name = "Cedric Foellmi", email = "cedric@arcsecond.io" },
 ]
 description = "CLI for arcsecond.io"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
 classifiers = [
     'Development Status :: 5 - Production/Stable',
@@ -19,6 +19,8 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     "Operating System :: OS Independent",
     'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
     'Topic :: Software Development :: Libraries :: Python Modules'
 ]
 dependencies = [
@@ -62,12 +64,3 @@ Documentation = "https://docs.arcsecond.io"
 
 [tool.setuptools.package-data]
 "arcsecond.hosting.docker" = ["docker-compose.yml"]
-
-[tool.uv]
-# Resolve the lock file only for the Python versions that are actually tested
-# (see .github/workflows/tests.yml). Without this, uv keeps a second, parallel
-# set of pins for Python 3.9 — which is end-of-life — and those older pins are
-# what security scanners flag, even though nothing builds or tests against them.
-# This does not change `requires-python` above, so what users may install is
-# untouched.
-environments = ["python_version >= '3.10'"]
