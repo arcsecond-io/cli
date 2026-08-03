@@ -1,4 +1,5 @@
 import gzip
+import json
 import os
 import re
 import subprocess
@@ -313,6 +314,74 @@ def _stale_apps_note(stale_apps):
     )
 
 
+def _run_destination_backups_command(*args, timeout=60):
+    """Drive the backend's `destination_backups` management command through
+    docker exec (same transport as the migration-compatibility check) and
+    return its parsed JSON, or None when the backend can't answer."""
+    if not _container_running(API_CONTAINER):
+        return None
+    try:
+        out = subprocess.run(
+            ["docker", "exec", API_CONTAINER, "python", "manage.py", "destination_backups", *args],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if out.returncode != 0:
+        return None
+    try:
+        return json.loads(out.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        return None
+
+
+def _destination_listing():
+    """Names of backups living on the destination storage, or None when there
+    is no destination configured / the backend or NAS is unreachable."""
+    payload = _run_destination_backups_command("--list")
+    if payload is None or "error" in payload:
+        return None
+    return [entry["name"] for entry in payload.get("backups", [])]
+
+
+def _remote_only_items(items, remote_names):
+    """(name, datetime) tuples for dumps existing only on the destination."""
+    if not remote_names:
+        return []
+    local_names = {path.name for path, _ in items}
+    result = []
+    for name in remote_names:
+        m = BACKUP_PATTERN.match(name)
+        if not m or name in local_names:
+            continue
+        try:
+            ts = datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        result.append((name, ts))
+    result.sort(key=lambda x: x[1], reverse=True)
+    return result
+
+
+def _pull_destination_backup(backups_dir, name):
+    """Pull a remote dump back into db_backups; returns its local Path or None."""
+    click.echo(
+        click.style(
+            f"$ docker exec {API_CONTAINER} python manage.py destination_backups --pull {name}",
+            fg="cyan",
+        )
+    )
+    payload = _run_destination_backups_command("--pull", name, timeout=600)
+    if payload is None or payload.get("error"):
+        detail = (payload or {}).get("detail", "backend or destination unreachable")
+        click.echo(click.style(f"Pull failed: {detail}", fg="red"))
+        return None
+    return backups_dir / name
+
+
 def _select_backup(items, ref):
     """Resolve a CLI ref (1-based index or filename) to a Path."""
     if ref is None:
@@ -325,6 +394,27 @@ def _select_backup(items, ref):
     for path, _ in items:
         if path.name == ref:
             return path
+    return None
+
+
+def _resolve_ref_with_destination(backups_dir, items, ref):
+    """Resolve a ref against local dumps first, then against the destination
+    storage — a remote-only dump is pulled into db_backups before use, so
+    everything downstream (health, compat, restore) works unchanged."""
+    path = _select_backup(items, ref)
+    if path is not None:
+        return path
+    remote_only = _remote_only_items(items, _destination_listing())
+    if not remote_only or ref is None:
+        return None
+    if ref.isdigit():
+        idx = int(ref) - len(items)
+        if 1 <= idx <= len(remote_only):
+            return _pull_destination_backup(backups_dir, remote_only[idx - 1][0])
+        return None
+    for name, _ in remote_only:
+        if name == ref:
+            return _pull_destination_backup(backups_dir, name)
     return None
 
 
@@ -418,6 +508,29 @@ def list_cmd():
         )
     click.echo("")
     click.echo(f"{len(items)} backup(s) in {backups_dir}")
+
+    remote_names = _destination_listing()
+    if remote_names is None:
+        click.echo(
+            click.style(
+                "Destination storage: not configured or unreachable — local backups only.",
+                fg="yellow",
+            )
+        )
+    else:
+        remote_only = _remote_only_items(items, remote_names)
+        if remote_only:
+            click.echo("")
+            click.echo("On the destination storage only:")
+            for j, (name, ts) in enumerate(remote_only, start=len(items) + 1):
+                click.echo(
+                    f"{j:>3}  {ts.strftime('%Y-%m-%d %H:%M:%S'):<20}  {'—':>10}  "
+                    f"on destination (pull to check)"
+                )
+            click.echo(
+                "Use `arcsecond backups inspect <#>` or `restore <#>` — the dump "
+                "is pulled back locally first."
+            )
     if broken_count:
         click.echo(
             click.style(
@@ -447,7 +560,7 @@ def inspect_cmd(ref):
         sys.exit(1)
 
     items = _list_backup_files(backups_dir)
-    path = _select_backup(items, ref)
+    path = _resolve_ref_with_destination(backups_dir, items, ref)
     if path is None:
         click.echo(f"No backup matches '{ref}'.")
         sys.exit(1)
@@ -821,7 +934,7 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
         ctx.invoke(list_cmd)
         path = _interactive_pick(items)
     else:
-        path = _select_backup(items, ref)
+        path = _resolve_ref_with_destination(backups_dir, items, ref)
 
     if path is None:
         click.echo("No backup selected.")
