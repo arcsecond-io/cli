@@ -1,6 +1,6 @@
 # === Arcsecond.local config. ===
 # *** DO NOT change any name or port number. ***
-# Version 6.2
+# Version 6.3
 
 services:
   # Database (PostgresQL)
@@ -116,6 +116,25 @@ services:
     ports:
       - "5555:5555"
       - "5577:5577"
+
+  # >>> arcsecond:alerts
+  # Arcsecond transient-alerts consumer (optional).
+  # Long-lived Kafka client for NASA GCN. Outbound TLS to kafka.gcn.nasa.gov
+  # and auth.gcn.nasa.gov only — nothing listens. Requires GCN_CONSUMER_CLIENT_ID /
+  # GCN_CONSUMER_CLIENT_SECRET in .env; idles harmlessly when they are absent.
+  # Single instance only — do not scale it.
+  alerts:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-alerts
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-alerts.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    stop_grace_period: 30s
+  # <<< arcsecond:alerts
 
 volumes:
   arcsecond_postgres_data:
