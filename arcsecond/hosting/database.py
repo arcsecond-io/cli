@@ -37,6 +37,21 @@ DB_CONTAINER = "arcsecond-db"
 # directory, so recreating it would be downtime for nothing.
 SERVICES_TO_RECREATE = ["backend", "worker", "beat"]
 
+
+def _services_to_recreate():
+    """The optional alerts consumer joins the recreate list only when the
+    operator's compose file actually carries it — naming an unknown service
+    makes `docker compose up` fail outright on installs without the block."""
+    services = list(SERVICES_TO_RECREATE)
+    compose_path = Path.cwd() / "docker-compose.yml"
+    try:
+        if "# >>> arcsecond:alerts" in compose_path.read_text(encoding="utf-8"):
+            services.append("alerts")
+    except OSError:
+        pass
+    return services
+
+
 ENV_KEY = "POSTGRES_PASSWORD"
 
 # The .env in the install directory does double duty: compose also reads it to
@@ -248,7 +263,7 @@ def set_password_cmd(password, show, no_restart, dry_run):
         click.echo(f"  would run       ALTER ROLE \"{db_user}\" WITH PASSWORD '***'")
         if not no_restart:
             click.echo(
-                f"  would recreate  {', '.join(SERVICES_TO_RECREATE)} "
+                f"  would recreate  {', '.join(_services_to_recreate())} "
                 "(docker compose up -d --force-recreate)"
             )
         sys.exit(0)
@@ -324,21 +339,22 @@ def set_password_cmd(password, show, no_restart, dry_run):
 
     click.echo(click.style("Password changed and verified.", fg="green"))
 
+    services_to_recreate = _services_to_recreate()
     if no_restart:
         click.echo(
             "\nSkipping the restart, as asked. The running containers still hold the\n"
             "old password and will fail on their next reconnect. Apply it with:\n"
-            f"    docker compose up -d --force-recreate {' '.join(SERVICES_TO_RECREATE)}"
+            f"    docker compose up -d --force-recreate {' '.join(services_to_recreate)}"
         )
     else:
-        click.echo(f"Recreating {', '.join(SERVICES_TO_RECREATE)}...")
+        click.echo(f"Recreating {', '.join(services_to_recreate)}...")
         cmd = [
             "docker",
             "compose",
             "up",
             "-d",
             "--force-recreate",
-            *SERVICES_TO_RECREATE,
+            *services_to_recreate,
         ]
         click.echo(click.style(f"$ {' '.join(cmd)}", fg="cyan"))
         recreate = subprocess.run(cmd, capture_output=True, text=True, check=False)

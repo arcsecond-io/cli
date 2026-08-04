@@ -20,9 +20,18 @@ API_CONTAINER = "arcsecond-api"
 WORKER_CONTAINER = "arcsecond-worker"
 BEAT_CONTAINER = "arcsecond-beat"
 WEB_CONTAINER = "arcsecond-web"
+# Optional service: absent on most installs. The stop loop skips it when it
+# is not running, and the docker-start fallback tolerates the missing name.
+ALERTS_CONTAINER = "arcsecond-alerts"
 
 # Services to stop before wiping the DB. db is kept up so we can talk to it.
-SERVICES_TO_STOP = [API_CONTAINER, WORKER_CONTAINER, BEAT_CONTAINER, WEB_CONTAINER]
+SERVICES_TO_STOP = [
+    API_CONTAINER,
+    WORKER_CONTAINER,
+    ALERTS_CONTAINER,
+    BEAT_CONTAINER,
+    WEB_CONTAINER,
+]
 
 BACKUP_PATTERN = re.compile(r"^backup-(\d{8}-\d{6})\.sql\.gz$")
 PRE_RESTORE_PREFIX = "pre-restore-"
