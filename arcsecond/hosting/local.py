@@ -2,7 +2,7 @@ import os
 import re
 import sys
 from importlib import resources
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 import click
 
@@ -43,10 +43,22 @@ GCN_ENV_COMMENT = (
 )
 
 
+# Compose reads .env itself, and a backslash in a value is an escape sequence
+# there — a Windows default like C:\Users\Obs\Data reaches the daemon mangled
+# (\U, \O, \D swallowed), and the bind mount then points somewhere that does
+# not exist. Windows accepts forward slashes in every path API and Docker
+# accepts C:/Users/Obs/Data, so we write the path posix-style on every
+# platform. Picked at import time rather than branching inside expand_path so
+# tests can exercise the Windows flavour from any host.
+_PATH_FLAVOUR = PureWindowsPath if os.name == "nt" else PurePosixPath
+
+
 def expand_path(value: str) -> str:
     expanded = os.path.expandvars(value)
     expanded = os.path.expanduser(expanded)
-    return str(Path(expanded))
+    # A backslash is a legal filename character on POSIX, so the conversion
+    # must only ever happen with the Windows flavour.
+    return _PATH_FLAVOUR(expanded).as_posix()
 
 
 def prompt_shared_data_path() -> str:

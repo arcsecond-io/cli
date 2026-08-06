@@ -1,5 +1,5 @@
 from importlib import resources
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from click.testing import CliRunner
 
@@ -181,6 +181,41 @@ def test_write_env_file_does_not_prompt_when_nothing_is_missing(tmp_path, monkey
 
     monkeypatch.setattr(local, "prompt_shared_data_path", explode)
     local.write_env_file()
+
+
+def test_expand_path_writes_forward_slashes_on_windows(monkeypatch):
+    """Compose parses .env itself and treats a backslash as an escape, so a
+    native Windows path silently loses characters before it reaches the bind
+    mount. Everything we write must be posix-style."""
+    monkeypatch.setattr(local, "_PATH_FLAVOUR", PureWindowsPath)
+
+    assert local.expand_path(r"C:\Users\Obs\Data") == "C:/Users/Obs/Data"
+    assert local.expand_path("C:/Users/Obs/Data") == "C:/Users/Obs/Data"
+    assert "\\" not in local.expand_path(r"D:\astro\shared data\2026")
+
+
+def test_expand_path_keeps_backslashes_on_posix(monkeypatch):
+    """They are legal filename characters here — converting would point the
+    mount at a different directory."""
+    monkeypatch.setattr(local, "_PATH_FLAVOUR", PurePosixPath)
+
+    assert local.expand_path("/tmp/odd\\name") == "/tmp/odd\\name"
+    assert local.expand_path("/tmp/shared-data") == "/tmp/shared-data"
+
+
+def test_prompted_windows_path_lands_unescaped_in_the_env_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(local, "_get_random_secret_key", lambda: "x")
+    monkeypatch.setattr(local, "_get_encryption_key", lambda: "x")
+    monkeypatch.setattr(local, "_get_random_postgres_password", lambda: "x")
+    # The real prompt runs here — this is the path the Windows operator takes.
+    monkeypatch.setattr(local, "_PATH_FLAVOUR", PureWindowsPath)
+    monkeypatch.setattr("builtins.input", lambda _: r"C:\Users\Obs\Data")
+
+    local.write_env_file()
+
+    env_contents = (Path(tmp_path) / ".env").read_text(encoding="utf-8")
+    assert 'SHARED_DATA_PATH="C:/Users/Obs/Data"' in env_contents
 
 
 def test_compose_fresh_write_with_alerts_contains_the_block(tmp_path, monkeypatch):
