@@ -105,7 +105,9 @@ services:
     restart: unless-stopped
     ports: [ "8900:8900" ]
 
-  # Arcsecond webapp.
+  # Arcsecond webapp. Served on 5555 only: a self-hosted install is
+  # organisation-based and therefore always a portal, so the second port that
+  # used to be here (5577) served the very same app.
   web:
     image: ghcr.io/arcsecond-io/arcsecond-web:latest
     container_name: arcsecond-web
@@ -115,7 +117,6 @@ services:
         condition: service_started
     ports:
       - "5555:5555"
-      - "5577:5577"
 
   # >>> arcsecond:alerts
   # Arcsecond transient-alerts consumer (optional).
