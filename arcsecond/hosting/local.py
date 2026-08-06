@@ -228,7 +228,7 @@ def _extract_optional_service_block(packaged_text, name):
     end_index = next((i for i, line in enumerate(lines) if line.strip() == end), None)
     if begin_index is None or end_index is None or end_index < begin_index:
         return None
-    return lines[begin_index:end_index + 1]
+    return lines[begin_index : end_index + 1]
 
 
 def _with_trailing_newline_like(lines, original_text):
@@ -244,7 +244,7 @@ def _strip_optional_service_block(text, name):
     end_index = next((i for i, line in enumerate(lines) if line.strip() == end), None)
     if begin_index is None or end_index is None or end_index < begin_index:
         return text
-    del lines[begin_index:end_index + 1]
+    del lines[begin_index : end_index + 1]
     # Drop the blank separator the block carried, so strip(splice(x)) == x.
     if begin_index < len(lines) and not lines[begin_index].strip():
         del lines[begin_index]
@@ -297,12 +297,14 @@ def _reconcile_version_header(current_text, expected_text):
     updated = (
         current_text[: current_match.start()]
         + expected_match.group(0)
-        + current_text[current_match.end():]
+        + current_text[current_match.end() :]
     )
     return updated if updated == expected_text else None
 
 
-def write_docker_compose_file(enabled_services=frozenset(), removed_services=frozenset()) -> Path:
+def write_docker_compose_file(
+    enabled_services=frozenset(), removed_services=frozenset()
+) -> Path:
     """
     Materialise the packaged docker-compose.yml in the current directory.
 

@@ -331,7 +331,15 @@ def _run_destination_backups_command(*args, timeout=60):
         return None
     try:
         out = subprocess.run(
-            ["docker", "exec", API_CONTAINER, "python", "manage.py", "destination_backups", *args],
+            [
+                "docker",
+                "exec",
+                API_CONTAINER,
+                "python",
+                "manage.py",
+                "destination_backups",
+                *args,
+            ],
             capture_output=True,
             text=True,
             check=False,
@@ -367,7 +375,9 @@ def _remote_only_items(items, remote_names):
         if not m or name in local_names:
             continue
         try:
-            ts = datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=timezone.utc)
+            ts = datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(
+                tzinfo=timezone.utc
+            )
         except ValueError:
             continue
         result.append((name, ts))
