@@ -1,3 +1,4 @@
+import os
 import shutil
 from configparser import ConfigParser
 from pathlib import Path
@@ -7,6 +8,19 @@ from arcsecond.errors import ArcsecondError
 from arcsecond.options import State
 
 from .constants import ARCSECOND_API_URL_PROD
+
+# Where the configuration lives, when it is not to live in the usual place.
+#
+# Set this to keep several sets of credentials apart — a personal account and
+# an observatory's, say — or to point a container or a CI job at a directory of
+# its own. It is also what the test suite uses: the tests write real-looking
+# credentials, and without somewhere else to put them they would land in the
+# developer's own config file and stay there.
+#
+# An environment variable rather than something passed in, because the CLI
+# starts child processes of its own (`arcsecond proxy start`), and those have
+# to end up in the same place as the command that started them.
+CONFIG_DIR_ENV_VAR = "ARCSECOND_CONFIG_DIR"
 
 
 class ArcsecondConfig(object):
@@ -31,16 +45,33 @@ class ArcsecondConfig(object):
         return (Path.home() / ".arcsecond.ini").expanduser()
 
     @classmethod
-    def dir_path(cls):
-        _config_root_path = Path.home() / ".config"
-        return _config_root_path / "arcsecond"
+    def is_dir_path_overridden(cls) -> bool:
+        return bool(os.environ.get(CONFIG_DIR_ENV_VAR, "").strip())
+
+    @classmethod
+    def dir_path(cls) -> Path:
+        """The directory holding config.ini and everything beside it.
+
+        ``$ARCSECOND_CONFIG_DIR`` wins when it is set; otherwise the usual
+        ``~/.config/arcsecond``.
+        """
+        override = os.environ.get(CONFIG_DIR_ENV_VAR, "").strip()
+        if override:
+            return Path(override).expanduser()
+        return Path.home() / ".config" / "arcsecond"
 
     @classmethod
     def file_path(cls) -> Path:
         _config_dir_path = ArcsecondConfig.dir_path()
         _config_file_path = _config_dir_path / "config.ini"
+
+        # The one-time move of the pre-0.9 ~/.arcsecond.ini happens only for
+        # the real config directory. Doing it for an overridden one would take
+        # the file out of the operator's home and drop it somewhere temporary —
+        # which, during a test run, would destroy it.
         if (
-            ArcsecondConfig.__old_config_file_path().exists()
+            not ArcsecondConfig.is_dir_path_overridden()
+            and ArcsecondConfig.__old_config_file_path().exists()
             and not _config_file_path.exists()
         ):
             _config_dir_path.mkdir(parents=True, exist_ok=True)

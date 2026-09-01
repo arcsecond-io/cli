@@ -3,8 +3,30 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from arcsecond import DatasetFileUploader
+from arcsecond.api.config import CONFIG_DIR_ENV_VAR
 from arcsecond.cloud.uploader import DatasetUploadContext
 from tests.utils import random_string
+
+
+@pytest.fixture(scope="session", autouse=True)
+def isolated_config_dir(tmp_path_factory):
+    """Keep the whole suite out of the developer's own configuration.
+
+    Several tests here save credentials — real-looking access and upload keys,
+    under a randomly named API section — through a real ArcsecondConfig. With
+    nothing done about it those land in ~/.config/arcsecond/config.ini and stay
+    there: ten sections per run, never cleaned up, on the machine of whoever
+    ran the tests.
+
+    Autouse and session-scoped, so no test has to remember to ask for it, and
+    an environment variable rather than a patched ``dir_path`` so that it also
+    covers the child process ``arcsecond proxy start`` launches.
+    """
+    with pytest.MonkeyPatch.context() as patched:
+        patched.setenv(
+            CONFIG_DIR_ENV_VAR, str(tmp_path_factory.mktemp("arcsecond-config"))
+        )
+        yield
 
 
 @pytest.fixture
