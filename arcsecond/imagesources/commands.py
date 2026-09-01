@@ -40,6 +40,7 @@ import sys
 import time
 import urllib.request
 from string import Template
+from typing import Optional
 from urllib.parse import urlsplit
 
 import click
@@ -275,10 +276,23 @@ def _list_registered(kinds, noun: str, add_example: str):
 
     click.echo(click.style(f"Registered {noun}s ({len(cameras)}):\n", bold=True))
     _print_table(
-        [(c.id, c.display_kind, c.target, c.label or "") for c in cameras],
-        ("ID", "KIND", "CAMERA", "NAME"),
+        [
+            (c.id, c.display_kind, c.target, _describe_specs(c), c.label or "")
+            for c in cameras
+        ],
+        ("ID", "KIND", "CAMERA", "DETAILS", "NAME"),
     )
     click.echo(f"\nForget one with:  {_forget_example(kinds)} <ID>")
+
+
+def _describe_specs(camera: Camera) -> str:
+    """A camera's resolution and frame rate, as recorded when it was added."""
+    specs = camera.specs or {}
+    width, height, fps = specs.get("width"), specs.get("height"), specs.get("fps")
+    if not (width and height):
+        return ""
+    size = f"{width}×{height}"
+    return f"{size}, {fps:.0f} fps" if fps else size
 
 
 def _detect_example(kinds) -> str:
@@ -506,9 +520,12 @@ def webcam_add_cmd(camera, label):
 
     if target.isdigit():
         index = int(target)
+        # One probe, used for both jobs: telling the operator if nothing is
+        # there, and recording the camera's resolution while it is open.
+        device = _probe_index(index)
         _add(
-            Camera(id="", kind=USB, index=index, label=label),
-            absent_note=lambda: _index_absent_note(index),
+            Camera(id="", kind=USB, index=index, label=label, specs=_specs(device)),
+            absent_note=lambda: None if device else _nothing_at_index(index),
         )
         return
 
@@ -534,24 +551,53 @@ def webcam_add_cmd(camera, label):
     _add(Camera(id="", kind=NET, url=target, label=label))
 
 
-def _index_absent_note(index: int):
-    """A note if nothing is at that index — the camera is registered either way.
+def _probe_index(index: int):
+    """The device at ``index`` right now, or None.
 
-    A webcam that is unplugged right now is still a camera the operator owns,
-    and refusing to register it would mean re-typing the command later. Saying
-    nothing would let a typo sit unnoticed until the proxy failed to open it.
+    Returns None rather than raising when OpenCV is missing or the probe
+    fails: not knowing what is plugged in is a reason to say less, not a
+    reason to refuse to register a camera.
     """
     try:
         from .sources.opencv import detect_webcams
 
-        found = {d.identity for d in detect_webcams()}
+        for device in detect_webcams():
+            if device.identity == ("usb", index):
+                return device
     except Exception:
         return None
-    if ("usb", index) in found:
+    return None
+
+
+def _specs(device) -> Optional[dict]:
+    """Resolution and frame rate, as measured while the device was open.
+
+    Recorded so that listing a camera can report them without opening it —
+    `/detect` must stay answerable when a camera is busy or unplugged.
+    """
+    if device is None:
         return None
+    extra = device.extra or {}
+    specs = {
+        "width": extra.get("width"),
+        "height": extra.get("height"),
+        "fps": extra.get("fps"),
+    }
+    kept = {k: v for k, v in specs.items() if v}
+    return kept or None
+
+
+def _nothing_at_index(index: int) -> str:
+    """Said when a camera is registered while nothing is plugged in at its index.
+
+    It is registered either way: a webcam that is unplugged right now is still
+    a camera the operator owns, and refusing would mean re-typing the command
+    later. Saying nothing would let a typo sit unnoticed until the proxy failed
+    to open it.
+    """
     return (
         f"nothing is at device index {index} right now. It stays registered — "
-        "plug it in and it will be served."
+        "plug it in, then re-run this command to record its resolution."
     )
 
 

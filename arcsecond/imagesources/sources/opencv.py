@@ -51,8 +51,10 @@ class OpenCVWebcamSource(FrameSource):
         index: int,
         source_id: Optional[str] = None,
         label: Optional[str] = None,
+        specs: Optional[dict] = None,
     ):
         self.index = index
+        self.specs = specs or {}
         # Registered cameras pass their own short id. The fallback only exists
         # for probing a device that nobody has registered yet.
         self.id = source_id or f"usb:{index}"
@@ -100,14 +102,15 @@ class OpenCVWebcamSource(FrameSource):
         self._cap = None
 
     def info(self) -> SourceInfo:
-        # Width/height/fps are only known once opened, and listing must not
-        # open anything — `arcsecond webcam detect` is what reports those.
-        return SourceInfo(
-            id=self.id,
-            kind=self.kind,
-            label=self.label,
-            extra={"transport": "usb", "index": self.index},
-        )
+        # Width, height and fps are only knowable by opening the device, and
+        # listing must not open anything — one camera being busy would hold the
+        # answer up for every other. They are measured once, when the camera is
+        # registered, and reported from the store here.
+        extra = {"transport": "usb", "index": self.index}
+        for key in ("width", "height", "fps"):
+            if self.specs.get(key):
+                extra[key] = self.specs[key]
+        return SourceInfo(id=self.id, kind=self.kind, label=self.label, extra=extra)
 
 
 def detect_webcams(max_index: int = _MAX_PROBE) -> list[DetectedDevice]:

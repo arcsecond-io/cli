@@ -154,3 +154,19 @@ def test_open_raises_when_the_device_will_not_open():
             assert "device index 0" in str(e)
         else:
             raise AssertionError("expected open() to raise")
+
+
+def test_info_reports_the_recorded_resolution_without_opening_anything():
+    source = OpenCVWebcamSource(
+        0, source_id="k3f", specs={"width": 1280, "height": 720, "fps": 30.0}
+    )
+    # No cv2 in sys.modules for this call: reporting must not need the device.
+    extra = source.info().extra
+    assert (extra["width"], extra["height"], extra["fps"]) == (1280, 720, 30.0)
+    assert extra["transport"] == "usb"
+
+
+def test_info_omits_what_was_never_measured():
+    extra = OpenCVWebcamSource(0, source_id="k3f").info().extra
+    assert "width" not in extra and "fps" not in extra
+    assert extra == {"transport": "usb", "index": 0}

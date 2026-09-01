@@ -641,3 +641,76 @@ def test_a_proxy_is_only_stopped_once_its_process_is_gone(monkeypatch):
     assert commands._has_exited(8765, 4711) is False
     alive["gone"] = True
     assert commands._has_exited(8765, 4711) is True
+
+
+# ---------------------------------------------------------------------------
+# Resolution and frame rate
+# ---------------------------------------------------------------------------
+
+
+def _device(index=0, width=1280, height=720, fps=30.0):
+    return DetectedDevice(
+        kind="usb",
+        identity=("usb", index),
+        label=f"USB webcam #{index}",
+        extra={"index": index, "width": width, "height": height, "fps": fps},
+    )
+
+
+def test_add_records_what_it_measured_while_the_device_was_open(cli, monkeypatch):
+    monkeypatch.setattr(
+        "arcsecond.imagesources.sources.opencv.detect_webcams",
+        lambda *a, **k: [_device()],
+    )
+    _run(cli, webcam, ["add", "0"])
+    (camera,) = store.all_cameras()
+    assert camera.specs == {"width": 1280, "height": 720, "fps": 30.0}
+
+
+def test_listing_shows_the_resolution_without_probing(cli, monkeypatch):
+    monkeypatch.setattr(
+        "arcsecond.imagesources.sources.opencv.detect_webcams",
+        lambda *a, **k: [_device()],
+    )
+    _run(cli, webcam, ["add", "0"])
+
+    def explode(*a, **k):
+        raise AssertionError("listing probed the hardware")
+
+    monkeypatch.setattr("arcsecond.imagesources.sources.opencv.detect_webcams", explode)
+    assert "1280×720, 30 fps" in _run(cli, webcam, []).output
+
+
+def test_a_camera_added_while_unplugged_says_how_to_fill_them_in(cli, monkeypatch):
+    _no_webcams(monkeypatch)
+    result = _run(cli, webcam, ["add", "0"])
+    assert "re-run this command to record its resolution" in result.output
+    assert store.all_cameras()[0].specs is None
+
+
+def test_re_adding_once_plugged_in_records_the_resolution(cli, monkeypatch):
+    _no_webcams(monkeypatch)
+    _run(cli, webcam, ["add", "0"])
+    monkeypatch.setattr(
+        "arcsecond.imagesources.sources.opencv.detect_webcams",
+        lambda *a, **k: [_device()],
+    )
+    result = _run(cli, webcam, ["add", "0"])
+    assert "Already registered" in result.output
+    assert store.all_cameras()[0].specs["width"] == 1280
+
+
+def test_the_proxy_is_given_the_recorded_resolution(cli, monkeypatch):
+    """It is what /detect reports, and what the backend shows the operator."""
+    monkeypatch.setattr(
+        "arcsecond.imagesources.sources.opencv.detect_webcams",
+        lambda *a, **k: [_device()],
+    )
+    _run(cli, webcam, ["add", "0"])
+
+    started = {}
+    monkeypatch.setattr(
+        "arcsecond.imagesources.proxy.run", lambda **k: started.update(k)
+    )
+    _run(cli, proxy, ["start", "--foreground"])
+    assert started["cameras"][0].specs == {"width": 1280, "height": 720, "fps": 30.0}

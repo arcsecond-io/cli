@@ -296,3 +296,74 @@ def test_migration_does_not_expand_the_password(store_file):
     store_file.write_text(json.dumps(V1))
     store.all_cameras(store_file)
     assert "${DOME_CAM_PW}" in store_file.read_text()
+
+
+# ---------------------------------------------------------------------------
+# What probing learned about a USB camera
+#
+# Resolution and frame rate can only be measured by opening the device, and
+# `/detect` must stay answerable while a camera is busy or unplugged. So they
+# are measured once, at registration, and read back from the store afterwards.
+# ---------------------------------------------------------------------------
+
+
+SPECS = {"width": 1280, "height": 720, "fps": 30.0}
+
+
+def test_a_usb_camera_remembers_what_probing_measured(store_file):
+    stored, _ = store.add(Camera(id="", kind=USB, index=0, specs=SPECS), store_file)
+    assert store.find(stored.id, store_file).specs == SPECS
+
+
+def test_specs_survive_the_round_trip_to_disk(store_file):
+    store.add(Camera(id="", kind=USB, index=0, specs=SPECS), store_file)
+    written = json.loads(store_file.read_text())
+    assert written["cameras"][store.all_cameras(store_file)[0].id]["specs"] == SPECS
+
+
+def test_a_camera_registered_while_unplugged_simply_has_none(store_file):
+    stored, _ = store.add(_usb(0), store_file)
+    assert store.find(stored.id, store_file).specs is None
+
+
+def test_re_registering_records_specs_measured_the_second_time(store_file):
+    """Plugging the camera in and re-running `add` is how they get filled in."""
+    first, _ = store.add(_usb(0), store_file)
+    second, created = store.add(
+        Camera(id="", kind=USB, index=0, specs=SPECS), store_file
+    )
+    assert created is False
+    assert second.id == first.id
+    assert store.find(first.id, store_file).specs == SPECS
+
+
+def test_re_registering_without_specs_does_not_wipe_the_recorded_ones(store_file):
+    """A re-run on a machine without OpenCV must not lose what was measured."""
+    stored, _ = store.add(Camera(id="", kind=USB, index=0, specs=SPECS), store_file)
+    store.add(_usb(0), store_file)
+    assert store.find(stored.id, store_file).specs == SPECS
+
+
+def test_specs_are_not_part_of_what_identifies_a_camera(store_file):
+    """A camera switched to another mode is the same camera, not a new one."""
+    first, _ = store.add(Camera(id="", kind=USB, index=0, specs=SPECS), store_file)
+    other = dict(SPECS, width=640, height=480)
+    second, created = store.add(
+        Camera(id="", kind=USB, index=0, specs=other), store_file
+    )
+    assert (created, second.id) == (False, first.id)
+    assert len(store.all_cameras(store_file)) == 1
+    assert store.find(first.id, store_file).specs == other
+
+
+def test_a_malformed_specs_entry_is_ignored_rather_than_fatal(store_file):
+    store_file.write_text(
+        json.dumps(
+            {
+                "version": 2,
+                "cameras": {"aaa": {"kind": "usb", "index": 0, "specs": "1280x720"}},
+            }
+        )
+    )
+    (camera,) = store.all_cameras(store_file)
+    assert camera.specs is None

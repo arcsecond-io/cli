@@ -34,7 +34,12 @@ def build_source(camera: Camera) -> FrameSource:
     ``store.expanded``.
     """
     if camera.kind == USB:
-        return OpenCVWebcamSource(camera.index, source_id=camera.id, label=camera.label)
+        return OpenCVWebcamSource(
+            camera.index,
+            source_id=camera.id,
+            label=camera.label,
+            specs=camera.specs,
+        )
     if camera.kind == NET:
         return build_network_source(camera.id, camera.url, camera.label)
     if camera.kind == ALLSKY:

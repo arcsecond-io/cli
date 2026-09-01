@@ -91,6 +91,11 @@ class Camera:
     index: Optional[int] = None  # usb
     url: Optional[str] = None  # net
     path: Optional[str] = None  # allsky
+    # What probing learned about a USB camera: width, height, fps. Recorded at
+    # registration, when the device is opened anyway, so that listing it later
+    # can report them without opening anything. Absent for a camera registered
+    # while unplugged, and for the kinds that have no such thing.
+    specs: Optional[dict] = None
 
     @property
     def identity(self) -> tuple:
@@ -134,6 +139,8 @@ class Camera:
         entry: dict = {"kind": self.kind}
         if self.kind == USB:
             entry["index"] = self.index
+            if self.specs:
+                entry["specs"] = self.specs
         elif self.kind == NET:
             entry["url"] = self.url
         else:
@@ -154,7 +161,14 @@ def camera_from_json(cam_id: str, entry: dict) -> Optional[Camera]:
         index = entry.get("index")
         if not isinstance(index, int):
             return None
-        return Camera(id=cam_id, kind=USB, index=index, label=label)
+        specs = entry.get("specs")
+        return Camera(
+            id=cam_id,
+            kind=USB,
+            index=index,
+            label=label,
+            specs=specs if isinstance(specs, dict) else None,
+        )
     if kind == NET:
         url = entry.get("url")
         if not url:
@@ -345,8 +359,17 @@ def add(camera: Camera, path: Optional[Path] = None) -> tuple[Camera, bool]:
 
     for existing in stored.values():
         if existing.identity == camera.identity:
+            # Re-registering the same camera is how its label and its measured
+            # resolution get refreshed — a camera that was unplugged the first
+            # time, or that has been set to a different mode since.
+            changed = False
             if camera.label and camera.label != existing.label:
                 existing.label = camera.label
+                changed = True
+            if camera.specs and camera.specs != existing.specs:
+                existing.specs = camera.specs
+                changed = True
+            if changed:
                 data["cameras"][existing.id] = existing.to_json()
                 save(data, path)
             return existing, False
@@ -403,7 +426,11 @@ def expanded(cameras: list[Camera], expand) -> list[Camera]:
             continue
         usable.append(
             Camera(
-                id=camera.id, kind=NET, url=url, label=camera.label, path=camera.path
+                id=camera.id,
+                kind=NET,
+                url=url,
+                label=camera.label,
+                path=camera.path,
             )
         )
     return usable
