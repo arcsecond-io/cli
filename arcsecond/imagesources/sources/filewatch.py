@@ -14,7 +14,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from .base import FrameSource, SourceInfo
+from .base import DetectedDevice, FrameSource, SourceInfo
 
 logger = logging.getLogger(__name__)
 
@@ -87,26 +87,25 @@ class FileWatchSource(FrameSource):
             id=self.id,
             kind=self.kind,
             label=self.label,
-            extra={"path": self.path},
+            extra={"path": self.path, "transport": "file"},
         )
 
 
-def detect_allsky() -> list[SourceInfo]:
-    """Probe well-known all-sky JPEG locations and return any that exist."""
-    found: list[SourceInfo] = []
+def detect_allsky() -> list[DetectedDevice]:
+    """Probe well-known all-sky JPEG locations and return any that exist.
+
+    Returns what is on disk right now, with no reference to what is
+    registered — the two are matched up by ``detection.report``. Nothing here
+    invents a name for a camera any more: a camera gets its id when it is
+    registered, and only then.
+    """
+    found: list[DetectedDevice] = []
     for path in ALLSKY_DISCOVERY_PATHS:
         if path.exists():
-            sid = f"allsky:{path.parent.parent.name or 'default'}"
-            # Disambiguate if multiple discoveries hit the same id.
-            base = sid
-            n = 1
-            while any(s.id == sid for s in found):
-                n += 1
-                sid = f"{base}-{n}"
             found.append(
-                SourceInfo(
-                    id=sid,
+                DetectedDevice(
                     kind="allsky",
+                    identity=("allsky", str(path)),
                     label=f"All-sky camera ({path})",
                     extra={"path": str(path)},
                 )

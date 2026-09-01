@@ -10,7 +10,7 @@ import logging
 import sys
 from typing import Optional
 
-from .base import FrameSource, SourceInfo
+from .base import DetectedDevice, FrameSource, SourceInfo
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +46,17 @@ class OpenCVWebcamSource(FrameSource):
     poll_interval = _FRAME_INTERVAL
     shareable = True  # USB webcams can only be opened once at a time.
 
-    def __init__(self, index: int):
+    def __init__(
+        self,
+        index: int,
+        source_id: Optional[str] = None,
+        label: Optional[str] = None,
+    ):
         self.index = index
-        self.id = f"webcam:{index}"
+        # Registered cameras pass their own short id. The fallback only exists
+        # for probing a device that nobody has registered yet.
+        self.id = source_id or f"usb:{index}"
+        self.label = label or f"USB webcam #{index}"
         self._cap = None
 
     async def open(self) -> None:
@@ -92,25 +100,34 @@ class OpenCVWebcamSource(FrameSource):
         self._cap = None
 
     def info(self) -> SourceInfo:
-        # Width/height/fps are only known once opened. Detection re-opens
-        # briefly to populate them; for already-known sources we just expose id.
-        return SourceInfo(id=self.id, kind=self.kind, label=f"USB webcam #{self.index}")
+        # Width/height/fps are only known once opened, and listing must not
+        # open anything — `arcsecond webcam detect` is what reports those.
+        return SourceInfo(
+            id=self.id,
+            kind=self.kind,
+            label=self.label,
+            extra={"transport": "usb", "index": self.index},
+        )
 
 
-def detect_webcams(max_index: int = _MAX_PROBE) -> list[SourceInfo]:
-    """Blocking probe of device indices 0..max_index-1."""
+def detect_webcams(max_index: int = _MAX_PROBE) -> list[DetectedDevice]:
+    """Blocking probe of device indices 0..max_index-1.
+
+    Returns what is plugged in right now, with no reference to what is
+    registered. Matching the two up is ``detection.report``'s job.
+    """
     import cv2
 
     backend = _capture_backend()
-    found: list[SourceInfo] = []
+    found: list[DetectedDevice] = []
     for i in range(max_index):
         cap = cv2.VideoCapture(i, backend)
         if not cap.isOpened():
             cap.release()
             continue
-        info = SourceInfo(
-            id=f"webcam:{i}",
-            kind="webcam",
+        device = DetectedDevice(
+            kind="usb",
+            identity=("usb", i),
             label=f"USB webcam #{i}",
             extra={
                 "index": i,
@@ -120,6 +137,6 @@ def detect_webcams(max_index: int = _MAX_PROBE) -> list[SourceInfo]:
             },
         )
         cap.release()
-        found.append(info)
+        found.append(device)
         logger.debug("Detected webcam at index %d", i)
     return found

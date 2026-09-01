@@ -86,9 +86,12 @@ def test_detect_webcams_reports_every_open_index():
     with patch.dict(sys.modules, {"cv2": cv2}), patch.object(sys, "platform", "linux"):
         found = detect_webcams(max_index=2)
 
-    assert [i.id for i in found] == ["webcam:0", "webcam:1"]
-    assert all(i.kind == "webcam" for i in found)
-    assert [i.extra["index"] for i in found] == [0, 1]
+    # Detection reports identities, not ids: a device nobody has registered
+    # does not have an id yet, and inventing one is what used to make the
+    # printed id and the id `forget` accepted disagree.
+    assert [d.identity for d in found] == [("usb", 0), ("usb", 1)]
+    assert all(d.kind == "usb" for d in found)
+    assert [d.extra["index"] for d in found] == [0, 1]
 
 
 def test_detect_webcams_skips_indices_that_do_not_open():
@@ -98,7 +101,7 @@ def test_detect_webcams_skips_indices_that_do_not_open():
     with patch.dict(sys.modules, {"cv2": cv2}), patch.object(sys, "platform", "linux"):
         found = detect_webcams(max_index=3)
 
-    assert [i.id for i in found] == ["webcam:1"]
+    assert [d.identity for d in found] == [("usb", 1)]
     # Every probe is released, including the ones that never opened.
     assert cv2.VideoCapture.return_value.release.call_count == 3
 
@@ -114,6 +117,19 @@ def test_detect_webcams_finds_nothing_when_no_device_opens():
 # ---------------------------------------------------------------------------
 # Opening a source
 # ---------------------------------------------------------------------------
+
+
+def test_a_registered_camera_is_addressed_by_its_own_id():
+    """The registry passes the store's id in; the source must not invent one."""
+    assert OpenCVWebcamSource(2, source_id="k3f", label="Guide cam").id == "k3f"
+    assert OpenCVWebcamSource(2, source_id="k3f", label="Guide cam").info().id == "k3f"
+
+
+def test_info_says_how_the_camera_is_reached_without_opening_it():
+    info = OpenCVWebcamSource(2, source_id="k3f").info()
+    assert info.kind == "webcam"
+    assert info.extra["transport"] == "usb"
+    assert info.extra["index"] == 2
 
 
 def test_open_uses_the_same_backend_as_detection():

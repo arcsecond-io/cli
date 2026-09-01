@@ -1,0 +1,210 @@
+"""Tests for the three-way detection report.
+
+`detect` answers three separate questions and must not blur them: what is here
+but unknown, what is known and here, what is known and gone. Each of the three
+buckets is asserted on its own, because the old command printed detection and
+registration one after the other with no way to tell which was which.
+"""
+
+from unittest.mock import patch
+
+import pytest
+
+from arcsecond.imagesources import detection
+from arcsecond.imagesources.sources.base import DetectedDevice
+from arcsecond.imagesources.store import ALLSKY, NET, USB, WEBCAM_KINDS, Camera
+
+
+def _usb_device(index, width=1280, height=720, fps=30.0):
+    return DetectedDevice(
+        kind=USB,
+        identity=(USB, index),
+        label=f"USB webcam #{index}",
+        extra={"index": index, "width": width, "height": height, "fps": fps},
+    )
+
+
+def _report(cameras, kinds=WEBCAM_KINDS, devices=(), **kwargs):
+    with patch.object(detection, "_detect_webcams", return_value=list(devices)):
+        return detection.report(cameras, kinds, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# The three buckets
+# ---------------------------------------------------------------------------
+
+
+def test_a_detected_unregistered_webcam_is_new():
+    report = _report([], devices=[_usb_device(0)])
+    assert [d.identity for d in report.new] == [(USB, 0)]
+    assert report.present == []
+    assert report.missing == []
+
+
+def test_a_detected_registered_webcam_is_present():
+    camera = Camera(id="abc", kind=USB, index=0)
+    report = _report([camera], devices=[_usb_device(0)])
+    assert report.new == []
+    assert report.present == [camera]
+    assert report.missing == []
+
+
+def test_a_registered_webcam_that_is_not_there_is_missing():
+    camera = Camera(id="abc", kind=USB, index=0)
+    report = _report([camera], devices=[])
+    assert report.new == []
+    assert report.present == []
+    assert report.missing == [camera]
+    assert "not attached" in report.detail["abc"]
+
+
+def test_the_three_buckets_are_reported_together():
+    registered = Camera(id="abc", kind=USB, index=0)
+    gone = Camera(id="def", kind=USB, index=9)
+    report = _report([registered, gone], devices=[_usb_device(0), _usb_device(1)])
+    assert [d.identity for d in report.new] == [(USB, 1)]
+    assert report.present == [registered]
+    assert report.missing == [gone]
+
+
+def test_detection_registers_nothing(tmp_path):
+    """`detect` probes and reports. Registering is `add`'s job, and only `add`'s."""
+    from arcsecond.imagesources import store
+
+    store_file = tmp_path / "s.json"
+    _report([], devices=[_usb_device(0)])
+    assert store.all_cameras(store_file) == []
+
+
+def test_a_new_device_reports_its_resolution():
+    report = _report([], devices=[_usb_device(0, 1920, 1080, 25.0)])
+    assert report.detail[(USB, 0)] == "1920×1080, 25.0 fps"
+
+
+# ---------------------------------------------------------------------------
+# Kinds are kept apart
+# ---------------------------------------------------------------------------
+
+
+def test_webcam_detection_ignores_all_sky_cameras():
+    sky = Camera(id="abc", kind=ALLSKY, path="/nowhere.jpg")
+    report = _report([sky], kinds=WEBCAM_KINDS, devices=[])
+    assert report.is_empty
+
+
+def test_all_sky_detection_ignores_webcams():
+    usb = Camera(id="abc", kind=USB, index=0)
+    with patch.object(detection, "detect_allsky", return_value=[]):
+        report = detection.report([usb], (ALLSKY,))
+    assert report.is_empty
+
+
+# ---------------------------------------------------------------------------
+# Network cameras: never new, but confirmed or reported missing
+# ---------------------------------------------------------------------------
+
+
+def test_a_reachable_network_camera_is_present():
+    camera = Camera(id="abc", kind=NET, url="rtsp://cam.local/s")
+    with patch.object(detection, "_is_reachable", return_value=(True, "answering")):
+        report = _report([camera])
+    assert report.present == [camera]
+    assert report.new == []
+
+
+def test_an_unreachable_network_camera_is_missing_with_a_reason():
+    camera = Camera(id="abc", kind=NET, url="rtsp://cam.local/s")
+    with patch.object(detection, "_is_reachable", return_value=(False, "no answer")):
+        report = _report([camera])
+    assert report.missing == [camera]
+    assert report.detail["abc"] == "no answer"
+
+
+def test_no_network_says_so_rather_than_guessing():
+    camera = Camera(id="abc", kind=NET, url="rtsp://cam.local/s")
+    with patch.object(detection, "_is_reachable", side_effect=AssertionError("called")):
+        report = _report([camera], check_network=False)
+    assert report.present == [camera]
+    assert report.detail["abc"] == "not contacted"
+
+
+def test_reachability_never_leaks_the_password():
+    camera = Camera(id="abc", kind=NET, url="rtsp://admin:hunter2@127.0.0.1:1/s")
+    reachable, why = detection._is_reachable(camera, timeout=0.2)
+    assert reachable is False
+    assert "hunter2" not in why
+
+
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("rtsp://cam.local/s", ("cam.local", 554)),
+        ("rtsps://cam.local/s", ("cam.local", 322)),
+        ("http://cam.local/snap.jpg", ("cam.local", 80)),
+        ("https://cam.local/snap.jpg", ("cam.local", 443)),
+        ("rtsp://cam.local:8554/s", ("cam.local", 8554)),
+    ],
+)
+def test_the_port_to_check_is_taken_from_the_url(url, expected):
+    assert detection._network_endpoint(url) == expected
+
+
+# ---------------------------------------------------------------------------
+# All-sky cameras
+# ---------------------------------------------------------------------------
+
+
+def test_an_all_sky_camera_at_its_own_path_is_present_not_missing(tmp_path):
+    """A camera writing somewhere unusual is not missing — only unusual."""
+    image = tmp_path / "latest.jpg"
+    image.write_bytes(b"x")
+    camera = Camera(id="abc", kind=ALLSKY, path=str(image))
+    with patch.object(detection, "detect_allsky", return_value=[]):
+        report = detection.report([camera], (ALLSKY,))
+    assert report.present == [camera]
+
+
+def test_an_all_sky_camera_with_no_image_is_missing(tmp_path):
+    camera = Camera(id="abc", kind=ALLSKY, path=str(tmp_path / "nope.jpg"))
+    with patch.object(detection, "detect_allsky", return_value=[]):
+        report = detection.report([camera], (ALLSKY,))
+    assert report.missing == [camera]
+    assert report.detail["abc"] == "no image at that path"
+
+
+def test_a_glob_reports_which_file_matched(tmp_path):
+    (tmp_path / "a.jpg").write_bytes(b"x")
+    camera = Camera(id="abc", kind=ALLSKY, path=str(tmp_path / "*.jpg"))
+    with patch.object(detection, "detect_allsky", return_value=[]):
+        report = detection.report([camera], (ALLSKY,))
+    assert report.present == [camera]
+    assert report.detail["abc"].endswith("a.jpg")
+
+
+def test_a_detected_all_sky_camera_that_is_registered_is_not_reported_twice(tmp_path):
+    image = tmp_path / "latest.jpg"
+    image.write_bytes(b"x")
+    camera = Camera(id="abc", kind=ALLSKY, path=str(image))
+    device = DetectedDevice(
+        kind=ALLSKY,
+        identity=(ALLSKY, str(image)),
+        label="All-sky",
+        extra={"path": str(image)},
+    )
+    with patch.object(detection, "detect_allsky", return_value=[device]):
+        report = detection.report([camera], (ALLSKY,))
+    assert report.present == [camera]
+    assert report.new == []
+    assert report.missing == []
+
+
+# ---------------------------------------------------------------------------
+# Probing must never take the report down
+# ---------------------------------------------------------------------------
+
+
+def test_a_probe_that_explodes_does_not_lose_the_registered_cameras():
+    camera = Camera(id="abc", kind=USB, index=0)
+    with patch.object(detection, "_detect_webcams", side_effect=OSError("no cv2")):
+        report = detection.report([camera], WEBCAM_KINDS, check_network=False)
+    assert report.missing == [camera]

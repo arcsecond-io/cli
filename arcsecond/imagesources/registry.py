@@ -1,11 +1,16 @@
 """
-Source resolution and discovery for the proxy.
+The cameras the proxy is serving, and how to open one.
 
-Webcams are auto-detected by probing OpenCV device indices.
-All-sky sources are either auto-discovered at well-known paths or registered
-explicitly by the user (``arcsecond allsky add``-style overrides passed at
-``run()`` time).
-Network cameras are always registered explicitly — there is nothing to probe.
+The registry holds exactly what was registered with ``arcsecond webcam add``
+and ``arcsecond allsky add`` — nothing more. It never probes for hardware on
+its own: discovery is what ``arcsecond webcam detect`` is for, and it is a
+thing the operator asks for, not a thing that happens behind their back while
+a client is waiting for a list.
+
+A source is addressed by the camera's three-character id (``k3f``), the same
+id the CLI prints. There is no second, prefixed form of the id — the two used
+to disagree, and every ``forget`` typed from what the screen showed failed
+because of it.
 """
 
 import asyncio
@@ -14,29 +19,27 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .sources.base import FrameSource, SourceInfo
-from .sources.filewatch import FileWatchSource, detect_allsky
+from .sources.filewatch import FileWatchSource
 from .sources.network import build_network_source
-from .sources.opencv import OpenCVWebcamSource, detect_webcams
+from .sources.opencv import OpenCVWebcamSource
+from .store import ALLSKY, NET, USB, Camera
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class AllskyOverride:
-    id: str  # bare id, will be prefixed with "allsky:"
-    path: str  # file path or glob
-    label: Optional[str] = None
+def build_source(camera: Camera) -> FrameSource:
+    """The right :class:`FrameSource` for ``camera``.
 
-
-@dataclass
-class NetcamOverride:
-    id: str  # bare id, will be prefixed with "netcam:"
-    url: str  # rtsp:// or http:// URL, ready to use: ${VAR} already expanded
-    label: Optional[str] = None
-    # The URL as the operator typed it, with any ${VARIABLE} still in place.
-    # This is the form that gets remembered on disk — see store.py. Defaults to
-    # `url` for sources that never went through a shell.
-    raw_url: Optional[str] = None
+    ``camera.url`` must already have had its ``${VARIABLE}`` expanded — see
+    ``store.expanded``.
+    """
+    if camera.kind == USB:
+        return OpenCVWebcamSource(camera.index, source_id=camera.id, label=camera.label)
+    if camera.kind == NET:
+        return build_network_source(camera.id, camera.url, camera.label)
+    if camera.kind == ALLSKY:
+        return FileWatchSource(camera.id, camera.path, camera.label)
+    raise KeyError(f"Unknown camera kind: {camera.kind!r}")
 
 
 @dataclass
@@ -74,7 +77,7 @@ class AcquiredSource:
 
 
 class Registry:
-    """Discover and instantiate sources on demand.
+    """Hold the registered cameras, and instantiate them on demand.
 
     Sources marked ``shareable=True`` (e.g. OpenCV webcams, which can only be
     opened once on Windows/DirectShow) are reference-counted: the first
@@ -84,123 +87,64 @@ class Registry:
     per acquire so each consumer keeps its own per-reader state.
     """
 
-    def __init__(
-        self,
-        allsky_overrides: Optional[list[AllskyOverride]] = None,
-        netcam_overrides: Optional[list[NetcamOverride]] = None,
-    ):
-        self.allsky_overrides = allsky_overrides or []
-        self.netcam_overrides = netcam_overrides or []
+    def __init__(self, cameras: Optional[list[Camera]] = None):
+        self._cameras: dict[str, Camera] = {c.id: c for c in cameras or []}
         self._shared: dict[str, _SharedEntry] = {}
         self._lock = asyncio.Lock()
 
-    def add_sources(
-        self,
-        allsky: Optional[list[AllskyOverride]] = None,
-        netcam: Optional[list[NetcamOverride]] = None,
-    ) -> list[str]:
+    @property
+    def cameras(self) -> list[Camera]:
+        return list(self._cameras.values())
+
+    def add(self, cameras: list[Camera]) -> list[str]:
         """Register cameras into a running proxy. Returns the ids added.
 
-        An id that is already registered is replaced. Both lists are rebuilt and
-        assigned whole rather than mutated in place: ``_build`` reads them
-        without holding the lock, and would otherwise be able to see a list
+        An id that is already registered is replaced. The dict is rebuilt and
+        assigned whole rather than mutated in place: ``infos`` and ``_build``
+        read it without holding the lock, and would otherwise be able to see it
         mid-update.
         """
-        added: list[str] = []
+        if not cameras:
+            return []
+        merged = dict(self._cameras)
+        for camera in cameras:
+            merged[camera.id] = camera
+        self._cameras = merged
+        return [c.id for c in cameras]
 
-        if allsky:
-            merged = {o.id: o for o in self.allsky_overrides}
-            for o in allsky:
-                merged[o.id] = o
-                added.append(f"allsky:{o.id}")
-            self.allsky_overrides = list(merged.values())
-
-        if netcam:
-            merged = {o.id: o for o in self.netcam_overrides}
-            for o in netcam:
-                merged[o.id] = o
-                added.append(f"netcam:{o.id}")
-            self.netcam_overrides = list(merged.values())
-
-        return added
-
-    def remove_source(self, kind: str, source_id: str) -> bool:
+    def remove(self, cam_id: str) -> bool:
         """Unregister one camera. Returns False if it was not registered.
 
         Any viewer already streaming it keeps its own handle and is left alone;
         it simply cannot be acquired again.
         """
-        if kind == "allsky":
-            kept = [o for o in self.allsky_overrides if o.id != source_id]
-            if len(kept) == len(self.allsky_overrides):
-                return False
-            self.allsky_overrides = kept
-            return True
+        if cam_id not in self._cameras:
+            return False
+        merged = dict(self._cameras)
+        del merged[cam_id]
+        self._cameras = merged
+        return True
 
-        if kind == "netcam":
-            kept = [o for o in self.netcam_overrides if o.id != source_id]
-            if len(kept) == len(self.netcam_overrides):
-                return False
-            self.netcam_overrides = kept
-            return True
+    def infos(self) -> list[SourceInfo]:
+        """What this proxy is serving. Nothing is opened or contacted.
 
-        raise ValueError(f"Unknown source kind: {kind!r}")
-
-    def detect(self) -> list[SourceInfo]:
+        A camera that is off, unplugged or unreachable is still listed: finding
+        that out would mean opening every device on every call, and would hold
+        the answer up for every client whenever one camera was down.
+        """
         infos: list[SourceInfo] = []
-        try:
-            infos.extend(detect_webcams())
-        except Exception as e:
-            logger.warning("Webcam detection failed: %s", e)
-
-        if self.allsky_overrides:
-            for o in self.allsky_overrides:
-                src = FileWatchSource(f"allsky:{o.id}", o.path, o.label)
-                infos.append(src.info())
-        else:
-            infos.extend(detect_allsky())
-
-        # Registered network cameras are listed without being contacted. A
-        # camera that is off or unreachable would otherwise hold up /detect for
-        # every caller; `arcsecond netcam test` is the way to check one.
-        for o in self.netcam_overrides:
+        for camera in self._cameras.values():
             try:
-                src = build_network_source(f"netcam:{o.id}", o.url, o.label)
+                infos.append(build_source(camera).info())
             except KeyError as e:
-                logger.warning("Skipping network camera %r: %s", o.id, e)
-                continue
-            infos.append(src.info())
-
+                logger.warning("Skipping camera %r: %s", camera.id, e)
         return infos
 
     def _build(self, source_id: str) -> FrameSource:
-        # Backward-compat: bare numeric ids → webcam.
-        if source_id.isdigit():
-            return OpenCVWebcamSource(int(source_id))
-
-        kind, _, name = source_id.partition(":")
-        if not name:
-            raise KeyError(f"Unknown source id: {source_id!r}")
-
-        if kind == "webcam":
-            return OpenCVWebcamSource(int(name))
-
-        if kind == "allsky":
-            for o in self.allsky_overrides:
-                if o.id == name:
-                    return FileWatchSource(source_id, o.path, o.label)
-            for info in detect_allsky():
-                if info.id == source_id:
-                    return FileWatchSource(source_id, info.extra["path"], info.label)
-            raise KeyError(f"No all-sky source registered as {source_id!r}")
-
-        if kind == "netcam":
-            for o in self.netcam_overrides:
-                if o.id == name:
-                    return build_network_source(source_id, o.url, o.label)
-            raise KeyError(f"No network camera registered as {source_id!r}")
-
-        raise KeyError(f"Unknown source kind: {kind!r}")
+        camera = self._cameras.get(source_id)
+        if camera is None:
+            raise KeyError(f"No camera is registered as {source_id!r}")
+        return build_source(camera)
 
     async def acquire(self, source_id: str) -> AcquiredSource:
         candidate = self._build(source_id)

@@ -50,3 +50,19 @@ class FrameSource(ABC):
 
     def info(self) -> SourceInfo:
         return SourceInfo(id=self.id, kind=self.kind, label=self.id)
+
+
+@dataclass
+class DetectedDevice:
+    """A camera found by probing, whether or not it is registered.
+
+    Detection reports what is *there*; the store says what is *registered*.
+    The two are matched on ``identity`` — see ``store.Camera.identity`` — which
+    is why this carries an identity rather than an id: a device nobody has
+    registered yet does not have an id to carry.
+    """
+
+    kind: str  # a store kind: "usb" or "allsky"
+    identity: tuple
+    label: str
+    extra: Optional[dict] = None

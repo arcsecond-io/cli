@@ -1,4 +1,8 @@
-"""Tests for network camera sources (``netcam:``).
+"""Tests for cameras reached over the network.
+
+These are webcams like any other — same commands, same store, same ``kind`` on
+the wire — and only the transport differs. That is asserted here rather than
+assumed, because it is the whole reason the separate ``netcam`` group is gone.
 
 The async sources are driven with ``asyncio.run`` from ordinary sync tests, so
 no pytest-asyncio dependency is needed.
@@ -11,17 +15,14 @@ from unittest.mock import MagicMock, patch
 import click
 import pytest
 
-from arcsecond.imagesources.commands import (
-    _expand_env_vars,
-    _parse_netcam_overrides,
-)
-from arcsecond.imagesources.registry import NetcamOverride, Registry
+from arcsecond.imagesources.commands import _expand_env_vars
+from arcsecond.imagesources.registry import Registry, build_source
 from arcsecond.imagesources.sources.network import (
     HTTPImageSource,
     RTSPSource,
-    build_network_source,
     redact_url,
 )
+from arcsecond.imagesources.store import NET, USB, Camera
 
 JPEG_A = b"\xff\xd8\xff\xe0 first frame \xff\xd9"
 JPEG_B = b"\xff\xd8\xff\xe0 second frame \xff\xd9"
@@ -53,60 +54,26 @@ def test_redact_url_leaves_a_bare_username_alone():
 
 
 # ---------------------------------------------------------------------------
-# Option parsing
+# Environment variables in camera URLs
 # ---------------------------------------------------------------------------
 
 
-def test_parse_netcam_overrides_reads_id_and_url():
-    (override,) = _parse_netcam_overrides(("dome=rtsp://cam.local/stream1",))
-    assert override.id == "dome"
-    assert override.url == "rtsp://cam.local/stream1"
-
-
-def test_parse_netcam_overrides_splits_on_the_first_equals_only():
-    """A query string keeps its own '=' signs."""
-    (override,) = _parse_netcam_overrides(("dome=http://cam.local/s.jpg?size=full",))
-    assert override.url == "http://cam.local/s.jpg?size=full"
-
-
-def test_parse_netcam_overrides_accepts_several_cameras():
-    overrides = _parse_netcam_overrides(
-        ("dome=rtsp://a.local/s", "roof=http://b.local/s.jpg")
-    )
-    assert [o.id for o in overrides] == ["dome", "roof"]
-
-
-@pytest.mark.parametrize("value", ["no-equals-sign", "=rtsp://cam.local/s", "dome="])
-def test_parse_netcam_overrides_rejects_malformed_values(value):
-    with pytest.raises(click.BadParameter):
-        _parse_netcam_overrides((value,))
-
-
-def test_parse_netcam_overrides_rejects_an_unsupported_scheme():
-    with pytest.raises(click.BadParameter, match="must start with"):
-        _parse_netcam_overrides(("dome=ftp://cam.local/s",))
-
-
-def test_parse_netcam_overrides_expands_an_environment_variable(monkeypatch):
+def test_expand_env_vars_fills_in_a_variable(monkeypatch):
     monkeypatch.setenv("DOME_CAM_PW", "hunter2")
-    (override,) = _parse_netcam_overrides(
-        ("dome=rtsp://admin:${DOME_CAM_PW}@cam.local/s",),
-    )
-    assert override.url == "rtsp://admin:hunter2@cam.local/s"
+    assert _expand_env_vars("rtsp://a:${DOME_CAM_PW}@c/s") == "rtsp://a:hunter2@c/s"
 
 
-def test_parse_netcam_overrides_reports_a_missing_environment_variable(monkeypatch):
+def test_expand_env_vars_reports_a_missing_variable(monkeypatch):
     monkeypatch.delenv("DOME_CAM_PW", raising=False)
     with pytest.raises(click.BadParameter, match="DOME_CAM_PW"):
-        _parse_netcam_overrides(("dome=rtsp://admin:${DOME_CAM_PW}@cam.local/s",))
+        _expand_env_vars("rtsp://a:${DOME_CAM_PW}@c/s")
 
 
-def test_parse_netcam_overrides_does_not_echo_the_password(monkeypatch):
-    """A rejected URL must not put the password in the error message."""
+def test_expand_env_vars_does_not_echo_the_password(monkeypatch):
     monkeypatch.setenv("DOME_CAM_PW", "hunter2")
-    with pytest.raises(click.BadParameter) as excinfo:
-        _parse_netcam_overrides(("dome=ftp://admin:${DOME_CAM_PW}@cam.local/s",))
-    assert "hunter2" not in str(excinfo.value)
+    with pytest.raises(click.BadParameter) as e:
+        _expand_env_vars("rtsp://a:${DOME_CAM_PW}@c/s${MISSING}")
+    assert "hunter2" not in str(e.value)
 
 
 def test_expand_env_vars_reports_a_stray_dollar_sign():
@@ -115,68 +82,67 @@ def test_expand_env_vars_reports_a_stray_dollar_sign():
 
 
 # ---------------------------------------------------------------------------
-# Scheme dispatch
+# A network camera is a webcam
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("url", ["rtsp://cam.local/s", "rtsps://cam.local/s"])
-def test_build_network_source_picks_rtsp(url):
-    assert isinstance(build_network_source("netcam:dome", url), RTSPSource)
+def _netcam(url=RTSP_URL, cam_id="abc"):
+    return Camera(id=cam_id, kind=NET, url=url)
 
 
-@pytest.mark.parametrize("url", ["http://cam.local/s.jpg", "https://cam.local/s.jpg"])
-def test_build_network_source_picks_http(url):
-    assert isinstance(build_network_source("netcam:dome", url), HTTPImageSource)
+@pytest.mark.parametrize("url", ["rtsp://cam.local/s", "http://cam.local/snap.jpg"])
+def test_a_network_camera_reports_the_same_kind_as_a_usb_one(url):
+    """`kind` says what it is; `extra.transport` says how it is reached."""
+    from arcsecond.imagesources.sources.opencv import OpenCVWebcamSource
+
+    over_the_network = build_source(_netcam(url)).info()
+    over_usb = OpenCVWebcamSource(0, source_id="xyz").info()
+
+    assert over_the_network.kind == over_usb.kind == "webcam"
+    assert over_the_network.extra["transport"] != over_usb.extra["transport"]
 
 
-def test_build_network_source_rejects_an_unsupported_scheme():
-    with pytest.raises(KeyError):
-        build_network_source("netcam:dome", "ftp://cam.local/s")
+def test_the_registry_lists_a_registered_network_camera():
+    registry = Registry(cameras=[_netcam(cam_id="abc")])
+    (info,) = registry.infos()
+    assert info.id == "abc"
+    assert info.extra["url"] == "rtsp://admin:***@192.168.1.42:554/stream1"
 
 
-# ---------------------------------------------------------------------------
-# Registry
-# ---------------------------------------------------------------------------
-
-
-def test_registry_lists_registered_network_cameras():
-    registry = Registry(netcam_overrides=[NetcamOverride(id="dome", url=RTSP_URL)])
-    with (
-        patch("arcsecond.imagesources.registry.detect_webcams", return_value=[]),
-        patch("arcsecond.imagesources.registry.detect_allsky", return_value=[]),
-    ):
-        infos = registry.detect()
-
-    assert [i.id for i in infos] == ["netcam:dome"]
-    assert infos[0].kind == "netcam"
-    assert infos[0].extra["url"] == "rtsp://admin:***@192.168.1.42:554/stream1"
-
-
-def test_registry_never_reports_a_password_to_the_backend():
+def test_the_registry_never_reports_a_password_to_the_backend():
     """/detect output goes to the backend — it must not carry credentials."""
-    registry = Registry(netcam_overrides=[NetcamOverride(id="dome", url=RTSP_URL)])
-    with (
-        patch("arcsecond.imagesources.registry.detect_webcams", return_value=[]),
-        patch("arcsecond.imagesources.registry.detect_allsky", return_value=[]),
-    ):
-        infos = registry.detect()
-
-    assert "hunter2" not in str(infos)
+    registry = Registry(cameras=[_netcam()])
+    assert "hunter2" not in str(registry.infos())
 
 
-def test_registry_builds_a_registered_network_camera():
-    registry = Registry(
-        netcam_overrides=[NetcamOverride(id="dome", url="rtsp://cam.local/s")]
-    )
-    source = registry._build("netcam:dome")
+def test_listing_contacts_nothing():
+    """A camera that is switched off must not hold the list up for the others."""
+    registry = Registry(cameras=[_netcam(url="rtsp://192.0.2.1/s")])
+    with patch.object(RTSPSource, "open", side_effect=AssertionError("opened!")):
+        assert len(registry.infos()) == 1
+
+
+def test_the_registry_builds_a_registered_network_camera():
+    registry = Registry(cameras=[_netcam(url="rtsp://cam.local/s", cam_id="abc")])
+    source = registry._build("abc")
     assert isinstance(source, RTSPSource)
     assert source.url == "rtsp://cam.local/s"
 
 
-def test_registry_rejects_an_unregistered_network_camera():
-    registry = Registry(netcam_overrides=[])
-    with pytest.raises(KeyError, match="netcam:dome"):
-        registry._build("netcam:dome")
+def test_the_registry_rejects_an_unregistered_camera():
+    with pytest.raises(KeyError, match="abc"):
+        Registry()._build("abc")
+
+
+def test_a_usb_and_a_network_camera_live_in_one_registry():
+    """One proxy, one id space — whatever the camera is plugged into."""
+    from arcsecond.imagesources.sources.opencv import OpenCVWebcamSource
+
+    registry = Registry(
+        cameras=[_netcam(cam_id="abc"), Camera(id="xyz", kind=USB, index=0)]
+    )
+    assert isinstance(registry._build("abc"), RTSPSource)
+    assert isinstance(registry._build("xyz"), OpenCVWebcamSource)
 
 
 # ---------------------------------------------------------------------------

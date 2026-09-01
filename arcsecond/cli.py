@@ -64,11 +64,25 @@ main.add_command(backups)
 # Manage the Arcsecond.local database (e.g. `arcsecond db set-password`).
 main.add_command(db)
 
-# Native live-image proxy — exposes USB webcams, all-sky cameras and network
-# cameras to Arcsecond.local Docker containers via host.docker.internal.
+# Cameras, and the native live-image proxy that exposes them to
+# Arcsecond.local Docker containers via host.docker.internal. `webcam` covers
+# every camera the machine can reach, whether over USB or over the network;
+# `allsky` covers all-sky cameras writing JPEGs to disk; `proxy` runs the one
+# server that serves whatever those two registered.
 main.add_command(imagesources.webcam)
 main.add_command(imagesources.allsky)
+main.add_command(imagesources.proxy)
+
+# Removed: a network camera is a webcam. Kept only to say so — see commands.py.
 main.add_command(imagesources.netcam)
 
 # Local ASCOM Alpaca diagnostics (e.g. `arcsecond alpaca probe dome ...`).
 main.add_command(alpaca_group)
+
+
+# `arcsecond proxy start` launches its detached proxy as
+# `python -m arcsecond.cli proxy start --foreground`, which needs this. Going
+# through the interpreter rather than the console script means the background
+# proxy runs on the very same Python as the command that started it.
+if __name__ == "__main__":
+    main()

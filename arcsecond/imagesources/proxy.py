@@ -8,31 +8,35 @@ not forward USB devices — and may not have access to host filesystem paths
 where all-sky software writes images. This small aiohttp server runs
 **natively** on the host and exposes:
 
+    GET  /health             → liveness, plus this proxy's pid to a local caller
     GET  /detect             → JSON list of available sources
     WS   /stream/{id}        → continuous JPEG-frame stream (base64-in-JSON)
     POST /sources            → register cameras into the running proxy
     DEL  /sources/{id}       → unregister one
 
 The last two answer only to callers on this same machine, so that the proxy
-stays read-only to everyone else on the network. They are what lets each
-`arcsecond ... start` command be run separately, at different times, without
-the second one trying to bind a port the first already holds.
+stays read-only to everyone else on the network. They are what lets a camera
+registered or forgotten while the proxy is up take effect immediately, instead
+of at the next restart.
 
-Source ids look like ``webcam:0``, ``allsky:roof`` or ``netcam:dome``. For
-backward compatibility, a bare numeric id (``/stream/0``) is treated as
-``webcam:0``.
+A source id is the camera's three-character id — ``k3f`` — exactly as
+``arcsecond webcam`` prints it. ``/detect`` lists what is registered without
+opening or contacting anything, so one camera being switched off never holds
+up the answer for the others.
 
 Network cameras are served by the same proxy even though they are not attached
 to the host at all: the proxy connects out to them over the network, so one
-proxy covers every camera it can reach.
+proxy covers every camera it can reach. They are not a separate kind on the
+wire — ``kind`` is ``webcam`` for both, and ``extra.transport`` says whether it
+is reached over ``usb``, ``rtsp`` or ``http``.
 
 The backend reads the ``LIVE_IMAGE_PROXY_URL`` environment variable
 (``WEBCAM_PROXY_URL`` is accepted as a deprecated fallback). When set, it
 delegates detection and streaming to this proxy.
 
-Started by ``arcsecond webcam start`` (USB and network cameras) or
-``arcsecond allsky start`` (all-sky cameras). Whichever runs first puts the
-proxy up; the other hands its cameras to it and exits.
+Started by ``arcsecond proxy start``, which serves every camera registered
+with ``arcsecond webcam add`` and ``arcsecond allsky add``. Starting the proxy
+never registers anything by itself, and registering never starts it.
 """
 
 import asyncio
@@ -40,10 +44,12 @@ import base64
 import ipaddress
 import json
 import logging
+import os
 from dataclasses import asdict
 from typing import Optional
 
-from .registry import AllskyOverride, NetcamOverride, Registry
+from . import runtime, store
+from .registry import Registry
 
 logger = logging.getLogger(__name__)
 
@@ -70,25 +76,41 @@ def _is_loopback(request) -> bool:
 
 
 async def handle_health(request):
+    """Confirm this is one of our proxies, and say which process it is.
+
+    The pid is what lets `arcsecond proxy stop` signal the right process
+    instead of trusting the pid in the runtime file — a file outlives a proxy
+    that was killed, and by then the number in it may belong to something else
+    entirely. It is told only to callers on this machine: nobody on the
+    network needs it, and the point of /health for them is just "yes, alive".
+    """
     from aiohttp import web
 
-    return web.json_response({"status": "ok"})
+    answer = {"status": "ok"}
+    if _is_loopback(request):
+        answer["pid"] = os.getpid()
+    return web.json_response(answer)
 
 
 async def handle_detect(request):
+    """List the registered cameras. Nothing is opened or contacted.
+
+    Kept at /detect because that is the path the backend already calls, but it
+    no longer probes: what this proxy serves is what was registered, and
+    finding out which of them are switched on right now is
+    `arcsecond webcam detect`'s job, not something to do on every page load.
+    """
     from aiohttp import web
 
     registry: Registry = request.app["registry"]
-    loop = asyncio.get_running_loop()
-    infos = await loop.run_in_executor(None, registry.detect)
-    return web.json_response([asdict(i) for i in infos])
+    return web.json_response([asdict(i) for i in registry.infos()])
 
 
 async def handle_add_sources(request):
     """Register cameras into the running proxy (same machine only).
 
-    This is what lets `arcsecond allsky start` join a proxy that `arcsecond
-    webcam start` already put on this port, instead of failing to bind it.
+    This is what lets `arcsecond webcam add` take effect on a proxy that is
+    already up, rather than the operator having to restart it.
     """
     from aiohttp import web
 
@@ -105,20 +127,28 @@ async def handle_add_sources(request):
     except Exception:
         return web.json_response({"error": "Expected a JSON body."}, status=400)
 
-    try:
-        allsky = [
-            AllskyOverride(id=e["id"], path=e["path"])
-            for e in payload.get("allsky") or []
-        ]
-        netcam = [
-            NetcamOverride(id=e["id"], url=e["url"])
-            for e in payload.get("netcam") or []
-        ]
-    except (KeyError, TypeError) as e:
-        return web.json_response({"error": f"Malformed registration: {e}"}, status=400)
+    entries = payload.get("cameras") if isinstance(payload, dict) else None
+    if not isinstance(entries, list) or not entries:
+        return web.json_response(
+            {"error": 'Expected a JSON body of the form {"cameras": [...]}.'},
+            status=400,
+        )
+
+    cameras = []
+    for entry in entries:
+        if not isinstance(entry, dict) or not entry.get("id"):
+            return web.json_response(
+                {"error": f"Malformed registration: {entry!r}"}, status=400
+            )
+        camera = store.camera_from_json(entry["id"], entry)
+        if camera is None:
+            return web.json_response(
+                {"error": f"Malformed registration: {entry!r}"}, status=400
+            )
+        cameras.append(camera)
 
     registry: Registry = request.app["registry"]
-    added = registry.add_sources(allsky=allsky, netcam=netcam)
+    added = registry.add(cameras)
     for source_id in added:
         logger.info("Live-image proxy: %s registered.", source_id)
 
@@ -135,23 +165,51 @@ async def handle_remove_source(request):
             {"error": "Cameras can only be removed from this machine."}, status=403
         )
 
-    source_id = request.match_info["id"]
-    kind, _, name = source_id.partition(":")
-    if not name:
+    source_id = (request.match_info["id"] or "").strip()
+    if not source_id:
         return web.json_response(
-            {"error": f"Expected an id such as allsky:roof, got {source_id!r}."},
-            status=400,
+            {"error": "Expected a camera id, such as k3f."}, status=400
         )
 
     registry: Registry = request.app["registry"]
-    try:
-        removed = registry.remove_source(kind, name)
-    except ValueError as e:
-        return web.json_response({"error": str(e)}, status=400)
+    removed = registry.remove(source_id)
 
     if removed:
         logger.info("Live-image proxy: %s removed.", source_id)
     return web.json_response({"removed": removed})
+
+
+async def _viewer_has_gone(ws, delay: float) -> bool:
+    """Pause between frames, and say whether the viewer left during the pause.
+
+    A plain sleep would not notice. Nothing in this handler reads from the
+    socket, so a viewer that closed its tab is only discovered when a send
+    fails — and a camera that sends only when its picture changes may not send
+    again for minutes, or at all overnight. The device would stay open the
+    whole time, for nobody.
+
+    Waiting *on the socket* also means shutdown is immediate: closing the
+    websocket wakes this up rather than leaving it mid-sleep.
+    """
+    from aiohttp import WSMsgType
+
+    if delay <= 0:
+        # A camera streaming as fast as it can. It sends constantly, so a
+        # departed viewer surfaces as a failed send; do not pay for a timeout
+        # on every frame.
+        await asyncio.sleep(0)
+        return False
+
+    try:
+        message = await ws.receive(timeout=delay)
+    except asyncio.TimeoutError:
+        return False  # nothing was said, which is the normal case
+    return message.type in (
+        WSMsgType.CLOSE,
+        WSMsgType.CLOSING,
+        WSMsgType.CLOSED,
+        WSMsgType.ERROR,
+    )
 
 
 async def handle_stream(request):
@@ -163,17 +221,28 @@ async def handle_stream(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
+    # Registered so that shutdown can close it. Without this the loop below
+    # runs until the viewer goes away, and aiohttp waits for the handler to
+    # return before exiting — so a proxy with someone watching would sit
+    # through Ctrl-C and `proxy stop` alike.
+    request.app["websockets"].add(ws)
+
     try:
         acquired = await registry.acquire(source_id)
     except KeyError as e:
-        logger.error("Live-image proxy: %s", e)
-        await ws.send_str(json.dumps({"type": "error", "message": str(e)}))
+        # e.args[0] rather than str(e): KeyError's str() wraps the message in
+        # its own quotes, and this text is shown to whoever is watching.
+        message = e.args[0] if e.args else "Unknown camera"
+        logger.error("Live-image proxy: %s", message)
+        await ws.send_str(json.dumps({"type": "error", "message": message}))
         await ws.close()
+        request.app["websockets"].discard(ws)
         return ws
     except Exception as e:
         logger.error("Live-image proxy: cannot open %s: %s", source_id, e)
         await ws.send_str(json.dumps({"type": "error", "message": str(e)}))
         await ws.close()
+        request.app["websockets"].discard(ws)
         return ws
 
     logger.info(
@@ -217,10 +286,12 @@ async def handle_stream(request):
                         }
                     )
                 )
-            await asyncio.sleep(acquired.poll_interval)
+            if await _viewer_has_gone(ws, acquired.poll_interval):
+                break
     except (ConnectionResetError, ConnectionError):
         pass
     finally:
+        request.app["websockets"].discard(ws)
         remaining = await acquired.release()
         logger.info(
             "Live-image proxy: client disconnected from %s (refcount=%d).",
@@ -236,25 +307,66 @@ async def handle_stream(request):
 # ---------------------------------------------------------------------------
 
 
-def run(
-    host: str = "0.0.0.0",
-    port: int = 8765,
-    allsky_overrides: Optional[list[AllskyOverride]] = None,
-    netcam_overrides: Optional[list[NetcamOverride]] = None,
-):
-    """Build and run the aiohttp application (blocking)."""
+# How long to wait for viewers to go away once shutdown has begun. They are
+# asked to leave first (see _close_websockets), so this is only a backstop —
+# but it has to be short, because it is what an operator waits through after
+# pressing Ctrl-C or running `arcsecond proxy stop`.
+SHUTDOWN_TIMEOUT = 5.0
+
+
+async def _close_websockets(app):
+    """Send every viewer away, so their handlers return and the proxy can exit.
+
+    aiohttp waits for in-flight handlers before it finishes shutting down, and
+    a streaming handler loops until its socket closes. Nothing closes it on its
+    own, so without this the proxy would ignore Ctrl-C for as long as somebody
+    was watching.
+    """
+    from aiohttp import WSCloseCode
+
+    for ws in set(app["websockets"]):
+        await ws.close(code=WSCloseCode.GOING_AWAY, message=b"proxy shutting down")
+
+
+def build_app(cameras: Optional[list] = None):
+    """The configured aiohttp application, wired but not running."""
     from aiohttp import web
 
     app = web.Application()
-    app["registry"] = Registry(
-        allsky_overrides=allsky_overrides, netcam_overrides=netcam_overrides
-    )
+    app["registry"] = Registry(cameras=cameras)
+    app["websockets"] = set()
+    app.on_shutdown.append(_close_websockets)
 
     app.router.add_get("/health", handle_health)
     app.router.add_get("/detect", handle_detect)
     app.router.add_get("/stream/{id}", handle_stream)
     app.router.add_post("/sources", handle_add_sources)
     app.router.add_delete("/sources/{id}", handle_remove_source)
+    return app
+
+
+def run(
+    host: str = "0.0.0.0",
+    port: int = 8765,
+    cameras: Optional[list] = None,
+):
+    """Build and run the aiohttp application (blocking)."""
+    from aiohttp import web
+
+    app = build_app(cameras)
 
     logger.info("Live-image proxy starting on %s:%d", host, port)
-    web.run_app(app, host=host, port=port, print=lambda msg: logger.info(msg))
+    # Recorded so that `add`, `forget` and `proxy status` can find this proxy
+    # without the operator having to remember the port. Cleared on the way out,
+    # and never trusted without a health check — see runtime.py.
+    runtime.write(host, port)
+    try:
+        web.run_app(
+            app,
+            host=host,
+            port=port,
+            shutdown_timeout=SHUTDOWN_TIMEOUT,
+            print=lambda msg: logger.info(msg),
+        )
+    finally:
+        runtime.clear()

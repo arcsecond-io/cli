@@ -57,7 +57,10 @@ def redact_url(url: str) -> str:
 class RTSPSource(FrameSource):
     """RTSP video stream, decoded with OpenCV and re-encoded as JPEG."""
 
-    kind = "netcam"
+    # A camera reached over the network is a webcam like any other, and is
+    # listed, added and forgotten by the same commands. Only how it is reached
+    # differs, and that is reported as the transport below.
+    kind = "webcam"
     poll_interval = _RTSP_FRAME_INTERVAL
     # Shared between viewers. Unlike the HTTP source below there is no
     # per-viewer state — every read returns whatever frame is current — and
@@ -132,7 +135,7 @@ class HTTPImageSource(FrameSource):
     request and looks at the content type it gets back.
     """
 
-    kind = "netcam"
+    kind = "webcam"  # see RTSPSource
     poll_interval = _SNAPSHOT_INTERVAL
     # Not shared. A still-image camera only sends a frame on when the picture
     # has changed since the last one *that viewer* received, so two viewers
