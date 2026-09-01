@@ -69,6 +69,96 @@ def _validate_target_class(target_class: str, label: str, errors: list[str]) -> 
         )
 
 
+def _base_payload(
+    effective_name,
+    effective_identifier,
+    *,
+    color,
+    notes,
+    profile,
+    organisation,
+    extra_fields,
+) -> dict:
+    """The fields every target carries, whatever its class or mode."""
+    payload: dict[str, Any] = {}
+    if effective_name:
+        payload["name"] = effective_name
+    if effective_identifier:
+        payload["identifier"] = effective_identifier
+    for key, value in {
+        "color": color,
+        "notes": notes,
+        "profile": profile,
+        "organisation": organisation,
+    }.items():
+        if value is not None:
+            payload[key] = value
+    if extra_fields:
+        payload.update(
+            {
+                key: value
+                for key, value in dict(extra_fields).items()
+                if value is not None
+            }
+        )
+    return payload
+
+
+def _plan_manual(
+    payload: dict,
+    effective_coordinates,
+    effective_name,
+    effective_identifier,
+    user_target_class,
+    inferred_target_class,
+    warnings: list,
+    errors: list,
+) -> "ArcsecondTargetPayloadPlan":
+    """The plan for coordinates the user gave us themselves.
+
+    The backend takes manual coordinates only as an 'AstronomicalObject', so
+    that class is assumed here and anything inferred is set aside — with a
+    warning, since silently ignoring what was inferred would be worse.
+    """
+    if user_target_class and user_target_class != TARGET_CLASS_ASTRONOMICAL_OBJECT:
+        errors.append(
+            "Manual coordinates are currently supported only for 'AstronomicalObject'. "
+            f"Received target_class '{user_target_class}'."
+        )
+
+    effective_target_class = user_target_class or TARGET_CLASS_ASTRONOMICAL_OBJECT
+
+    if (
+        inferred_target_class
+        and not user_target_class
+        and inferred_target_class != TARGET_CLASS_ASTRONOMICAL_OBJECT
+    ):
+        warnings.append(
+            f"Inferred target_class '{inferred_target_class}' is ignored because user-provided coordinates "
+            "require a manual 'AstronomicalObject' payload with the current backend."
+        )
+
+    if not effective_name:
+        errors.append("Manual coordinates require a target name.")
+
+    payload["target_class"] = effective_target_class
+    payload["mode"] = TARGET_MODE_MANUAL
+    payload["object"] = {
+        "name": effective_name or effective_identifier,
+        "equatorial_coordinates": effective_coordinates,
+    }
+
+    return ArcsecondTargetPayloadPlan(
+        payload=payload,
+        target_class=effective_target_class or None,
+        mode=TARGET_MODE_MANUAL,
+        target_class_source="user" if user_target_class else "default",
+        coordinates_source="user",
+        warnings=tuple(warnings),
+        errors=tuple(errors),
+    )
+
+
 def plan_target_payload(
     *,
     name: Optional[str] = None,
@@ -123,67 +213,26 @@ def plan_target_payload(
             f"User-provided target_class '{user_target_class}' overrides inferred target_class '{inferred_target_class}'."
         )
 
-    payload: dict[str, Any] = {}
-    if effective_name:
-        payload["name"] = effective_name
-    if effective_identifier:
-        payload["identifier"] = effective_identifier
-    for key, value in {
-        "color": color,
-        "notes": notes,
-        "profile": profile,
-        "organisation": organisation,
-    }.items():
-        if value is not None:
-            payload[key] = value
-    if extra_fields:
-        payload.update(
-            {
-                key: value
-                for key, value in dict(extra_fields).items()
-                if value is not None
-            }
-        )
+    payload = _base_payload(
+        effective_name,
+        effective_identifier,
+        color=color,
+        notes=notes,
+        profile=profile,
+        organisation=organisation,
+        extra_fields=extra_fields,
+    )
 
     if effective_coordinates is not None:
-        if user_target_class and user_target_class != TARGET_CLASS_ASTRONOMICAL_OBJECT:
-            errors.append(
-                "Manual coordinates are currently supported only for 'AstronomicalObject'. "
-                f"Received target_class '{user_target_class}'."
-            )
-
-        effective_target_class = user_target_class or TARGET_CLASS_ASTRONOMICAL_OBJECT
-        target_class_source = "user" if user_target_class else "default"
-        coordinates_source = "user"
-
-        if (
-            inferred_target_class
-            and not user_target_class
-            and inferred_target_class != TARGET_CLASS_ASTRONOMICAL_OBJECT
-        ):
-            warnings.append(
-                f"Inferred target_class '{inferred_target_class}' is ignored because user-provided coordinates "
-                "require a manual 'AstronomicalObject' payload with the current backend."
-            )
-
-        if not effective_name:
-            errors.append("Manual coordinates require a target name.")
-
-        payload["target_class"] = effective_target_class
-        payload["mode"] = TARGET_MODE_MANUAL
-        payload["object"] = {
-            "name": effective_name or effective_identifier,
-            "equatorial_coordinates": effective_coordinates,
-        }
-
-        return ArcsecondTargetPayloadPlan(
-            payload=payload,
-            target_class=effective_target_class or None,
-            mode=TARGET_MODE_MANUAL,
-            target_class_source=target_class_source,
-            coordinates_source=coordinates_source,
-            warnings=tuple(warnings),
-            errors=tuple(errors),
+        return _plan_manual(
+            payload,
+            effective_coordinates,
+            effective_name,
+            effective_identifier,
+            user_target_class,
+            inferred_target_class,
+            warnings,
+            errors,
         )
 
     effective_target_class = user_target_class or inferred_target_class

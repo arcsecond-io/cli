@@ -212,6 +212,58 @@ async def _viewer_has_gone(ws, delay: float) -> bool:
     )
 
 
+async def _acquire_for(ws, registry: Registry, source_id: str):
+    """Open the camera for this viewer, or tell them why not. None on failure."""
+    try:
+        return await registry.acquire(source_id)
+    except KeyError as e:
+        # e.args[0] rather than str(e): KeyError's str() wraps the message in
+        # its own quotes, and this text is shown to whoever is watching.
+        message = e.args[0] if e.args else "Unknown camera"
+        logger.error("Live-image proxy: %s", message)
+    except Exception as e:
+        message = str(e)
+        logger.error("Live-image proxy: cannot open %s: %s", source_id, e)
+
+    await ws.send_str(json.dumps({"type": "error", "message": message}))
+    await ws.close()
+    return None
+
+
+async def _pump_frames(ws, acquired, source_id: str) -> None:
+    """Send frames until the viewer leaves or the camera gives up."""
+    # Tolerate a few transient read failures before giving up. ~2 s at the
+    # source's poll rate covers most one-off DirectShow hiccups.
+    max_consecutive_failures = max(1, int(2.0 / max(acquired.poll_interval, 0.01)))
+    consecutive_failures = 0
+
+    while not ws.closed:
+        try:
+            jpeg: Optional[bytes] = await acquired.read()
+        except Exception as e:
+            consecutive_failures += 1
+            if consecutive_failures >= max_consecutive_failures:
+                msg = f"frame read failed for {source_id}: {e}"
+                logger.warning(
+                    "Live-image proxy: %s (after %d attempts)",
+                    msg,
+                    consecutive_failures,
+                )
+                await ws.send_str(json.dumps({"type": "error", "message": msg}))
+                return
+            await asyncio.sleep(acquired.poll_interval)
+            continue
+
+        consecutive_failures = 0
+        if jpeg is not None:
+            b64 = base64.b64encode(jpeg).decode("ascii")
+            await ws.send_str(
+                json.dumps({"type": "frame", "format": "jpeg/base64", "data": b64})
+            )
+        if await _viewer_has_gone(ws, acquired.poll_interval):
+            return
+
+
 async def handle_stream(request):
     from aiohttp import web
 
@@ -227,21 +279,8 @@ async def handle_stream(request):
     # through Ctrl-C and `proxy stop` alike.
     request.app["websockets"].add(ws)
 
-    try:
-        acquired = await registry.acquire(source_id)
-    except KeyError as e:
-        # e.args[0] rather than str(e): KeyError's str() wraps the message in
-        # its own quotes, and this text is shown to whoever is watching.
-        message = e.args[0] if e.args else "Unknown camera"
-        logger.error("Live-image proxy: %s", message)
-        await ws.send_str(json.dumps({"type": "error", "message": message}))
-        await ws.close()
-        request.app["websockets"].discard(ws)
-        return ws
-    except Exception as e:
-        logger.error("Live-image proxy: cannot open %s: %s", source_id, e)
-        await ws.send_str(json.dumps({"type": "error", "message": str(e)}))
-        await ws.close()
+    acquired = await _acquire_for(ws, registry, source_id)
+    if acquired is None:
         request.app["websockets"].discard(ws)
         return ws
 
@@ -251,43 +290,8 @@ async def handle_stream(request):
         acquired.refcount,
     )
 
-    # Tolerate a few transient read failures before giving up. ~2 s at the
-    # source's poll rate covers most one-off DirectShow hiccups.
-    max_consecutive_failures = max(1, int(2.0 / max(acquired.poll_interval, 0.01)))
-    consecutive_failures = 0
-
     try:
-        while not ws.closed:
-            try:
-                jpeg: Optional[bytes] = await acquired.read()
-            except Exception as e:
-                consecutive_failures += 1
-                if consecutive_failures >= max_consecutive_failures:
-                    msg = f"frame read failed for {source_id}: {e}"
-                    logger.warning(
-                        "Live-image proxy: %s (after %d attempts)",
-                        msg,
-                        consecutive_failures,
-                    )
-                    await ws.send_str(json.dumps({"type": "error", "message": msg}))
-                    break
-                await asyncio.sleep(acquired.poll_interval)
-                continue
-
-            consecutive_failures = 0
-            if jpeg is not None:
-                b64 = base64.b64encode(jpeg).decode("ascii")
-                await ws.send_str(
-                    json.dumps(
-                        {
-                            "type": "frame",
-                            "format": "jpeg/base64",
-                            "data": b64,
-                        }
-                    )
-                )
-            if await _viewer_has_gone(ws, acquired.poll_interval):
-                break
+        await _pump_frames(ws, acquired, source_id)
     except (ConnectionResetError, ConnectionError):
         pass
     finally:

@@ -22,7 +22,8 @@ pass_state = click.make_pass_decorator(State, ensure=True)
     required=True,
     type=click.Choice(["access", "upload"], case_sensitive=False),
     prompt=True,
-    help="Your access key (a.k.a. API key). Visit your settings page to copy and paste it here. One of Access or Upload key must be provided.",
+    help="Your access key (a.k.a. API key). Visit your settings page to copy "
+    "and paste it here. One of Access or Upload key must be provided.",
 )
 @click.option(
     "--key",

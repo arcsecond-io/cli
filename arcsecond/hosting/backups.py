@@ -1,6 +1,5 @@
 import gzip
 import json
-import os
 import re
 import subprocess
 import sys
@@ -466,6 +465,107 @@ def backups():
     pass
 
 
+def _classify_backup(path, code_migs):
+    """``(status, only_in_backup, only_in_code, stale_apps)`` for one dump.
+
+    A dump that will not read is broken and is not compared any further; one
+    that reads is only comparable when the running code can be asked which
+    migrations it has.
+    """
+    healthy, _reason = _classify_dump_health(path)
+    if not healthy:
+        return STATUS_BROKEN, set(), set(), set()
+    if code_migs is None:
+        return STATUS_UNKNOWN, set(), set(), set()
+    return _compute_compat(_extract_backup_migrations(path), code_migs)
+
+
+def _print_backup_rows(items, code_migs):
+    """One line per backup. Returns ``(broken_count, most_recent, stale)``.
+
+    ``most_recent`` is the classification of items[0] — the newest dump, which
+    is the one the closing advice is about.
+    """
+    click.echo("")
+    click.echo(f"{'#':>3}  {'Timestamp (UTC)':<20}  {'Size':>10}  Status")
+    click.echo("-" * 70)
+
+    broken_count = 0
+    most_recent = None
+    most_recent_stale = set()
+
+    for i, (path, ts) in enumerate(items, start=1):
+        status, only_in_backup, only_in_code, stale_apps = _classify_backup(
+            path, code_migs
+        )
+        if status == STATUS_BROKEN:
+            broken_count += 1
+        if i == 1:
+            most_recent = (status, only_in_backup, only_in_code, stale_apps)
+            most_recent_stale = stale_apps
+        click.echo(
+            f"{i:>3}  {ts.strftime('%Y-%m-%d %H:%M:%S'):<20}  "
+            f"{_human_size(path.stat().st_size):>10}  "
+            f"{_format_status(status, only_in_backup, only_in_code, stale_apps)}"
+        )
+
+    return broken_count, most_recent, most_recent_stale
+
+
+def _print_migration_diff(only_in_code, only_in_backup, stale_apps):
+    """Spell out how a dump's migrations differ from the running code's."""
+    if only_in_code:
+        click.echo(
+            f"  + {len(only_in_code)} migration(s) applied in the running code "
+            f"after this backup was taken:"
+        )
+        for app, name in sorted(only_in_code):
+            click.echo(f"      {app}.{name}")
+    if only_in_backup:
+        click.echo(
+            f"  - {len(only_in_backup)} migration(s) recorded in this backup "
+            f"but no longer in the running code:"
+        )
+        for app, name in sorted(only_in_backup):
+            click.echo(f"      {app}.{name}")
+    if stale_apps:
+        click.echo(
+            f"  ~ {len(stale_apps)} migration(s) from uninstalled app(s) "
+            f"(harmless leftovers, ignored for compatibility):"
+        )
+        for app, name in sorted(stale_apps):
+            click.echo(f"      {app}.{name}")
+
+
+def _print_destination_section(items):
+    """What the destination storage holds that this machine does not."""
+    remote_names = _destination_listing()
+    if remote_names is None:
+        click.echo(
+            click.style(
+                "Destination storage: not configured or unreachable — local backups only.",
+                fg="yellow",
+            )
+        )
+        return
+
+    remote_only = _remote_only_items(items, remote_names)
+    if not remote_only:
+        return
+
+    click.echo("")
+    click.echo("On the destination storage only:")
+    for j, (name, ts) in enumerate(remote_only, start=len(items) + 1):
+        click.echo(
+            f"{j:>3}  {ts.strftime('%Y-%m-%d %H:%M:%S'):<20}  {'—':>10}  "
+            f"on destination (pull to check)"
+        )
+    click.echo(
+        "Use `arcsecond backups inspect <#>` or `restore <#>` — the dump "
+        "is pulled back locally first."
+    )
+
+
 @backups.command(
     name="list", help="List available DB backups with compatibility status."
 )
@@ -496,60 +596,12 @@ def list_cmd():
             )
         )
 
-    click.echo("")
-    click.echo(f"{'#':>3}  {'Timestamp (UTC)':<20}  {'Size':>10}  Status")
-    click.echo("-" * 70)
-    broken_count = 0
-    most_recent = (
-        None  # (status, only_in_backup, only_in_code, stale_apps) for items[0]
-    )
-    most_recent_stale = set()
-    for i, (path, ts) in enumerate(items, start=1):
-        healthy, _reason = _classify_dump_health(path)
-        only_in_backup, only_in_code, stale_apps = set(), set(), set()
-        if not healthy:
-            status = STATUS_BROKEN
-            broken_count += 1
-        elif code_migs is None:
-            status = STATUS_UNKNOWN
-        else:
-            backup_migs = _extract_backup_migrations(path)
-            status, only_in_backup, only_in_code, stale_apps = _compute_compat(
-                backup_migs, code_migs
-            )
-        if i == 1:
-            most_recent = (status, only_in_backup, only_in_code, stale_apps)
-            most_recent_stale = stale_apps
-        click.echo(
-            f"{i:>3}  {ts.strftime('%Y-%m-%d %H:%M:%S'):<20}  "
-            f"{_human_size(path.stat().st_size):>10}  "
-            f"{_format_status(status, only_in_backup, only_in_code, stale_apps)}"
-        )
+    broken_count, most_recent, most_recent_stale = _print_backup_rows(items, code_migs)
     click.echo("")
     click.echo(f"{len(items)} backup(s) in {backups_dir}")
 
-    remote_names = _destination_listing()
-    if remote_names is None:
-        click.echo(
-            click.style(
-                "Destination storage: not configured or unreachable — local backups only.",
-                fg="yellow",
-            )
-        )
-    else:
-        remote_only = _remote_only_items(items, remote_names)
-        if remote_only:
-            click.echo("")
-            click.echo("On the destination storage only:")
-            for j, (name, ts) in enumerate(remote_only, start=len(items) + 1):
-                click.echo(
-                    f"{j:>3}  {ts.strftime('%Y-%m-%d %H:%M:%S'):<20}  {'—':>10}  "
-                    f"on destination (pull to check)"
-                )
-            click.echo(
-                "Use `arcsecond backups inspect <#>` or `restore <#>` — the dump "
-                "is pulled back locally first."
-            )
+    _print_destination_section(items)
+
     if broken_count:
         click.echo(
             click.style(
@@ -618,27 +670,7 @@ def inspect_cmd(ref):
     click.echo(
         f"Compat:      {_format_status(status, only_in_backup, only_in_code, stale_apps)}"
     )
-    if only_in_code:
-        click.echo(
-            f"  + {len(only_in_code)} migration(s) applied in the running code "
-            f"after this backup was taken:"
-        )
-        for app, name in sorted(only_in_code):
-            click.echo(f"      {app}.{name}")
-    if only_in_backup:
-        click.echo(
-            f"  - {len(only_in_backup)} migration(s) recorded in this backup "
-            f"but no longer in the running code:"
-        )
-        for app, name in sorted(only_in_backup):
-            click.echo(f"      {app}.{name}")
-    if stale_apps:
-        click.echo(
-            f"  ~ {len(stale_apps)} migration(s) from uninstalled app(s) "
-            f"(harmless leftovers, ignored for compatibility):"
-        )
-        for app, name in sorted(stale_apps):
-            click.echo(f"      {app}.{name}")
+    _print_migration_diff(only_in_code, only_in_backup, stale_apps)
 
     context = _most_recent_context(status, only_in_backup, only_in_code, stale_apps)
     if context:
@@ -820,22 +852,8 @@ def _iter_filtered_dump_lines(backup_path):
         )
 
 
-def _restore_dump(backup_path, dry_run):
-    db_user = _read_env_value("POSTGRES_USER") or "arcsecond_docker"
-    db_name = _read_env_value("POSTGRES_DB") or "arcsecond_docker"
-    db_password = _read_env_value("POSTGRES_PASSWORD") or ""
-
-    click.echo(
-        click.style(
-            f"$ gunzip -c {backup_path} | docker exec -i -e PGPASSWORD=*** "
-            f"{DB_CONTAINER} psql -U {db_user} -d {db_name}",
-            fg="cyan",
-        )
-    )
-    if dry_run:
-        return
-
-    psql = subprocess.Popen(
+def _spawn_psql(db_user, db_name, db_password):
+    return subprocess.Popen(
         [
             "docker",
             "exec",
@@ -854,53 +872,62 @@ def _restore_dump(backup_path, dry_run):
         stdin=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    # Any IO error from writing to / closing psql's stdin almost always means
-    # psql already exited (e.g. ON_ERROR_STOP=1 tripped on a SQL error). We
-    # swallow the IO error here and let the rc / stderr check below surface
-    # the *real* cause — surfacing the Python-side IO error instead just
-    # hides what psql actually complained about.
-    #
-    # We deliberately do NOT use Popen.communicate() to drain stderr: once
-    # we've closed stdin ourselves, communicate() tries to flush it again on
-    # its way through and raises ValueError("flush of closed file"). Reading
-    # stderr directly and then wait()ing sidesteps the whole interaction.
+
+
+def _feed_dump(psql, backup_path):
+    """Write the dump into psql's stdin. Returns the write error, or None.
+
+    Any IO error from writing to / closing psql's stdin almost always means
+    psql already exited (e.g. ON_ERROR_STOP=1 tripped on a SQL error). It is
+    swallowed here and handed back so the caller can let the return code and
+    stderr surface the *real* cause — reporting the Python-side IO error
+    instead just hides what psql actually complained about.
+    """
     write_err = None
-    stderr_bytes = b""
+    assert psql.stdin is not None
     try:
-        assert psql.stdin is not None
-        try:
-            for line in _iter_filtered_dump_lines(backup_path):
-                psql.stdin.write(line)
-        except (BrokenPipeError, OSError, ValueError) as e:
-            write_err = e
-        finally:
-            try:
-                psql.stdin.close()
-            except (BrokenPipeError, OSError, ValueError):
-                pass
-
-        if psql.stderr is not None:
-            try:
-                stderr_bytes = psql.stderr.read() or b""
-            except (OSError, ValueError):
-                stderr_bytes = b""
-            finally:
-                try:
-                    psql.stderr.close()
-                except (OSError, ValueError):
-                    pass
-
-        try:
-            rc = psql.wait(timeout=300)
-        except subprocess.TimeoutExpired:
-            psql.kill()
-            rc = psql.wait(timeout=5)
+        for line in _iter_filtered_dump_lines(backup_path):
+            psql.stdin.write(line)
+    except (BrokenPipeError, OSError, ValueError) as e:
+        write_err = e
     finally:
-        if psql.poll() is None:
-            psql.kill()
-            psql.wait(timeout=5)
+        try:
+            psql.stdin.close()
+        except (BrokenPipeError, OSError, ValueError):
+            pass
+    return write_err
 
-    stderr_text = stderr_bytes.decode("utf-8", errors="replace").strip()
+
+def _drain_psql_stderr(psql) -> bytes:
+    """Read psql's stderr to the end.
+
+    Deliberately not Popen.communicate(): once stdin has been closed here,
+    communicate() tries to flush it again on its way through and raises
+    ValueError("flush of closed file"). Reading stderr directly and then
+    wait()ing sidesteps the whole interaction.
+    """
+    if psql.stderr is None:
+        return b""
+    try:
+        return psql.stderr.read() or b""
+    except (OSError, ValueError):
+        return b""
+    finally:
+        try:
+            psql.stderr.close()
+        except (OSError, ValueError):
+            pass
+
+
+def _wait_for_psql(psql) -> int:
+    try:
+        return psql.wait(timeout=300)
+    except subprocess.TimeoutExpired:
+        psql.kill()
+        return psql.wait(timeout=5)
+
+
+def _raise_on_restore_failure(rc, stderr_text, write_err):
     if rc != 0:
         if stderr_text:
             click.echo(click.style(stderr_text, fg="red"))
@@ -919,34 +946,38 @@ def _restore_dump(backup_path, dry_run):
         )
 
 
-@backups.command(
-    name="restore",
-    help="Restore a DB backup. Stops the backend, wipes the DB, "
-    "pipes the dump back in, then restarts the backend.",
-)
-@click.argument("ref", required=False)
-@click.option("--force", is_flag=True, help="Bypass the incompatible-backup block.")
-@click.option(
-    "--dry-run", is_flag=True, help="Print every command that would run; do nothing."
-)
-@click.option(
-    "--no-safety-backup", is_flag=True, help="Skip the pre-restore safety snapshot."
-)
-@basic_options
-def restore_cmd(ref, force, dry_run, no_safety_backup):
-    backups_dir = _ensure_install_dir()
-    if backups_dir is None:
-        sys.exit(1)
+def _restore_dump(backup_path, dry_run):
+    db_user = _read_env_value("POSTGRES_USER") or "arcsecond_docker"
+    db_name = _read_env_value("POSTGRES_DB") or "arcsecond_docker"
+    db_password = _read_env_value("POSTGRES_PASSWORD") or ""
 
-    if not _read_env_value("POSTGRES_PASSWORD"):
-        click.echo("POSTGRES_PASSWORD missing from .env — refusing to restore.")
-        sys.exit(1)
+    click.echo(
+        click.style(
+            f"$ gunzip -c {backup_path} | docker exec -i -e PGPASSWORD=*** "
+            f"{DB_CONTAINER} psql -U {db_user} -d {db_name}",
+            fg="cyan",
+        )
+    )
+    if dry_run:
+        return
 
-    items = _list_backup_files(backups_dir)
-    if not items:
-        click.echo(f"No backups available in {backups_dir}.")
-        sys.exit(1)
+    psql = _spawn_psql(db_user, db_name, db_password)
+    try:
+        write_err = _feed_dump(psql, backup_path)
+        stderr_bytes = _drain_psql_stderr(psql)
+        rc = _wait_for_psql(psql)
+    finally:
+        if psql.poll() is None:
+            psql.kill()
+            psql.wait(timeout=5)
 
+    _raise_on_restore_failure(
+        rc, stderr_bytes.decode("utf-8", errors="replace").strip(), write_err
+    )
+
+
+def _choose_backup_to_restore(backups_dir, items, ref):
+    """The dump to restore, chosen by reference or picked interactively."""
     if ref is None:
         # Interactive picker — print the list first
         ctx = click.get_current_context()
@@ -971,7 +1002,15 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
         )
         sys.exit(1)
 
-    # Compatibility check
+    return path
+
+
+def _vet_backup(path, force):
+    """Report how the dump compares with the running code, and decide.
+
+    Reads only. Exits rather than returning when the dump is incompatible and
+    the operator has not said --force.
+    """
     code_migs = _current_code_migrations()
     backup_migs = _extract_backup_migrations(path) if code_migs is not None else None
     status, only_in_backup, only_in_code, stale_apps = _compute_compat(
@@ -1018,7 +1057,9 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
             )
         )
 
-    # Confirmation: type the filename
+
+def _confirm_restore(path):
+    """Make the operator type the filename. Exits unless they get it right."""
     click.echo("")
     click.echo(
         click.style(
@@ -1034,9 +1075,28 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
         click.echo("Confirmation did not match. Aborted.")
         sys.exit(1)
 
+
+def _stop_services(dry_run):
+    """Stop everything but the database, which the restore needs running."""
+    for name in SERVICES_TO_STOP:
+        if dry_run or _container_running(name):
+            _run(["docker", "stop", name], dry_run, capture_output=True, text=True)
+
+
+def _start_services(dry_run):
+    """Bring the stack back. Compose restarts dependents; by name if it is absent."""
+    compose_file = Path.cwd() / "docker-compose.yml"
+    if compose_file.exists():
+        _run(["docker", "compose", "up", "-d"], dry_run)
+    else:
+        for name in reversed(SERVICES_TO_STOP):
+            _run(["docker", "start", name], dry_run, capture_output=True, text=True)
+
+
+def _perform_restore(path, backups_dir, dry_run, no_safety_backup):
+    """Take the safety copy, stop the services, wipe, reload, bring back up."""
     started = time.time()
 
-    # Safety backup
     if not no_safety_backup:
         try:
             safety = _take_safety_backup(backups_dir, dry_run)
@@ -1049,33 +1109,21 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
             click.style("Skipping safety backup (--no-safety-backup).", fg="yellow")
         )
 
-    # Stop services (leave db running)
-    for name in SERVICES_TO_STOP:
-        if dry_run or _container_running(name):
-            _run(["docker", "stop", name], dry_run, capture_output=True, text=True)
+    _stop_services(dry_run)
 
-    # Wipe & recreate DB
     try:
         _drop_and_recreate_db(dry_run)
     except Exception as e:
         click.echo(click.style(f"DB reset failed: {e}", fg="red"))
         sys.exit(1)
 
-    # Stream dump back in
     try:
         _restore_dump(path, dry_run)
     except Exception as e:
         click.echo(click.style(f"Restore failed: {e}", fg="red"))
         sys.exit(1)
 
-    # Restart api (compose will restart dependents). If compose isn't available,
-    # fall back to starting each container by name.
-    compose_file = Path.cwd() / "docker-compose.yml"
-    if compose_file.exists():
-        _run(["docker", "compose", "up", "-d"], dry_run)
-    else:
-        for name in reversed(SERVICES_TO_STOP):
-            _run(["docker", "start", name], dry_run, capture_output=True, text=True)
+    _start_services(dry_run)
 
     elapsed = time.time() - started
     click.echo("")
@@ -1086,3 +1134,37 @@ def restore_cmd(ref, force, dry_run, no_safety_backup):
             fg="green",
         )
     )
+
+
+@backups.command(
+    name="restore",
+    help="Restore a DB backup. Stops the backend, wipes the DB, "
+    "pipes the dump back in, then restarts the backend.",
+)
+@click.argument("ref", required=False)
+@click.option("--force", is_flag=True, help="Bypass the incompatible-backup block.")
+@click.option(
+    "--dry-run", is_flag=True, help="Print every command that would run; do nothing."
+)
+@click.option(
+    "--no-safety-backup", is_flag=True, help="Skip the pre-restore safety snapshot."
+)
+@basic_options
+def restore_cmd(ref, force, dry_run, no_safety_backup):
+    backups_dir = _ensure_install_dir()
+    if backups_dir is None:
+        sys.exit(1)
+
+    if not _read_env_value("POSTGRES_PASSWORD"):
+        click.echo("POSTGRES_PASSWORD missing from .env — refusing to restore.")
+        sys.exit(1)
+
+    items = _list_backup_files(backups_dir)
+    if not items:
+        click.echo(f"No backups available in {backups_dir}.")
+        sys.exit(1)
+
+    path = _choose_backup_to_restore(backups_dir, items, ref)
+    _vet_backup(path, force)
+    _confirm_restore(path)
+    _perform_restore(path, backups_dir, dry_run, no_safety_backup)

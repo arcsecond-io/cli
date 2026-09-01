@@ -1,15 +1,12 @@
 import os
-from datetime import datetime
 from logging import (
     DEBUG,
     INFO,
-    FileHandler,
     Formatter,
     Logger,
     StreamHandler,
     getLogger,
 )
-from pathlib import Path
 
 
 def get_logger(debug=False) -> Logger:

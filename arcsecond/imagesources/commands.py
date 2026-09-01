@@ -645,20 +645,22 @@ def _test_usb(camera: Camera):
     )
 
 
-def _test_url(url: str, timeout: float, suggest: bool, typed: str = ""):
+def _require_reachable_scheme(url: str):
+    """Refuse an address we cannot speak, and check the extra it will need."""
     scheme = urlsplit(url).scheme.lower()
     if scheme not in SUPPORTED_SCHEMES:
         raise click.BadParameter(
             f"{redact_url(url)} cannot be used. Camera addresses must start with "
             f"{', '.join(s + '://' for s in SUPPORTED_SCHEMES)}."
         )
-
     if scheme in RTSP_SCHEMES:
         _check_cv2()
     else:
         _check_aiohttp()
 
-    click.echo(f"Connecting to {redact_url(url)} ...")
+
+def _grab_one_frame(url: str, timeout: float):
+    """Connect, wait for a first image, and hand it back. Fails loudly."""
 
     async def _probe():
         source = build_network_source("test", url)
@@ -675,7 +677,7 @@ def _test_url(url: str, timeout: float, suggest: bool, typed: str = ""):
             await source.close()
 
     try:
-        frame = asyncio.run(asyncio.wait_for(_probe(), timeout + 5.0))
+        return asyncio.run(asyncio.wait_for(_probe(), timeout + 5.0))
     except asyncio.TimeoutError:
         _fail(
             f"no image after {timeout:.0f} seconds. The address may be wrong, "
@@ -684,6 +686,12 @@ def _test_url(url: str, timeout: float, suggest: bool, typed: str = ""):
     except Exception as e:
         _fail(str(e))
 
+
+def _test_url(url: str, timeout: float, suggest: bool, typed: str = ""):
+    _require_reachable_scheme(url)
+    click.echo(f"Connecting to {redact_url(url)} ...")
+
+    frame = _grab_one_frame(url, timeout)
     if not frame:
         _fail(f"connected, but no image arrived within {timeout:.0f} seconds.")
 

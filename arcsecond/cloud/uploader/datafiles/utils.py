@@ -61,7 +61,10 @@ def _display_custom_tags_info(context: DatasetUploadContext):
 def _display_telescope_info(context: DatasetUploadContext):
     """Displays telescope-related information."""
     if context.telescope:
-        msg = f" • Dataset will be attached to the telescope named '{context.telescope.get('name')}' ({context.telescope.get('uuid')})."
+        msg = (
+            f" • Dataset will be attached to the telescope named "
+            f"'{context.telescope.get('name')}' ({context.telescope.get('uuid')})."
+        )
         click.echo(msg)
     elif not context.dataset_uuid and context.dataset_name:
         msg = " • Dataset will not be attached to any telescope. It can be changed later in the web."

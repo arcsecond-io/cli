@@ -52,7 +52,7 @@ def test_prepare_upload_with_error(file_uploader):
 
     with (
         patch("arcsecond.api.endpoint.ArcsecondAPIEndpoint.create") as mock_func_create,
-        patch("arcsecond.api.endpoint.ArcsecondAPIEndpoint.update") as mock_func_update,
+        patch("arcsecond.api.endpoint.ArcsecondAPIEndpoint.update"),
     ):
         error_message = "API error"
         mock_func_create.return_value = (None, error_message)

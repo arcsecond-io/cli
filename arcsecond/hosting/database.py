@@ -179,6 +179,142 @@ def db():
     pass
 
 
+def _preflight_rotation(password, env_path):
+    """Everything that must hold before .env or the cluster is touched.
+
+    Checked in this order on purpose: a rejected password is a typo to fix, not
+    a reason to go and start Docker; and rotating away from credentials that do
+    not work would only replace one broken state with another.
+
+    Returns ``(db_user, db_name, old_password)``, or exits.
+    """
+    if not env_path.exists():
+        _print_wrong_dir_hint()
+        sys.exit(1)
+
+    if password is not None:
+        error = _validate_password(password)
+        if error:
+            click.echo(f"Refusing that password — {error}")
+            sys.exit(1)
+
+    db_user = _read_env_value("POSTGRES_USER") or "arcsecond_docker"
+    db_name = _read_env_value("POSTGRES_DB") or "arcsecond_docker"
+    old_password = _read_env_value(ENV_KEY) or ""
+
+    if not _container_running(DB_CONTAINER):
+        click.echo(
+            f"The {DB_CONTAINER} container is not running.\n"
+            "Start the stack first:  docker compose up -d db"
+        )
+        sys.exit(1)
+
+    click.echo("Checking the current credentials...")
+    if not _credentials_work(db_user, old_password, db_name):
+        click.echo(
+            f"\nCannot authenticate as '{db_user}' with the {ENV_KEY} currently in "
+            f"{env_path.name}.\n\n"
+            "Fix that mismatch before rotating: .env has to match the password the\n"
+            "database volume was initialised with. Installs created before Arcsecond\n"
+            "read .env at all were always bootstrapped as\n"
+            "'arcsecond_docker'/'arcsecond_docker'."
+        )
+        sys.exit(1)
+
+    return db_user, db_name, old_password
+
+
+def _report_dry_run(env_path, backup_path, db_user, no_restart):
+    click.echo(click.style("\nDry run — nothing was changed.", fg="yellow"))
+    click.echo(f"  would back up   {env_path.name} -> {backup_path.name}")
+    click.echo(f"  would rewrite   {ENV_KEY} in {env_path.name}")
+    click.echo(f"  would run       ALTER ROLE \"{db_user}\" WITH PASSWORD '***'")
+    if not no_restart:
+        click.echo(
+            f"  would recreate  {', '.join(_services_to_recreate())} "
+            "(docker compose up -d --force-recreate)"
+        )
+    sys.exit(0)
+
+
+def _recover_unverified_password(
+    env_path, original_text, db_user, db_name, old_password, new_password
+):
+    """Put things back when an ALTER reported success but did not take.
+
+    Three outcomes are possible and they are not the same emergency, so each
+    gets its own message: the revert worked; nothing ever changed; or the
+    cluster now expects a password no file records. Always exits non-zero.
+    """
+    # Authenticate the revert with the password we were just told is in effect.
+    revert = _psql(
+        f'ALTER ROLE "{db_user}" WITH PASSWORD {_sql_literal(old_password)};',
+        db_user,
+        new_password,
+        db_name,
+    )
+    env_path.write_text(original_text, encoding="utf-8")
+
+    if revert.returncode == 0:
+        click.echo(
+            click.style(
+                "\nThe new password did not verify; rolled the database and "
+                f"{env_path.name} back to the old one.",
+                fg="red",
+            )
+        )
+    elif _credentials_work(db_user, old_password, db_name):
+        # Neither password change took effect, so the cluster is exactly where
+        # it started. Nothing is broken — say so plainly rather than sending the
+        # operator hunting for a password that was never set.
+        click.echo(
+            click.style(
+                "\nThe new password did not verify and the database still "
+                f"accepts the old one, so nothing changed. {env_path.name} has "
+                "been restored.",
+                fg="red",
+            )
+        )
+    else:
+        click.echo(
+            click.style(
+                "\nThe new password did not verify AND the database no longer "
+                "accepts the old one. It may now expect:\n\n"
+                f"    {new_password}\n\n"
+                f"{env_path.name} has been restored to the old value — set it to "
+                "whichever of the two actually works.",
+                fg="red",
+            )
+        )
+    sys.exit(1)
+
+
+def _recreate_services(no_restart):
+    services = _services_to_recreate()
+    if no_restart:
+        click.echo(
+            "\nSkipping the restart, as asked. The running containers still hold the\n"
+            "old password and will fail on their next reconnect. Apply it with:\n"
+            f"    docker compose up -d --force-recreate {' '.join(services)}"
+        )
+        return
+
+    click.echo(f"Recreating {', '.join(services)}...")
+    cmd = ["docker", "compose", "up", "-d", "--force-recreate", *services]
+    click.echo(click.style(f"$ {' '.join(cmd)}", fg="cyan"))
+    recreate = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if recreate.returncode != 0:
+        click.echo(
+            click.style(
+                "\nThe password was changed successfully, but recreating the "
+                "containers failed:\n" + (recreate.stderr or "").strip() + "\n\n"
+                "Re-run the command above once Docker is happy.",
+                fg="yellow",
+            )
+        )
+        sys.exit(1)
+
+
 @db.command(
     name="set-password",
     help="Rotate the Postgres password, in the database and in .env together.",
@@ -201,42 +337,7 @@ def db():
 @basic_options
 def set_password_cmd(password, show, no_restart, dry_run):
     env_path = _cwd_env_path()
-    if not env_path.exists():
-        _print_wrong_dir_hint()
-        sys.exit(1)
-
-    # Validate the operator's input before anything that needs Docker: a
-    # rejected password is a typo to fix, not a reason to go start the stack.
-    if password is not None:
-        error = _validate_password(password)
-        if error:
-            click.echo(f"Refusing that password — {error}")
-            sys.exit(1)
-
-    db_user = _read_env_value("POSTGRES_USER") or "arcsecond_docker"
-    db_name = _read_env_value("POSTGRES_DB") or "arcsecond_docker"
-    old_password = _read_env_value(ENV_KEY) or ""
-
-    if not _container_running(DB_CONTAINER):
-        click.echo(
-            f"The {DB_CONTAINER} container is not running.\n"
-            "Start the stack first:  docker compose up -d db"
-        )
-        sys.exit(1)
-
-    # Rotating from credentials that don't work would just replace one broken
-    # state with another, so establish that .env currently matches the cluster.
-    click.echo("Checking the current credentials...")
-    if not _credentials_work(db_user, old_password, db_name):
-        click.echo(
-            f"\nCannot authenticate as '{db_user}' with the {ENV_KEY} currently in "
-            f"{env_path.name}.\n\n"
-            "Fix that mismatch before rotating: .env has to match the password the\n"
-            "database volume was initialised with. Installs created before Arcsecond\n"
-            "read .env at all were always bootstrapped as\n"
-            "'arcsecond_docker'/'arcsecond_docker'."
-        )
-        sys.exit(1)
+    db_user, db_name, old_password = _preflight_rotation(password, env_path)
 
     new_password = password if password else _get_random_postgres_password()
 
@@ -257,16 +358,7 @@ def set_password_cmd(password, show, no_restart, dry_run):
     backup_path = env_path.with_name(f".env.bak-{timestamp}")
 
     if dry_run:
-        click.echo(click.style("\nDry run — nothing was changed.", fg="yellow"))
-        click.echo(f"  would back up   {env_path.name} -> {backup_path.name}")
-        click.echo(f"  would rewrite   {ENV_KEY} in {env_path.name}")
-        click.echo(f"  would run       ALTER ROLE \"{db_user}\" WITH PASSWORD '***'")
-        if not no_restart:
-            click.echo(
-                f"  would recreate  {', '.join(_services_to_recreate())} "
-                "(docker compose up -d --force-recreate)"
-            )
-        sys.exit(0)
+        _report_dry_run(env_path, backup_path, db_user, no_restart)
 
     backup_path.write_text(original_text, encoding="utf-8")
     click.echo(f"Backed up {env_path.name} to {backup_path.name}")
@@ -293,81 +385,13 @@ def set_password_cmd(password, show, no_restart, dry_run):
         sys.exit(1)
 
     if not _credentials_work(db_user, new_password, db_name):
-        # The ALTER reported success but the new password does not work. Try to
-        # put the cluster back where it was, authenticating with the password we
-        # were just told is in effect.
-        revert = _psql(
-            f'ALTER ROLE "{db_user}" WITH PASSWORD {_sql_literal(old_password)};',
-            db_user,
-            new_password,
-            db_name,
+        _recover_unverified_password(
+            env_path, original_text, db_user, db_name, old_password, new_password
         )
-        env_path.write_text(original_text, encoding="utf-8")
-
-        if revert.returncode == 0:
-            click.echo(
-                click.style(
-                    "\nThe new password did not verify; rolled the database and "
-                    f"{env_path.name} back to the old one.",
-                    fg="red",
-                )
-            )
-        elif _credentials_work(db_user, old_password, db_name):
-            # Neither password change took effect, so the cluster is exactly
-            # where it started. Nothing is broken — say so plainly rather than
-            # sending the operator hunting for a password that was never set.
-            click.echo(
-                click.style(
-                    "\nThe new password did not verify and the database still "
-                    f"accepts the old one, so nothing changed. {env_path.name} has "
-                    "been restored.",
-                    fg="red",
-                )
-            )
-        else:
-            click.echo(
-                click.style(
-                    "\nThe new password did not verify AND the database no longer "
-                    "accepts the old one. It may now expect:\n\n"
-                    f"    {new_password}\n\n"
-                    f"{env_path.name} has been restored to the old value — set it to "
-                    "whichever of the two actually works.",
-                    fg="red",
-                )
-            )
-        sys.exit(1)
 
     click.echo(click.style("Password changed and verified.", fg="green"))
 
-    services_to_recreate = _services_to_recreate()
-    if no_restart:
-        click.echo(
-            "\nSkipping the restart, as asked. The running containers still hold the\n"
-            "old password and will fail on their next reconnect. Apply it with:\n"
-            f"    docker compose up -d --force-recreate {' '.join(services_to_recreate)}"
-        )
-    else:
-        click.echo(f"Recreating {', '.join(services_to_recreate)}...")
-        cmd = [
-            "docker",
-            "compose",
-            "up",
-            "-d",
-            "--force-recreate",
-            *services_to_recreate,
-        ]
-        click.echo(click.style(f"$ {' '.join(cmd)}", fg="cyan"))
-        recreate = subprocess.run(cmd, capture_output=True, text=True, check=False)
-        if recreate.returncode != 0:
-            click.echo(
-                click.style(
-                    "\nThe password was changed successfully, but recreating the "
-                    "containers failed:\n" + (recreate.stderr or "").strip() + "\n\n"
-                    "Re-run the command above once Docker is happy.",
-                    fg="yellow",
-                )
-            )
-            sys.exit(1)
+    _recreate_services(no_restart)
 
     if show:
         click.echo(f"\nNew password: {new_password}")

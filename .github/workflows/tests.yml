@@ -72,8 +72,14 @@ jobs:
       - name: Install dev dependencies
         run: uv sync --group dev
 
-      - name: Lint with flake8
+      - name: Lint with flake8 (errors)
         run: uv run flake8 arcsecond tests --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      # Style and complexity, on the limits in .flake8. Blocking rather than
+      # advisory: the tree is clean, and the point of getting it there was to
+      # keep it there.
+      - name: Lint with flake8 (style and complexity)
+        run: uv run flake8 arcsecond tests --count --statistics
 
       - name: Check formatting with black
         run: uv run black --check arcsecond tests

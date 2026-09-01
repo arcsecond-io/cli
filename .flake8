@@ -1,0 +1,12 @@
+[flake8]
+# The same limits the lint job and the pre-commit hook pass on the command
+# line, kept here so that a bare `flake8` agrees with them.
+max-line-length = 127
+max-complexity = 10
+
+# E203 (whitespace before ':') contradicts black, which the same lint job
+# enforces: black writes `lines[begin : end + 1]` and pycodestyle objects to
+# the space. Black is the formatter of record here, so this one is ignored
+# rather than fought — fixing it in code would only be undone on the next
+# `black` run.
+extend-ignore = E203

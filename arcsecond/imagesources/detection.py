@@ -118,6 +118,70 @@ def _is_reachable(camera: Camera, timeout: float) -> tuple:
 # ---------------------------------------------------------------------------
 
 
+def _probe_safely(probe, what: str) -> list:
+    """Run one probe. A probe that fails must not take the report down with it.
+
+    A machine without OpenCV, or a directory that cannot be read, should still
+    get an answer about everything else — including which of its registered
+    cameras are missing.
+    """
+    try:
+        return list(probe())
+    except Exception as e:
+        logger.warning("%s detection failed: %s", what, e)
+        return []
+
+
+def _probe(kinds) -> list[DetectedDevice]:
+    devices: list[DetectedDevice] = []
+    if USB in kinds:
+        devices.extend(_probe_safely(_detect_webcams, "Webcam"))
+    if ALLSKY in kinds:
+        devices.extend(_probe_safely(detect_allsky, "All-sky"))
+    return devices
+
+
+def _reachability(cameras: list[Camera], timeout: float) -> dict:
+    """``{id: (reachable, why)}``, contacting the cameras concurrently.
+
+    Concurrently because the answer for a camera that is switched off only
+    arrives when the connection times out, and doing that one after another
+    would make the wait the sum of every camera that is down.
+    """
+    if not cameras:
+        return {}
+    with ThreadPoolExecutor(max_workers=min(8, len(cameras))) as pool:
+        outcomes = pool.map(lambda c: _is_reachable(c, timeout), cameras)
+        return {camera.id: outcome for camera, outcome in zip(cameras, outcomes)}
+
+
+def _settle_allsky(camera: Camera) -> tuple:
+    current = resolve_allsky_path(camera.path or "")
+    if not current:
+        return False, "no image at that path"
+    # Naming the file is only worth the width for a glob, where which file
+    # matched is the thing you cannot see already.
+    if current != camera.path:
+        return True, f"newest match: {current}"
+    return True, "an image is there"
+
+
+def _settle_unmatched(camera: Camera, check_network: bool, reachability: dict) -> tuple:
+    """``(present, why)`` for a registered camera no probe accounted for.
+
+    A network camera was never going to be found by probing, and an all-sky
+    camera writing to a path outside the well-known list was not either — so
+    neither is missing merely for having gone unprobed.
+    """
+    if camera.kind == NET:
+        if not check_network:
+            return True, "not contacted"
+        return reachability[camera.id]
+    if camera.kind == ALLSKY:
+        return _settle_allsky(camera)
+    return False, "not attached to this machine"
+
+
 def report(
     cameras: list[Camera],
     kinds,
@@ -133,22 +197,10 @@ def report(
     registered = [c for c in cameras if c.kind in kinds]
     by_identity = {c.identity: c for c in registered}
 
-    devices: list[DetectedDevice] = []
-    if USB in kinds:
-        try:
-            devices.extend(_detect_webcams())
-        except Exception as e:
-            logger.warning("Webcam detection failed: %s", e)
-    if ALLSKY in kinds:
-        try:
-            devices.extend(detect_allsky())
-        except Exception as e:
-            logger.warning("All-sky detection failed: %s", e)
-
     result = DetectionReport()
     matched: set = set()
 
-    for device in devices:
+    for device in _probe(kinds):
         camera = by_identity.get(device.identity)
         if camera is None:
             result.new.append(device)
@@ -158,47 +210,15 @@ def report(
             result.present.append(camera)
             result.detail[camera.id] = _describe(device)
 
-    # Everything registered that no probe accounted for. A network camera was
-    # never going to be found by probing, and an all-sky camera writing to a
-    # path outside the well-known list was not either — both are settled here,
-    # rather than being reported missing for the wrong reason.
     unmatched = [c for c in registered if c.id not in matched]
-
-    to_check = [c for c in unmatched if c.kind == NET and check_network]
-    reachability = {}
-    if to_check:
-        with ThreadPoolExecutor(max_workers=min(8, len(to_check))) as pool:
-            for camera, outcome in zip(
-                to_check, pool.map(lambda c: _is_reachable(c, timeout), to_check)
-            ):
-                reachability[camera.id] = outcome
+    reachability = _reachability(
+        [c for c in unmatched if c.kind == NET and check_network], timeout
+    )
 
     for camera in unmatched:
-        if camera.kind == NET:
-            if not check_network:
-                result.present.append(camera)
-                result.detail[camera.id] = "not contacted"
-                continue
-            reachable, why = reachability[camera.id]
-            (result.present if reachable else result.missing).append(camera)
-            result.detail[camera.id] = why
-        elif camera.kind == ALLSKY:
-            current = resolve_allsky_path(camera.path or "")
-            if current:
-                result.present.append(camera)
-                # Naming the file is only worth the width for a glob, where
-                # which file matched is the thing you cannot see already.
-                result.detail[camera.id] = (
-                    f"newest match: {current}"
-                    if current != camera.path
-                    else "an image is there"
-                )
-            else:
-                result.missing.append(camera)
-                result.detail[camera.id] = "no image at that path"
-        else:
-            result.missing.append(camera)
-            result.detail[camera.id] = "not attached to this machine"
+        present, why = _settle_unmatched(camera, check_network, reachability)
+        (result.present if present else result.missing).append(camera)
+        result.detail[camera.id] = why
 
     result.present.sort(key=lambda c: c.id)
     result.missing.sort(key=lambda c: c.id)

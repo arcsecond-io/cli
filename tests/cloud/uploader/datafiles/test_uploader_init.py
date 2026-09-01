@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 from unittest.mock import patch
 
 from arcsecond.cloud.uploader.constants import Status, Substatus
@@ -8,7 +7,6 @@ from arcsecond.cloud.uploader.datafiles.uploader import DatasetFileUploader
 
 def test_initialization(mock_file_context, temp_file):
     """Test if the uploader initializes correctly."""
-    walking_root = Path(temp_file).parent
 
     with patch("arcsecond.cloud.uploader.logger.get_logger"):
         uploader = DatasetFileUploader(mock_file_context, temp_file)

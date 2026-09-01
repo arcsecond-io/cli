@@ -302,6 +302,73 @@ def _reconcile_version_header(current_text, expected_text):
     return updated if updated == expected_text else None
 
 
+def _expected_compose_text(packaged_text: str, enabled_services) -> str:
+    """The packaged file minus every optional service that is not enabled."""
+    text = packaged_text
+    for name in OPTIONAL_SERVICES:
+        if name not in enabled_services:
+            text = _strip_optional_service_block(text, name)
+    return text
+
+
+def _apply_optional_services(
+    current_text: str, packaged_text: str, enabled_services, removed_services
+):
+    """Splice enabled services in and take disabled ones out, idempotently.
+
+    Returns ``(text, changes, unspliceable)`` — ``unspliceable`` naming any
+    service with nowhere to go, which the caller reports rather than dropping.
+    """
+    changes: list = []
+    unspliceable: list = []
+
+    for name in sorted(enabled_services):
+        spliced = _splice_optional_service_block(current_text, packaged_text, name)
+        if spliced is None:
+            unspliceable.append(name)
+        elif spliced != current_text:
+            current_text = spliced
+            changes.append(f"added the optional '{name}' service")
+
+    for name in sorted(removed_services):
+        stripped = _strip_optional_service_block(current_text, name)
+        if stripped != current_text:
+            current_text = stripped
+            changes.append(f"removed the optional '{name}' service")
+
+    return current_text, changes, unspliceable
+
+
+def _report_customised_compose(
+    dest: Path,
+    current_text: str,
+    expected_text: str,
+    expected_content: bytes,
+    unspliceable,
+) -> None:
+    """Leave a customised file alone, and put the packaged one beside it.
+
+    Overwriting would throw away whatever the operator changed on purpose, so
+    the two are left side by side for them to merge deliberately.
+    """
+    current_version = _compose_version(current_text)
+    yours = f"Version {current_version}" if current_version else "no Version header"
+    latest = dest.with_name("docker-compose.latest.yml")
+    latest.write_bytes(expected_content)
+
+    messages = [
+        "docker-compose.yml differs from the packaged version "
+        f"(yours: {yours}, packaged: Version {_compose_version(expected_text)}); "
+        f"leaving it untouched and writing the latest packaged copy to: {latest}"
+    ]
+    for name in unspliceable:
+        messages.append(
+            f"Could not find a top-level 'volumes:' line to splice the "
+            f"'{name}' service into — merge it from {latest.name} by hand."
+        )
+    print("\n".join(messages))
+
+
 def write_docker_compose_file(
     enabled_services=frozenset(), removed_services=frozenset()
 ) -> Path:
@@ -329,10 +396,7 @@ def write_docker_compose_file(
     with compose.open("rb") as src:
         packaged_text = src.read().decode("utf-8")
 
-    expected_text = packaged_text
-    for name in OPTIONAL_SERVICES:
-        if name not in enabled_services:
-            expected_text = _strip_optional_service_block(expected_text, name)
+    expected_text = _expected_compose_text(packaged_text, enabled_services)
     expected_content = expected_text.encode("utf-8")
 
     if not dest.exists():
@@ -344,23 +408,12 @@ def write_docker_compose_file(
         print("docker-compose.yml is already up to date.")
         return dest
 
-    current_text = dest.read_text(encoding="utf-8")
-    changes = []
-    unspliceable = []
-
-    for name in sorted(enabled_services):
-        spliced = _splice_optional_service_block(current_text, packaged_text, name)
-        if spliced is None:
-            unspliceable.append(name)
-        elif spliced != current_text:
-            current_text = spliced
-            changes.append(f"added the optional '{name}' service")
-
-    for name in sorted(removed_services):
-        stripped = _strip_optional_service_block(current_text, name)
-        if stripped != current_text:
-            current_text = stripped
-            changes.append(f"removed the optional '{name}' service")
+    current_text, changes, unspliceable = _apply_optional_services(
+        dest.read_text(encoding="utf-8"),
+        packaged_text,
+        enabled_services,
+        removed_services,
+    )
 
     if current_text.encode("utf-8") != expected_content:
         reconciled = _reconcile_version_header(current_text, expected_text)
@@ -377,21 +430,9 @@ def write_docker_compose_file(
     if current_text.encode("utf-8") == expected_content:
         return dest
 
-    current_version = _compose_version(current_text)
-    yours = f"Version {current_version}" if current_version else "no Version header"
-    latest = dest.with_name("docker-compose.latest.yml")
-    latest.write_bytes(expected_content)
-    messages = [
-        "docker-compose.yml differs from the packaged version "
-        f"(yours: {yours}, packaged: Version {_compose_version(expected_text)}); "
-        f"leaving it untouched and writing the latest packaged copy to: {latest}"
-    ]
-    for name in unspliceable:
-        messages.append(
-            f"Could not find a top-level 'volumes:' line to splice the "
-            f"'{name}' service into — merge it from {latest.name} by hand."
-        )
-    print("\n".join(messages))
+    _report_customised_compose(
+        dest, current_text, expected_text, expected_content, unspliceable
+    )
     return dest
 
 

@@ -8,3 +8,17 @@ from .uploader.constants import Status, Substatus
 from .uploads import (
     upload_data,
 )
+
+# Re-exported: this is the package's public surface.
+__all__ = [
+    "api",
+    "login",
+    "me",
+    "datasets",
+    "telescopes",
+    "DatasetFileUploader",
+    "DatasetUploadContext",
+    "Status",
+    "Substatus",
+    "upload_data",
+]
