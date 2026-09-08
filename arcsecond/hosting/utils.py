@@ -42,8 +42,10 @@ def _read_env_value(key, env_path=None):
 
 
 def _get_random_secret_key():
-    # No '%' to avoid interpolation surprises
-    chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$^&*(-_=+)"
+    # The value lands unquoted in .env, which Compose interpolates: '$name'
+    # would be swallowed (with a "variable is not set" warning) and '%' is
+    # unsafe in configparser-style readers. Neither belongs in the alphabet.
+    chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#^&*(-_=+)"
     return "".join(secrets.choice(chars) for _ in range(50))
 
 
