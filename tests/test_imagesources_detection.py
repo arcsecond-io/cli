@@ -198,6 +198,35 @@ def test_a_detected_all_sky_camera_that_is_registered_is_not_reported_twice(tmp_
     assert report.missing == []
 
 
+def test_an_all_sky_camera_at_an_address_is_confirmed_by_contacting_it():
+    """It has no path to look at, so it is settled the way any address is."""
+    camera = Camera(id="abc", kind=ALLSKY, url="http://sky.local/latest.jpg")
+    with patch.object(detection, "_is_reachable", return_value=(True, "answering")):
+        with patch.object(detection, "detect_allsky", return_value=[]):
+            report = detection.report([camera], (ALLSKY,))
+    assert report.present == [camera]
+    assert report.new == []
+
+
+def test_an_all_sky_camera_at_an_address_that_is_down_is_missing():
+    camera = Camera(id="abc", kind=ALLSKY, url="http://sky.local/latest.jpg")
+    with patch.object(detection, "_is_reachable", return_value=(False, "no answer")):
+        with patch.object(detection, "detect_allsky", return_value=[]):
+            report = detection.report([camera], (ALLSKY,))
+    assert report.missing == [camera]
+    assert report.detail["abc"] == "no answer"
+
+
+def test_an_all_sky_address_is_never_looked_for_on_this_disk():
+    """The old check called a URL a missing file — the wrong answer entirely."""
+    camera = Camera(id="abc", kind=ALLSKY, url="http://sky.local/latest.jpg")
+    with patch.object(detection, "resolve_allsky_path") as looked_at_disk:
+        with patch.object(detection, "_is_reachable", return_value=(True, "answering")):
+            with patch.object(detection, "detect_allsky", return_value=[]):
+                detection.report([camera], (ALLSKY,))
+    looked_at_disk.assert_not_called()
+
+
 # ---------------------------------------------------------------------------
 # Probing must never take the report down
 # ---------------------------------------------------------------------------

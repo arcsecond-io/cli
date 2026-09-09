@@ -192,10 +192,60 @@ def test_a_path_given_to_webcam_add_points_at_allsky(cli):
     assert "arcsecond allsky add" in result.output
 
 
-def test_an_address_given_to_allsky_add_points_at_webcam(cli):
+def test_a_video_stream_given_to_allsky_add_points_at_webcam(cli):
     result = _run(cli, allsky, ["add", "rtsp://cam.local/s"])
     assert result.exit_code == 1
     assert "arcsecond webcam add" in result.output
+
+
+def test_allsky_add_takes_the_address_of_a_published_image(cli):
+    """The all-sky software runs on another machine and publishes over HTTP."""
+    result = _run(cli, allsky, ["add", "http://sky.local/allsky/latest.jpg"])
+    assert result.exit_code == 0
+    (camera,) = store.all_cameras()
+    assert camera.kind == "allsky"
+    assert camera.url == "http://sky.local/allsky/latest.jpg"
+    assert camera.path is None
+
+
+def test_an_all_sky_camera_at_an_address_is_listed_by_allsky_not_webcam(cli):
+    _run(cli, allsky, ["add", "http://sky.local/latest.jpg"])
+    assert "sky.local" in _run(cli, allsky, []).output
+    assert "sky.local" not in _run(cli, webcam, []).output
+
+
+def test_a_windows_path_is_a_path_and_not_an_address(cli):
+    """`C:` is a drive letter; urlsplit calls it a scheme, and it is not one."""
+    result = _run(cli, allsky, ["add", r"C:\allsky\latest.jpg"])
+    assert result.exit_code == 0
+    (camera,) = store.all_cameras()
+    assert camera.path == r"C:\allsky\latest.jpg"
+    assert camera.url is None
+
+
+def test_an_address_allsky_cannot_read_is_refused(cli):
+    result = _run(cli, allsky, ["add", "ftp://sky.local/latest.jpg"])
+    assert result.exit_code == 1
+    assert "http://" in result.output
+    assert store.all_cameras() == []
+
+
+def test_a_password_in_an_all_sky_address_is_never_written_in_the_clear(
+    cli, monkeypatch, tmp_path
+):
+    monkeypatch.setenv("PW", "hunter2")
+    _run(cli, allsky, ["add", "http://sky:${PW}@10.0.0.9/latest.jpg"])
+    written = (tmp_path / "cameras.json").read_text()
+    assert "${PW}" in written
+    assert "hunter2" not in written
+
+
+def test_a_missing_variable_in_an_all_sky_address_registers_nothing(cli, monkeypatch):
+    monkeypatch.delenv("PW", raising=False)
+    result = cli.invoke(allsky, ["add", "http://sky:${PW}@10.0.0.9/latest.jpg"])
+    assert result.exit_code != 0
+    assert "PW" in result.output
+    assert store.all_cameras() == []
 
 
 def test_an_unsupported_scheme_is_refused(cli):
@@ -231,6 +281,7 @@ def test_a_missing_variable_is_reported_before_anything_is_registered(cli, monke
         (webcam, ["add", "0"]),
         (webcam, ["add", "rtsp://c/s"]),
         (allsky, ["add", "/a.jpg"]),
+        (allsky, ["add", "http://sky.local/latest.jpg"]),
     ],
 )
 def test_forget_works_for_every_kind_of_camera(cli, monkeypatch, group, add_args):
@@ -361,6 +412,32 @@ def test_allsky_start_points_at_add_and_proxy_start(cli):
     assert result.exit_code == 1
     assert "arcsecond allsky add" in result.output
     assert "arcsecond proxy start" in result.output
+
+
+def test_testing_an_all_sky_camera_at_an_address_contacts_it(cli, monkeypatch):
+    """It has an address, so `test` can pull an image from it like any other."""
+    tested = {}
+    monkeypatch.setattr(
+        commands, "_test_url", lambda url, timeout, **k: tested.update(url=url)
+    )
+    printed = (
+        _run(cli, allsky, ["add", "http://sky.local/latest.jpg"])
+        .output.split("Registered ")[1]
+        .split()[0]
+    )
+    _run(cli, webcam, ["test", printed])
+    assert tested["url"] == "http://sky.local/latest.jpg"
+
+
+def test_testing_an_all_sky_camera_on_this_disk_names_its_path(cli):
+    printed = (
+        _run(cli, allsky, ["add", "/srv/sky.jpg"])
+        .output.split("Registered ")[1]
+        .split()[0]
+    )
+    result = _run(cli, webcam, ["test", printed])
+    assert result.exit_code == 1
+    assert "/srv/sky.jpg" in result.output
 
 
 def test_netcam_points_at_webcam(cli):

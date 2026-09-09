@@ -30,6 +30,12 @@ proxy covers every camera it can reach. They are not a separate kind on the
 wire — ``kind`` is ``webcam`` for both, and ``extra.transport`` says whether it
 is reached over ``usb``, ``rtsp`` or ``http``.
 
+An all-sky camera is the same story: ``kind`` is ``allsky`` whether its image
+is read from a file on this host or fetched from another machine over HTTP,
+and ``extra.transport`` is ``file`` or ``http`` accordingly. A client that
+knows what an all-sky camera is therefore needs no change to see one running
+on the observatory PC next door.
+
 The backend reads the ``LIVE_IMAGE_PROXY_URL`` environment variable
 (``WEBCAM_PROXY_URL`` is accepted as a deprecated fallback). When set, it
 delegates detection and streaming to this proxy.

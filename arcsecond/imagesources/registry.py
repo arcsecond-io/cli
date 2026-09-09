@@ -20,7 +20,7 @@ from typing import Optional
 
 from .sources.base import FrameSource, SourceInfo
 from .sources.filewatch import FileWatchSource
-from .sources.network import build_network_source
+from .sources.network import build_allsky_source, build_network_source
 from .sources.opencv import OpenCVWebcamSource
 from .store import ALLSKY, NET, USB, Camera
 
@@ -31,7 +31,10 @@ def build_source(camera: Camera) -> FrameSource:
     """The right :class:`FrameSource` for ``camera``.
 
     ``camera.url`` must already have had its ``${VARIABLE}`` expanded — see
-    ``store.expanded``.
+    ``store.expanded``. An all-sky camera carries a URL instead of a path when
+    its software runs on another machine and publishes the image over HTTP;
+    either way it is served as one kind, ``allsky``, and ``extra.transport``
+    says which of the two it is.
     """
     if camera.kind == USB:
         return OpenCVWebcamSource(
@@ -43,6 +46,8 @@ def build_source(camera: Camera) -> FrameSource:
     if camera.kind == NET:
         return build_network_source(camera.id, camera.url, camera.label)
     if camera.kind == ALLSKY:
+        if camera.url:
+            return build_allsky_source(camera.id, camera.url, camera.label)
         return FileWatchSource(camera.id, camera.path, camera.label)
     raise KeyError(f"Unknown camera kind: {camera.kind!r}")
 

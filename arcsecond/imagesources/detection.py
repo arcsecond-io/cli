@@ -14,10 +14,11 @@ A camera is matched to a probe result on its *identity* (device index, URL,
 path), never on its id — an id is a name given at registration, and a device
 nobody has registered yet does not have one.
 
-Network cameras cannot be discovered: there is no protocol to ask a subnet
-which of it is a camera, so a network camera is never *new*. It can still be
-confirmed present or reported missing, and that is done with a plain TCP
-connection to the address rather than by pulling a frame. Opening an RTSP
+A camera registered by address cannot be discovered: there is no protocol to
+ask a subnet which of it is a camera, so neither a network camera nor an
+all-sky camera published over HTTP is ever *new*. Either can still be confirmed
+present or reported missing, and that is done with a plain TCP connection to
+the address rather than by pulling a frame. Opening an RTSP
 stream to decide takes seconds per camera and can wake hardware that would
 rather be left alone; ``arcsecond webcam test`` is there for when the question
 really is "does this send me a picture?".
@@ -34,7 +35,7 @@ from urllib.parse import urlsplit
 
 from .sources.base import DetectedDevice
 from .sources.filewatch import detect_allsky
-from .store import ALLSKY, NET, USB, Camera
+from .store import ALLSKY, USB, Camera
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ def _network_endpoint(url: str) -> Optional[tuple]:
 
 
 def _is_reachable(camera: Camera, timeout: float) -> tuple:
-    """``(reachable, why)`` for one network camera.
+    """``(reachable, why)`` for one camera registered by address.
 
     Only the address is contacted, and the answer never contains the URL's
     password: ``Camera.target`` is redacted, and the endpoint printed here is
@@ -169,11 +170,14 @@ def _settle_allsky(camera: Camera) -> tuple:
 def _settle_unmatched(camera: Camera, check_network: bool, reachability: dict) -> tuple:
     """``(present, why)`` for a registered camera no probe accounted for.
 
-    A network camera was never going to be found by probing, and an all-sky
-    camera writing to a path outside the well-known list was not either — so
-    neither is missing merely for having gone unprobed.
+    A camera reached over the network was never going to be found by probing,
+    and an all-sky camera writing to a path outside the well-known list was not
+    either — so neither is missing merely for having gone unprobed.
+
+    Which check applies follows the address, not the kind: an all-sky camera
+    registered by URL is confirmed the way every other camera at an address is.
     """
-    if camera.kind == NET:
+    if camera.url:
         if not check_network:
             return True, "not contacted"
         return reachability[camera.id]
@@ -212,7 +216,7 @@ def report(
 
     unmatched = [c for c in registered if c.id not in matched]
     reachability = _reachability(
-        [c for c in unmatched if c.kind == NET and check_network], timeout
+        [c for c in unmatched if c.url and check_network], timeout
     )
 
     for camera in unmatched:

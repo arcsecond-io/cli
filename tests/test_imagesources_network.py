@@ -18,11 +18,12 @@ import pytest
 from arcsecond.imagesources.commands import _expand_env_vars
 from arcsecond.imagesources.registry import Registry, build_source
 from arcsecond.imagesources.sources.network import (
+    AllSkyHTTPSource,
     HTTPImageSource,
     RTSPSource,
     redact_url,
 )
-from arcsecond.imagesources.store import NET, USB, Camera
+from arcsecond.imagesources.store import ALLSKY, NET, USB, Camera
 
 JPEG_A = b"\xff\xd8\xff\xe0 first frame \xff\xd9"
 JPEG_B = b"\xff\xd8\xff\xe0 second frame \xff\xd9"
@@ -132,6 +133,70 @@ def test_the_registry_builds_a_registered_network_camera():
 def test_the_registry_rejects_an_unregistered_camera():
     with pytest.raises(KeyError, match="abc"):
         Registry()._build("abc")
+
+
+# ---------------------------------------------------------------------------
+# All-sky cameras reached over the network
+# ---------------------------------------------------------------------------
+
+SKY_URL = "http://sky.local/allsky/latest.jpg"
+
+
+def _sky_over_http(url=SKY_URL, cam_id="sky"):
+    return Camera(id=cam_id, kind=ALLSKY, url=url)
+
+
+def test_an_all_sky_camera_over_http_is_announced_as_an_all_sky_camera():
+    """The backend must see the same kind wherever the image is fetched from."""
+    from arcsecond.imagesources.sources.filewatch import FileWatchSource
+
+    over_http = build_source(_sky_over_http()).info()
+    on_disk = FileWatchSource("sky", "/srv/allsky/latest.jpg").info()
+
+    assert over_http.kind == on_disk.kind == "allsky"
+    assert over_http.extra["transport"] == "http"
+    assert on_disk.extra["transport"] == "file"
+
+
+def test_the_same_address_is_an_all_sky_camera_or_a_webcam_as_registered():
+    assert build_source(_sky_over_http()).info().kind == "allsky"
+    assert build_source(_netcam(url=SKY_URL)).info().kind == "webcam"
+
+
+def test_an_all_sky_camera_over_http_is_polled_at_its_own_cadence():
+    """One image every 30-120 seconds: asking every second buys nothing."""
+    sky = build_source(_sky_over_http())
+    webcam = build_source(_netcam(url=SKY_URL))
+    assert isinstance(sky, AllSkyHTTPSource)
+    assert sky.poll_interval > webcam.poll_interval
+
+
+def test_the_registry_builds_an_all_sky_camera_from_its_address():
+    registry = Registry(cameras=[_sky_over_http(cam_id="sky")])
+    source = registry._build("sky")
+    assert isinstance(source, AllSkyHTTPSource)
+    assert source.url == SKY_URL
+
+
+def test_the_registry_builds_an_all_sky_camera_from_its_path(tmp_path):
+    from arcsecond.imagesources.sources.filewatch import FileWatchSource
+
+    image = tmp_path / "latest.jpg"
+    registry = Registry(cameras=[Camera(id="sky", kind=ALLSKY, path=str(image))])
+    assert isinstance(registry._build("sky"), FileWatchSource)
+
+
+def test_an_all_sky_address_never_reports_its_password():
+    registry = Registry(
+        cameras=[_sky_over_http(url="http://sky:hunter2@10.0.0.9/latest.jpg")]
+    )
+    assert "hunter2" not in str(registry.infos())
+
+
+def test_a_video_stream_is_not_an_all_sky_camera():
+    """`allsky add` turns one away; reaching the registry with one is a bug."""
+    with pytest.raises(KeyError, match="http"):
+        build_source(_sky_over_http(url="rtsp://sky.local/stream1"))
 
 
 def test_a_usb_and_a_network_camera_live_in_one_registry():

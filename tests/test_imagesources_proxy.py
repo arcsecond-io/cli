@@ -104,6 +104,7 @@ def test_every_kind_of_camera_can_be_registered_over_the_endpoint():
             NETCAM,
             {"id": "def", "kind": "usb", "index": 0},
             {"id": "ghi", "kind": "allsky", "path": "/a.jpg"},
+            {"id": "jkl", "kind": "allsky", "url": "http://sky.local/latest.jpg"},
         ]
     }
 
@@ -113,8 +114,8 @@ def test_every_kind_of_camera_can_be_registered_over_the_endpoint():
                 return await r.json(), {c.id for c in registry.cameras}
 
     answer, ids = _run_against_proxy(body)
-    assert answer["added"] == ["abc", "def", "ghi"]
-    assert ids == {"abc", "def", "ghi"}
+    assert answer["added"] == ["abc", "def", "ghi", "jkl"]
+    assert ids == {"abc", "def", "ghi", "jkl"}
 
 
 @pytest.mark.parametrize(

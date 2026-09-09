@@ -8,7 +8,9 @@ Three commands, three jobs, and no overlap between them:
                        not a separate thing to learn: same list, same ``add``,
                        same ``forget``, and the URL is simply what you pass to
                        ``add`` instead of a device index.
-``arcsecond allsky``   the same, for all-sky cameras writing JPEGs to disk.
+``arcsecond allsky``   the same, for all-sky cameras: the JPEG their software
+                       keeps up to date, given as a path when that software
+                       runs here and as an address when it runs elsewhere.
 ``arcsecond proxy``    starting and inspecting the one proxy that serves
                        everything registered above.
 
@@ -47,6 +49,7 @@ import click
 
 from . import detection, runtime, store
 from .sources.network import (
+    HTTP_SCHEMES,
     RTSP_SCHEMES,
     SUPPORTED_SCHEMES,
     build_network_source,
@@ -639,13 +642,15 @@ def webcam_test_cmd(camera, timeout):
         _test_usb(registered)
         return
 
-    if registered is not None and registered.kind == NET:
+    # Every camera registered by address is tested the same way, whether it is
+    # a network camera or an all-sky camera published over HTTP.
+    if registered is not None and registered.url:
         _test_url(_expand_env_vars(registered.url), timeout, suggest=False)
         return
 
     if registered is not None:
         _fail(
-            f"{registered.id} is an all-sky camera.",
+            f"{registered.id} is an all-sky camera writing to this machine.",
             f"\nIt reads images from {registered.target} — check that path directly.",
         )
 
@@ -798,25 +803,52 @@ def allsky_detect_cmd():
     name="add",
     help=(
         "Register an all-sky camera, so that the proxy serves it.\n\n"
-        "PATH is the JPEG your all-sky software keeps up to date. It may be a "
-        "fixed file, a symlink, or a glob — with a glob, the newest matching "
-        "file wins.\n\n"
+        "TARGET is the JPEG your all-sky software keeps up to date. Give a path "
+        "when that software runs on this machine — a fixed file, a symlink, or "
+        "a glob, in which case the newest matching file wins — or an "
+        "`http://...` address when it runs on another machine and publishes "
+        "the image. Write a password as ${VARIABLE} to keep it out of your "
+        "shell history: only the variable name is written to disk.\n\n"
         "Prints the camera's id. That id is the only handle you need "
         "afterwards, and it does not change."
     ),
 )
-@click.argument("path")
+@click.argument("target")
 @click.option("--label", default=None, help="A name for yourself, e.g. 'Roof'.")
-def allsky_add_cmd(path, label):
-    target = path.strip()
+def allsky_add_cmd(target, label):
+    target = target.strip()
     if not target:
-        _fail("give the path to the JPEG your all-sky software writes.")
+        _fail("give the path or address of the JPEG your all-sky software writes.")
 
-    if urlsplit(target).scheme.lower() in SUPPORTED_SCHEMES:
+    scheme = urlsplit(target).scheme.lower()
+
+    if scheme in RTSP_SCHEMES:
         _fail(
-            "an all-sky camera is registered by path, not by address.",
-            "\nA camera reached over the network is a webcam:  "
+            "an all-sky camera is registered by the JPEG it publishes, not by a "
+            "video stream.",
+            "\nA camera sending video is a webcam:  "
             f"arcsecond webcam add '{target}'",
+        )
+
+    if scheme in HTTP_SCHEMES:
+        # Expanded only to validate it — what is stored is what was typed, so a
+        # password stays a variable name on disk. Doing it here is what makes an
+        # unset variable a complaint about the line just typed, rather than a
+        # camera quietly missing from the next `proxy start`.
+        _expand_env_vars(target)
+        _add(Camera(id="", kind=ALLSKY, url=target, label=label))
+        return
+
+    # A single letter is a Windows drive, not a scheme: `C:\allsky\latest.jpg`
+    # is a path and must stay one. Anything longer was meant as an address, and
+    # registering it as a filename would only fail later, out of sight.
+    if len(scheme) > 1:
+        _fail(
+            f"{target!r} is not a path, and {scheme}:// is not an address the "
+            "proxy can read.",
+            "\nAn all-sky camera is registered by path:  "
+            "arcsecond allsky add /srv/allsky/latest.jpg",
+            "or by address:  arcsecond allsky add http://sky.local/latest.jpg",
         )
 
     # Registered whether or not the file is there yet: all-sky software often

@@ -16,9 +16,17 @@ The file lives next to the CLI's own configuration, in
       "cameras": {
         "k3f": {"kind": "usb",    "index": 0},
         "p9x": {"kind": "net",    "url": "rtsp://admin:${DOME_PW}@10.0.0.4/s"},
-        "r4t": {"kind": "allsky", "path": "/srv/allsky/latest.jpg"}
+        "r4t": {"kind": "allsky", "path": "/srv/allsky/latest.jpg"},
+        "w8n": {"kind": "allsky", "url": "http://sky.local/latest.jpg"}
       }
     }
+
+An all-sky camera carries a path when its software writes to this machine, and
+a URL when that software runs elsewhere and publishes the image over HTTP. That
+says how the image is fetched, not what kind of camera it is — the same way a
+webcam is one kind whether it arrives over a USB cable or over RTSP. A store
+holding one is still version 2: an older CLI ignores such an entry rather than
+losing it, since it rewrites the entries it does not understand untouched.
 
 Identifiers
 -----------
@@ -81,7 +89,9 @@ class SourceStoreError(Exception):
 class Camera:
     """One registered camera.
 
-    Exactly one of ``index`` / ``url`` / ``path`` is set, according to ``kind``.
+    Exactly one of ``index`` / ``url`` / ``path`` is set: an index for a USB
+    webcam, a path for an all-sky camera writing to this machine, and a URL for
+    a network camera or for an all-sky camera reached over HTTP.
     ``url`` is the URL as typed, with any ``${VARIABLE}`` still in place.
     """
 
@@ -89,8 +99,8 @@ class Camera:
     kind: str
     label: Optional[str] = None
     index: Optional[int] = None  # usb
-    url: Optional[str] = None  # net
-    path: Optional[str] = None  # allsky
+    url: Optional[str] = None  # net, and allsky published over HTTP
+    path: Optional[str] = None  # allsky writing to this machine
     # What probing learned about a USB camera: width, height, fps. Recorded at
     # registration, when the device is opened anyway, so that listing it later
     # can report them without opening anything. Absent for a camera registered
@@ -109,17 +119,20 @@ class Camera:
             return (USB, self.index)
         if self.kind == NET:
             return (NET, self.url)
-        return (ALLSKY, self.path)
+        # The same URL registered as an all-sky camera and as a webcam is two
+        # registrations, not one: the kind is part of what was asked for, and
+        # each is served at its own cadence.
+        return (ALLSKY, self.url or self.path)
 
     @property
     def target(self) -> str:
         """Where the camera is, in one line, safe to print."""
         if self.kind == USB:
             return f"device index {self.index}"
-        if self.kind == NET:
+        if self.url:
             from .sources.network import redact_url
 
-            return redact_url(self.url or "")
+            return redact_url(self.url)
         return self.path or ""
 
     @property
@@ -141,7 +154,7 @@ class Camera:
             entry["index"] = self.index
             if self.specs:
                 entry["specs"] = self.specs
-        elif self.kind == NET:
+        elif self.url:
             entry["url"] = self.url
         else:
             entry["path"] = self.path
@@ -174,6 +187,9 @@ def camera_from_json(cam_id: str, entry: dict) -> Optional[Camera]:
         if not url:
             return None
         return Camera(id=cam_id, kind=NET, url=url, label=label)
+    url = entry.get("url")
+    if url:
+        return Camera(id=cam_id, kind=ALLSKY, url=url, label=label)
     path = entry.get("path")
     if not path:
         return None
@@ -412,14 +428,17 @@ def expanded(cameras: list[Camera], expand) -> list[Camera]:
     """
     usable = []
     for camera in cameras:
-        if camera.kind != NET:
+        # Keyed on the URL rather than on the kind: an all-sky camera reached
+        # over HTTP may carry a password in its address just as a network
+        # camera does, and it is stored the same way — unexpanded.
+        if not camera.url:
             usable.append(camera)
             continue
         try:
             url = expand(camera.url)
         except Exception as e:
             logger.warning(
-                "Skipping network camera %r: %s",
+                "Skipping camera %r: %s",
                 camera.id,
                 getattr(e, "message", None) or e,
             )
@@ -427,10 +446,9 @@ def expanded(cameras: list[Camera], expand) -> list[Camera]:
         usable.append(
             Camera(
                 id=camera.id,
-                kind=NET,
+                kind=camera.kind,
                 url=url,
                 label=camera.label,
-                path=camera.path,
             )
         )
     return usable

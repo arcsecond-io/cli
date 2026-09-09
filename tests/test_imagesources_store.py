@@ -14,6 +14,11 @@ from arcsecond.imagesources.store import ALLSKY, NET, USB, Camera
 RAW_URL = "rtsp://admin:${DOME_CAM_PW}@192.168.1.42:554/stream1"
 EXPANDED_URL = "rtsp://admin:hunter2@192.168.1.42:554/stream1"
 
+# An all-sky camera whose software runs on another machine and publishes the
+# image over HTTP. Registered as an all-sky camera, not as a webcam.
+RAW_SKY_URL = "http://sky:${SKY_PW}@10.0.0.9/allsky/latest.jpg"
+EXPANDED_SKY_URL = "http://sky:hunter2@10.0.0.9/allsky/latest.jpg"
+
 
 @pytest.fixture
 def store_file(tmp_path):
@@ -30,6 +35,10 @@ def _net(url=RAW_URL, label=None):
 
 def _allsky(path="/srv/sky.jpg", label=None):
     return Camera(id="", kind=ALLSKY, path=path, label=label)
+
+
+def _allsky_url(url=RAW_SKY_URL, label=None):
+    return Camera(id="", kind=ALLSKY, url=url, label=label)
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +96,7 @@ def test_load_returns_nothing_when_nothing_was_ever_registered(store_file):
     assert store.all_cameras(store_file) == []
 
 
-@pytest.mark.parametrize("camera", [_usb(2), _net(), _allsky()])
+@pytest.mark.parametrize("camera", [_usb(2), _net(), _allsky(), _allsky_url()])
 def test_every_kind_of_camera_round_trips(store_file, camera):
     stored, created = store.add(camera, store_file)
     assert created is True
@@ -169,6 +178,38 @@ def test_a_prefixed_id_is_tolerated(store_file, prefix):
     assert store.find(f"{prefix}:{stored.id}", store_file) == stored
 
 
+def test_an_all_sky_camera_registered_by_address_is_still_an_all_sky_camera(
+    store_file,
+):
+    """The transport says how it is fetched, not what kind of camera it is."""
+    stored, _ = store.add(_allsky_url("http://sky.local/latest.jpg"), store_file)
+    assert stored.kind == ALLSKY
+    assert stored.display_kind == "all-sky"
+    assert [c.id for c in store.cameras_of_kinds((ALLSKY,), store_file)] == [stored.id]
+    assert store.cameras_of_kinds(store.WEBCAM_KINDS, store_file) == []
+
+
+def test_one_address_registered_as_both_kinds_is_two_cameras(store_file):
+    """Asking for an all-sky camera is not the same as asking for a webcam."""
+    url = "http://sky.local/latest.jpg"
+    sky, _ = store.add(_allsky_url(url), store_file)
+    cam, created = store.add(_net(url), store_file)
+    assert created is True
+    assert sky.id != cam.id
+
+
+def test_an_all_sky_address_is_stored_as_an_address_not_a_path(store_file):
+    stored, _ = store.add(_allsky_url("http://sky.local/latest.jpg"), store_file)
+    entry = json.loads(store_file.read_text())["cameras"][stored.id]
+    assert entry == {"kind": "allsky", "url": "http://sky.local/latest.jpg"}
+
+
+def test_an_all_sky_address_never_shows_its_password(store_file):
+    stored, _ = store.add(_allsky_url(EXPANDED_SKY_URL), store_file)
+    assert "hunter2" not in stored.target
+    assert "***" in stored.target
+
+
 def test_cameras_of_kinds_keeps_the_two_groups_apart(store_file):
     usb, _ = store.add(_usb(0), store_file)
     net, _ = store.add(_net(), store_file)
@@ -189,6 +230,16 @@ def test_a_registered_camera_is_expanded_again_on_the_way_back(store_file):
     (usable,) = store.expanded([stored], lambda u: EXPANDED_URL)
     assert usable.url == EXPANDED_URL
     assert usable.id == stored.id
+
+
+def test_an_all_sky_address_is_expanded_like_any_other(store_file):
+    """A password in an all-sky address is kept out of the file the same way."""
+    stored, _ = store.add(_allsky_url(RAW_SKY_URL), store_file)
+    assert "${SKY_PW}" in store_file.read_text()
+
+    (usable,) = store.expanded([stored], lambda u: EXPANDED_SKY_URL)
+    assert usable.url == EXPANDED_SKY_URL
+    assert usable.kind == ALLSKY
 
 
 def test_a_camera_whose_variable_is_unset_is_skipped_not_fatal(store_file):

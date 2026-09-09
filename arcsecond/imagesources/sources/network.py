@@ -8,6 +8,10 @@ Two transports, chosen from the URL scheme:
     http:// https://   JPEG bytes passed through untouched, either a still
                        image fetched repeatedly or an MJPEG stream
 
+An all-sky camera whose software runs on another machine publishes its JPEG
+over HTTP, and is fetched by exactly the same code — see ``AllSkyHTTPSource``,
+which differs from a webcam only in what it calls itself and how often it asks.
+
 Camera URLs often carry a password. Nothing here ever lets one out: every
 place a URL is logged, reported or put in an error message goes through
 ``redact_url`` first. That matters because the proxy forwards error text
@@ -31,6 +35,10 @@ SUPPORTED_SCHEMES = RTSP_SCHEMES + HTTP_SCHEMES
 
 _RTSP_FRAME_INTERVAL = 0.1  # seconds → ~10 fps, same as the USB webcam source
 _SNAPSHOT_INTERVAL = 1.0  # seconds — still-image cameras rarely update faster
+# All-sky software writes one image every 30-120 seconds, so asking every
+# second would be sixty questions for one answer. Kept in step with the
+# file-watch source, which polls a local all-sky image at the same cadence.
+_ALLSKY_SNAPSHOT_INTERVAL = 5.0  # seconds
 _JPEG_QUALITY = 60  # 0-100, only used on the RTSP path
 _CONNECT_TIMEOUT = 10.0  # seconds
 _READ_TIMEOUT = 30.0  # seconds without a byte before we call the stream dead
@@ -269,6 +277,40 @@ class HTTPImageSource(FrameSource):
                 "transport": urlsplit(self.url).scheme or "http",
             },
         )
+
+
+class AllSkyHTTPSource(HTTPImageSource):
+    """An all-sky camera that publishes its JPEG over HTTP.
+
+    Fetched exactly like any other HTTP camera — conditional requests, and a
+    digest comparison for a server offering neither ETag nor Last-Modified —
+    so a sky that has not changed is never sent on twice. What differs is what
+    it calls itself and how often it asks: an all-sky camera reached over the
+    network is an all-sky camera still, just as a webcam is a webcam whether
+    it arrives over USB or over RTSP.
+    """
+
+    kind = "allsky"
+    poll_interval = _ALLSKY_SNAPSHOT_INTERVAL
+
+
+def build_allsky_source(
+    source_id: str, url: str, label: Optional[str] = None
+) -> FrameSource:
+    """The source for an all-sky camera registered by address.
+
+    HTTP only. An all-sky camera is registered by the JPEG its software
+    publishes, and an RTSP address is a video stream — `arcsecond allsky add`
+    turns one away with the command that does take it, so reaching this with
+    one would be a bug rather than something an operator typed.
+    """
+    scheme = urlsplit(url).scheme.lower()
+    if scheme not in HTTP_SCHEMES:
+        raise KeyError(
+            f"{redact_url(url)} cannot be served as an all-sky camera. "
+            f"Expected one of: {', '.join(s + '://' for s in HTTP_SCHEMES)}."
+        )
+    return AllSkyHTTPSource(source_id, url, label)
 
 
 def build_network_source(
