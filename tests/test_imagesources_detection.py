@@ -228,6 +228,35 @@ def test_an_all_sky_address_is_never_looked_for_on_this_disk():
 
 
 # ---------------------------------------------------------------------------
+# Probing the well-known locations
+# ---------------------------------------------------------------------------
+
+
+def test_an_image_at_a_well_known_location_is_detected(tmp_path, monkeypatch):
+    from arcsecond.imagesources.sources import filewatch
+
+    image = tmp_path / "image.jpg"
+    image.write_bytes(b"x")
+    monkeypatch.setattr(filewatch, "ALLSKY_DISCOVERY_PATHS", [image])
+
+    (device,) = filewatch.detect_allsky()
+    assert device.identity == (ALLSKY, str(image))
+    assert device.extra["path"] == str(image)
+
+
+def test_a_well_known_location_with_nothing_at_it_is_not_reported(
+    tmp_path, monkeypatch
+):
+    """Probing reports what is there — an empty list is an answer, not a fault."""
+    from arcsecond.imagesources.sources import filewatch
+
+    monkeypatch.setattr(
+        filewatch, "ALLSKY_DISCOVERY_PATHS", [tmp_path / "nothing-here.jpg"]
+    )
+    assert filewatch.detect_allsky() == []
+
+
+# ---------------------------------------------------------------------------
 # Probing must never take the report down
 # ---------------------------------------------------------------------------
 

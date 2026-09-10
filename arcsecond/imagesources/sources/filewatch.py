@@ -21,10 +21,21 @@ logger = logging.getLogger(__name__)
 _POLL_INTERVAL = 5.0  # seconds — image cadence is much slower; this is fine
 
 # Common locations to probe at startup. First match wins per software.
+#
+# For Thomas Jacquin's allsky these are its own variables, resolved: since the
+# 2023 rearrangement everything lives under ALLSKY_HOME (``~/allsky``), with
+# ALLSKY_TMP at ``${ALLSKY_HOME}/tmp`` and the local website at
+# ``${ALLSKY_HOME}/html/allsky``. Installs older than that kept the website in
+# ``/var/www/html/allsky`` instead. Beware the ``/current/tmp/`` in the URL its
+# web interface uses: that is a lighttpd alias for ALLSKY_TMP, not a directory,
+# and pasting it in here as a path is how this list went stale before.
 ALLSKY_DISCOVERY_PATHS: list[Path] = [
-    # Thomas Jacquin's allsky (https://github.com/AllskyTeam/allsky)
+    # Thomas Jacquin's allsky (https://github.com/AllskyTeam/allsky).
+    # ALLSKY_TMP first: the capture loop rewrites it every cycle, and it is
+    # there whether or not the local website is enabled.
     Path.home() / "allsky" / "tmp" / "image.jpg",
-    Path("/var/www/html/allsky/current/tmp/image.jpg"),
+    Path.home() / "allsky" / "html" / "allsky" / "image.jpg",
+    Path("/var/www/html/allsky/image.jpg"),
     # indi-allsky (https://github.com/aaronwmorris/indi-allsky)
     Path("/var/lib/indi-allsky/images/latest.jpg"),
     Path.home() / "indi-allsky" / "latest.jpg",
