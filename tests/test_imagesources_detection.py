@@ -6,6 +6,7 @@ buckets is asserted on its own, because the old command printed detection and
 registration one after the other with no way to tell which was which.
 """
 
+from contextlib import nullcontext
 from unittest.mock import patch
 
 import pytest
@@ -138,8 +139,6 @@ def test_reachability_never_leaks_the_password():
 def _unresolvable(monkeypatch, answering=()):
     """Make the machine's resolver fail, except for addresses in ``answering``."""
     import socket as socket_module
-
-    from contextlib import nullcontext
 
     def connect(endpoint, timeout=None):
         host, _ = endpoint
