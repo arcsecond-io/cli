@@ -613,13 +613,15 @@ def _unreachable_note(url: str) -> Optional[str]:
     )
     host = (urlsplit(url).hostname or "").lower()
     if host.endswith(".local"):
-        # The failure that is worth explaining rather than merely reporting:
-        # the browser you found the address in resolves .local names over
-        # mDNS, and the proxy asks the machine's resolver, which often cannot.
+        # Worth explaining rather than merely reporting. A .local name is
+        # answered by its own machine over multicast, and the proxy asks that
+        # way itself when this computer's resolver cannot — so reaching here
+        # means neither worked, and something is eating the multicast.
         note += (
-            " A .local name is answered by that machine itself over mDNS, "
-            "which not every computer can do — registering its IP address "
-            "instead is the reliable form."
+            " A .local name is answered by that machine itself over mDNS. The "
+            "proxy asks that way too when this computer cannot, so something "
+            "on the network is stopping both — a firewall, or a subnet the "
+            "multicast does not cross. Its IP address is the reliable form."
         )
     return note
 

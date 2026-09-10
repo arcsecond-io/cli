@@ -135,17 +135,71 @@ def test_reachability_never_leaks_the_password():
     assert "hunter2" not in why
 
 
-def test_a_name_that_does_not_resolve_says_so(monkeypatch):
-    """Distinct from a refused connection: the camera may be perfectly fine."""
+def _unresolvable(monkeypatch, answering=()):
+    """Make the machine's resolver fail, except for addresses in ``answering``."""
     import socket as socket_module
 
-    def no_such_name(*a, **k):
+    from contextlib import nullcontext
+
+    def connect(endpoint, timeout=None):
+        host, _ = endpoint
+        if host in answering:
+            return nullcontext()
         raise socket_module.gaierror(-2, "Name or service not known")
 
-    monkeypatch.setattr(detection.socket, "create_connection", no_such_name)
+    monkeypatch.setattr(detection.socket, "create_connection", connect)
+
+
+def test_a_name_that_does_not_resolve_says_so(monkeypatch):
+    """Distinct from a refused connection: the camera may be perfectly fine."""
+    _unresolvable(monkeypatch)
+    monkeypatch.setattr(detection, "resolve_over_mdns", lambda host, **k: [])
+
     reachable, why = detection.is_reachable("http://skykot.local/image.jpg")
     assert reachable is False
     assert why == "skykot.local cannot be resolved"
+
+
+def test_a_local_name_the_machine_cannot_resolve_is_asked_of_the_network(monkeypatch):
+    """What the proxy does when it connects, so `detect` must agree with it."""
+    _unresolvable(monkeypatch, answering={"192.168.1.42"})
+    monkeypatch.setattr(
+        detection, "resolve_over_mdns", lambda host, **k: ["192.168.1.42"]
+    )
+
+    reachable, why = detection.is_reachable("http://skykot.local/image.jpg")
+    assert reachable is True
+    assert why == "answering on 192.168.1.42:80, found over mDNS"
+
+
+def test_an_address_that_does_not_answer_is_not_the_last_word(monkeypatch):
+    """The first address a multi-homed machine gives may be one this network
+    cannot reach; the others are still worth trying."""
+    _unresolvable(monkeypatch, answering={"192.168.1.97"})
+    monkeypatch.setattr(
+        detection,
+        "resolve_over_mdns",
+        lambda host, **k: ["192.168.64.1", "192.168.1.97"],
+    )
+
+    reachable, why = detection.is_reachable("http://skykot.local/image.jpg")
+    assert reachable is True
+    assert "192.168.1.97" in why
+
+
+def test_a_video_stream_is_not_asked_of_the_network(monkeypatch):
+    """FFmpeg opens an RTSP stream with its own resolver, out of our reach —
+    so promising it works would be a promise we cannot keep."""
+    _unresolvable(monkeypatch, answering={"192.168.1.42"})
+
+    def never(*a, **k):
+        raise AssertionError("asked over mDNS")
+
+    monkeypatch.setattr(detection, "resolve_over_mdns", never)
+
+    reachable, why = detection.is_reachable("rtsp://cam.local/stream1")
+    assert reachable is False
+    assert why == "cam.local cannot be resolved"
 
 
 def test_an_address_that_cannot_be_read_is_not_contacted():

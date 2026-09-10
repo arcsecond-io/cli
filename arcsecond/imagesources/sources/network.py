@@ -22,9 +22,11 @@ import asyncio
 import hashlib
 import logging
 import os
+import socket
 from typing import Optional
 from urllib.parse import urlsplit, urlunsplit
 
+from . import mdns
 from .base import FrameSource, SourceInfo
 
 logger = logging.getLogger(__name__)
@@ -163,6 +165,7 @@ class HTTPImageSource(FrameSource):
         self._etag: Optional[str] = None
         self._last_modified: Optional[str] = None
         self._digest: Optional[bytes] = None
+        self._resolver = None
 
     async def open(self) -> None:
         import aiohttp
@@ -170,7 +173,13 @@ class HTTPImageSource(FrameSource):
         timeout = aiohttp.ClientTimeout(
             total=None, connect=_CONNECT_TIMEOUT, sock_read=_READ_TIMEOUT
         )
-        self._session = aiohttp.ClientSession(timeout=timeout)
+        # aiohttp never closes a resolver it was handed, so this one is kept
+        # and closed alongside the session.
+        self._resolver = _mdns_aware_resolver()
+        self._session = aiohttp.ClientSession(
+            timeout=timeout,
+            connector=aiohttp.TCPConnector(resolver=self._resolver),
+        )
 
         try:
             response = await self._session.get(self.url)
@@ -266,6 +275,9 @@ class HTTPImageSource(FrameSource):
         if self._session is not None:
             await self._session.close()
             self._session = None
+        if self._resolver is not None:
+            await self._resolver.close()
+            self._resolver = None
 
     def info(self) -> SourceInfo:
         return SourceInfo(
@@ -277,6 +289,65 @@ class HTTPImageSource(FrameSource):
                 "transport": urlsplit(self.url).scheme or "http",
             },
         )
+
+
+async def _resolve_over_mdns(host: str) -> list:
+    """``host``'s addresses according to the machine that owns the name."""
+    if not mdns.is_mdns_name(host):
+        return []
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, mdns.resolve, host)
+
+
+def _mdns_aware_resolver():
+    """An aiohttp resolver that falls back to mDNS for a ``.local`` name.
+
+    The machine's own resolver is asked first and is almost always the end of
+    it. Only when it has no answer, and only for a ``.local`` name, is the
+    network asked directly — see ``mdns``. A camera registered by such a name
+    therefore keeps working when its address changes, which is the whole
+    reason for resolving at connect time rather than storing an address.
+
+    Built inside a function because aiohttp is an optional dependency: the CLI
+    has to stay importable on a machine that never installed the proxy extra.
+    """
+    import aiohttp
+    from aiohttp.abc import AbstractResolver
+
+    class _MDNSFallbackResolver(AbstractResolver):
+        def __init__(self):
+            self._default = aiohttp.DefaultResolver()
+
+        async def resolve(self, host, port=0, family=socket.AF_INET):
+            try:
+                return await self._default.resolve(host, port, family)
+            except OSError:
+                # Only A records are asked for, so an IPv6-only lookup is not
+                # something this can answer.
+                if family not in (socket.AF_INET, socket.AF_UNSPEC):
+                    raise
+                addresses = await _resolve_over_mdns(host)
+                if not addresses:
+                    raise
+                # Every address the machine answered with, in the order it
+                # gave them: aiohttp tries them in turn, which is what makes
+                # a responder with several interfaces work.
+                return [
+                    {
+                        "hostname": host,
+                        "host": address,
+                        "port": port,
+                        "family": socket.AF_INET,
+                        "proto": 0,
+                        "flags": socket.AI_NUMERICHOST,
+                    }
+                    for address in addresses
+                ]
+
+        async def close(self) -> None:
+            await self._default.close()
+
+    return _MDNSFallbackResolver()
 
 
 class AllSkyHTTPSource(HTTPImageSource):

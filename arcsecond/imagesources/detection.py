@@ -35,6 +35,8 @@ from urllib.parse import urlsplit
 
 from .sources.base import DetectedDevice
 from .sources.filewatch import detect_allsky
+from .sources.mdns import resolve as resolve_over_mdns
+from .sources.network import HTTP_SCHEMES
 from .store import ALLSKY, USB, Camera
 
 logger = logging.getLogger(__name__)
@@ -109,16 +111,44 @@ def is_reachable(url: str, timeout: float = NETWORK_TIMEOUT) -> tuple:
     if endpoint is None:
         return False, "the address cannot be read"
     host, port = endpoint
+
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True, f"answering on {host}:{port}"
     except socket.gaierror:
-        # Told apart from a connection that fails: nothing is wrong with the
-        # camera, the name simply does not resolve on this machine, and that
-        # is a different thing to go and fix.
-        return False, f"{host} cannot be resolved"
+        pass
     except OSError as e:
         return False, f"no answer on {host}:{port} ({e.strerror or e})"
+
+    # The machine's resolver has no answer. A `.local` name can still be
+    # answered by the machine that owns it, which is exactly what the proxy
+    # does when it connects — so the same fallback belongs here, or `detect`
+    # would call a camera missing that the proxy serves perfectly well.
+    #
+    # Only for the addresses the proxy fetches itself: an RTSP stream is
+    # opened by FFmpeg, with its own resolver and no way in, so promising that
+    # one works would be a promise this cannot keep.
+    if urlsplit(url).scheme.lower() not in HTTP_SCHEMES:
+        return False, f"{host} cannot be resolved"
+
+    addresses = resolve_over_mdns(host)
+    if not addresses:
+        # Told apart from a connection that fails: nothing is wrong with the
+        # camera, the name simply does not resolve here, and that is a
+        # different thing to go and fix.
+        return False, f"{host} cannot be resolved"
+
+    # A machine with several interfaces answers with an address for each, and
+    # only some of them are reachable from here — the same reason the proxy
+    # hands the whole list to aiohttp rather than picking one.
+    why = ""
+    for address in addresses:
+        try:
+            with socket.create_connection((address, port), timeout=timeout):
+                return True, f"answering on {address}:{port}, found over mDNS"
+        except OSError as e:
+            why = f"no answer on {address}:{port} ({e.strerror or e})"
+    return False, why
 
 
 # ---------------------------------------------------------------------------
