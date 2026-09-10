@@ -106,7 +106,7 @@ def test_all_sky_detection_ignores_webcams():
 
 def test_a_reachable_network_camera_is_present():
     camera = Camera(id="abc", kind=NET, url="rtsp://cam.local/s")
-    with patch.object(detection, "_is_reachable", return_value=(True, "answering")):
+    with patch.object(detection, "is_reachable", return_value=(True, "answering")):
         report = _report([camera])
     assert report.present == [camera]
     assert report.new == []
@@ -114,7 +114,7 @@ def test_a_reachable_network_camera_is_present():
 
 def test_an_unreachable_network_camera_is_missing_with_a_reason():
     camera = Camera(id="abc", kind=NET, url="rtsp://cam.local/s")
-    with patch.object(detection, "_is_reachable", return_value=(False, "no answer")):
+    with patch.object(detection, "is_reachable", return_value=(False, "no answer")):
         report = _report([camera])
     assert report.missing == [camera]
     assert report.detail["abc"] == "no answer"
@@ -122,17 +122,36 @@ def test_an_unreachable_network_camera_is_missing_with_a_reason():
 
 def test_no_network_says_so_rather_than_guessing():
     camera = Camera(id="abc", kind=NET, url="rtsp://cam.local/s")
-    with patch.object(detection, "_is_reachable", side_effect=AssertionError("called")):
+    with patch.object(detection, "is_reachable", side_effect=AssertionError("called")):
         report = _report([camera], check_network=False)
     assert report.present == [camera]
     assert report.detail["abc"] == "not contacted"
 
 
 def test_reachability_never_leaks_the_password():
-    camera = Camera(id="abc", kind=NET, url="rtsp://admin:hunter2@127.0.0.1:1/s")
-    reachable, why = detection._is_reachable(camera, timeout=0.2)
+    url = "rtsp://admin:hunter2@127.0.0.1:1/s"
+    reachable, why = detection.is_reachable(url, timeout=0.2)
     assert reachable is False
     assert "hunter2" not in why
+
+
+def test_a_name_that_does_not_resolve_says_so(monkeypatch):
+    """Distinct from a refused connection: the camera may be perfectly fine."""
+    import socket as socket_module
+
+    def no_such_name(*a, **k):
+        raise socket_module.gaierror(-2, "Name or service not known")
+
+    monkeypatch.setattr(detection.socket, "create_connection", no_such_name)
+    reachable, why = detection.is_reachable("http://skykot.local/image.jpg")
+    assert reachable is False
+    assert why == "skykot.local cannot be resolved"
+
+
+def test_an_address_that_cannot_be_read_is_not_contacted():
+    reachable, why = detection.is_reachable("http://")
+    assert reachable is False
+    assert why == "the address cannot be read"
 
 
 @pytest.mark.parametrize(
@@ -201,7 +220,7 @@ def test_a_detected_all_sky_camera_that_is_registered_is_not_reported_twice(tmp_
 def test_an_all_sky_camera_at_an_address_is_confirmed_by_contacting_it():
     """It has no path to look at, so it is settled the way any address is."""
     camera = Camera(id="abc", kind=ALLSKY, url="http://sky.local/latest.jpg")
-    with patch.object(detection, "_is_reachable", return_value=(True, "answering")):
+    with patch.object(detection, "is_reachable", return_value=(True, "answering")):
         with patch.object(detection, "detect_allsky", return_value=[]):
             report = detection.report([camera], (ALLSKY,))
     assert report.present == [camera]
@@ -210,7 +229,7 @@ def test_an_all_sky_camera_at_an_address_is_confirmed_by_contacting_it():
 
 def test_an_all_sky_camera_at_an_address_that_is_down_is_missing():
     camera = Camera(id="abc", kind=ALLSKY, url="http://sky.local/latest.jpg")
-    with patch.object(detection, "_is_reachable", return_value=(False, "no answer")):
+    with patch.object(detection, "is_reachable", return_value=(False, "no answer")):
         with patch.object(detection, "detect_allsky", return_value=[]):
             report = detection.report([camera], (ALLSKY,))
     assert report.missing == [camera]
@@ -221,7 +240,7 @@ def test_an_all_sky_address_is_never_looked_for_on_this_disk():
     """The old check called a URL a missing file — the wrong answer entirely."""
     camera = Camera(id="abc", kind=ALLSKY, url="http://sky.local/latest.jpg")
     with patch.object(detection, "resolve_allsky_path") as looked_at_disk:
-        with patch.object(detection, "_is_reachable", return_value=(True, "answering")):
+        with patch.object(detection, "is_reachable", return_value=(True, "answering")):
             with patch.object(detection, "detect_allsky", return_value=[]):
                 detection.report([camera], (ALLSKY,))
     looked_at_disk.assert_not_called()

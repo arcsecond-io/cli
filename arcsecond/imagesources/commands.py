@@ -551,7 +551,10 @@ def webcam_add_cmd(camera, label):
             + ".",
         )
 
-    _add(Camera(id="", kind=NET, url=target, label=label))
+    _add(
+        Camera(id="", kind=NET, url=target, label=label),
+        absent_note=lambda: _unreachable_note(expanded),
+    )
 
 
 def _probe_index(index: int):
@@ -588,6 +591,37 @@ def _specs(device) -> Optional[dict]:
     }
     kept = {k: v for k, v in specs.items() if v}
     return kept or None
+
+
+def _unreachable_note(url: str) -> Optional[str]:
+    """Said when a camera is registered at an address that does not answer.
+
+    It is registered either way, for the same reason an unplugged webcam is: a
+    camera that is switched off, or on a machine still booting, is one the
+    operator owns. But saying nothing lets a typo — or a name this machine
+    cannot resolve — surface hours later and two machines away, as a camera
+    that is simply blank in Arcsecond.local, instead of as an answer to the
+    line just typed.
+    """
+    reachable, why = detection.is_reachable(url)
+    if reachable:
+        return None
+
+    note = (
+        f"{why}. It stays registered — the proxy will serve it as soon as it "
+        "answers."
+    )
+    host = (urlsplit(url).hostname or "").lower()
+    if host.endswith(".local"):
+        # The failure that is worth explaining rather than merely reporting:
+        # the browser you found the address in resolves .local names over
+        # mDNS, and the proxy asks the machine's resolver, which often cannot.
+        note += (
+            " A .local name is answered by that machine itself over mDNS, "
+            "which not every computer can do — registering its IP address "
+            "instead is the reliable form."
+        )
+    return note
 
 
 def _nothing_at_index(index: int) -> str:
@@ -835,8 +869,11 @@ def allsky_add_cmd(target, label):
         # password stays a variable name on disk. Doing it here is what makes an
         # unset variable a complaint about the line just typed, rather than a
         # camera quietly missing from the next `proxy start`.
-        _expand_env_vars(target)
-        _add(Camera(id="", kind=ALLSKY, url=target, label=label))
+        expanded = _expand_env_vars(target)
+        _add(
+            Camera(id="", kind=ALLSKY, url=target, label=label),
+            absent_note=lambda: _unreachable_note(expanded),
+        )
         return
 
     # A single letter is a Windows drive, not a scheme: `C:\allsky\latest.jpg`

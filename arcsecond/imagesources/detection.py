@@ -96,20 +96,27 @@ def _network_endpoint(url: str) -> Optional[tuple]:
     return (host, port)
 
 
-def _is_reachable(camera: Camera, timeout: float) -> tuple:
-    """``(reachable, why)`` for one camera registered by address.
+def is_reachable(url: str, timeout: float = NETWORK_TIMEOUT) -> tuple:
+    """``(reachable, why)`` for one camera address.
+
+    Takes the URL rather than the camera because ``add`` asks this about an
+    address that is not registered yet, and ``detect`` about one that is.
 
     Only the address is contacted, and the answer never contains the URL's
-    password: ``Camera.target`` is redacted, and the endpoint printed here is
-    the host and port alone.
+    password: the endpoint named here is the host and port alone.
     """
-    endpoint = _network_endpoint(camera.url or "")
+    endpoint = _network_endpoint(url or "")
     if endpoint is None:
         return False, "the address cannot be read"
     host, port = endpoint
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True, f"answering on {host}:{port}"
+    except socket.gaierror:
+        # Told apart from a connection that fails: nothing is wrong with the
+        # camera, the name simply does not resolve on this machine, and that
+        # is a different thing to go and fix.
+        return False, f"{host} cannot be resolved"
     except OSError as e:
         return False, f"no answer on {host}:{port} ({e.strerror or e})"
 
@@ -152,7 +159,7 @@ def _reachability(cameras: list[Camera], timeout: float) -> dict:
     if not cameras:
         return {}
     with ThreadPoolExecutor(max_workers=min(8, len(cameras))) as pool:
-        outcomes = pool.map(lambda c: _is_reachable(c, timeout), cameras)
+        outcomes = pool.map(lambda c: is_reachable(c.url or "", timeout), cameras)
         return {camera.id: outcome for camera, outcome in zip(cameras, outcomes)}
 
 

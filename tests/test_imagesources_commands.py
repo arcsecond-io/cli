@@ -39,6 +39,15 @@ def cli(tmp_path, monkeypatch):
         )
 
     monkeypatch.setattr(commands.subprocess, "Popen", no_real_processes)
+
+    # `add` checks that an address answers before saying it is registered.
+    # Left alone, every test registering a camera would open a real socket to
+    # a made-up host and wait out the timeout — 2 seconds each, and a suite
+    # whose result depends on what the network does. Reachable is the quiet
+    # default; the tests about the note say otherwise for themselves.
+    monkeypatch.setattr(
+        commands.detection, "is_reachable", lambda url, **k: (True, "answering")
+    )
     return CliRunner()
 
 
@@ -228,6 +237,71 @@ def test_an_address_allsky_cannot_read_is_refused(cli):
     assert result.exit_code == 1
     assert "http://" in result.output
     assert store.all_cameras() == []
+
+
+def test_an_address_that_does_not_answer_is_registered_with_a_note(cli, monkeypatch):
+    """A camera that is off is still a camera — but the operator is told now."""
+    monkeypatch.setattr(
+        commands.detection,
+        "is_reachable",
+        lambda url, **k: (False, "no answer on 10.0.0.9:80 (Connection refused)"),
+    )
+    result = _run(cli, allsky, ["add", "http://10.0.0.9/latest.jpg"])
+    assert result.exit_code == 0
+    assert "Note:" in result.output
+    assert "no answer on 10.0.0.9:80" in result.output
+    assert len(store.all_cameras()) == 1
+
+
+def test_an_address_that_answers_says_nothing_extra(cli):
+    result = _run(cli, allsky, ["add", "http://10.0.0.9/latest.jpg"])
+    assert "Note:" not in result.output
+
+
+def test_a_local_name_that_will_not_resolve_explains_itself(cli, monkeypatch):
+    """The failure worth explaining: the browser resolves .local, we may not."""
+    monkeypatch.setattr(
+        commands.detection,
+        "is_reachable",
+        lambda url, **k: (False, "skykot.local cannot be resolved"),
+    )
+    result = _run(cli, allsky, ["add", "http://skykot.local/current/tmp/image.jpg"])
+    assert "mDNS" in result.output
+    assert "IP address" in result.output
+
+
+def test_a_network_camera_that_does_not_answer_is_noted_too(cli, monkeypatch):
+    monkeypatch.setattr(
+        commands.detection, "is_reachable", lambda url, **k: (False, "no answer")
+    )
+    result = _run(cli, webcam, ["add", "rtsp://cam.local/s"])
+    assert result.exit_code == 0
+    assert "Note:" in result.output
+
+
+def test_the_address_contacted_is_the_one_with_the_password_filled_in(cli, monkeypatch):
+    """The check must reach the real camera, not `${VARIABLE}` as a hostname."""
+    monkeypatch.setenv("PW", "hunter2")
+    asked = []
+    monkeypatch.setattr(
+        commands.detection,
+        "is_reachable",
+        lambda url, **k: (asked.append(url), (True, "answering"))[1],
+    )
+    _run(cli, allsky, ["add", "http://sky:${PW}@10.0.0.9/latest.jpg"])
+    assert asked == ["http://sky:hunter2@10.0.0.9/latest.jpg"]
+
+
+def test_re_running_an_add_does_not_contact_the_camera_again(cli, monkeypatch):
+    """Re-running a line from history should be quiet, and cost nothing."""
+    _run(cli, allsky, ["add", "http://10.0.0.9/latest.jpg"])
+    monkeypatch.setattr(
+        commands.detection,
+        "is_reachable",
+        lambda url, **k: (_ for _ in ()).throw(AssertionError("contacted again")),
+    )
+    result = _run(cli, allsky, ["add", "http://10.0.0.9/latest.jpg"])
+    assert "Already registered" in result.output
 
 
 def test_a_password_in_an_all_sky_address_is_never_written_in_the_clear(
