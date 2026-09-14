@@ -1,6 +1,6 @@
 # === Arcsecond.local config. ===
 # *** DO NOT change any name or port number. ***
-# Version 6.3
+# Version 6.4
 
 services:
   # Database (PostgresQL)
@@ -8,12 +8,11 @@ services:
     image: postgres:16
     container_name: arcsecond-db
     restart: unless-stopped
-    # Bind to localhost only — the backend container reaches the DB over the
-    # internal Docker network (hostname `arcsecond-db`), and operators can
-    # still run `psql -h localhost` / `pg_dump` from the host. Anything on the
-    # LAN is firewalled out.
-    ports:
-      - "127.0.0.1:5432:5432"
+    # No host port. The backend reaches the DB over the internal Docker
+    # network (hostname `arcsecond-db`), and every CLI command that needs
+    # the DB (backups, restore, password rotation) goes through `docker exec`
+    # into this container. Publishing 5432 on the host bought nothing and
+    # failed the whole stack whenever another Postgres already held it.
     volumes:
       - arcsecond_postgres_data:/var/lib/postgresql/data
     env_file:
@@ -25,10 +24,8 @@ services:
     image: redis:7.4
     container_name: arcsecond-broker
     restart: unless-stopped
-    # Localhost-only as well — Redis with no auth on a LAN-exposed port is a
-    # well-known foot-gun. Backend reaches it over the Docker network.
-    ports:
-      - "127.0.0.1:6379:6379"
+    # No host port either: Redis with no auth must never be reachable from
+    # outside the stack, and the backend reaches it over the Docker network.
 
   # Arcsecond backend (REST APIs). Can be used for API calls and external pipelines, scripts etc.
   backend:

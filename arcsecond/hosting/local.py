@@ -16,9 +16,10 @@ from .utils import (
 
 ENV_FILENAME = ".env"
 
-# Stable across installs — operators connect with this username when running
-# manual psql / pg_dump commands. The actual security boundary is the password
-# (generated per-install) and the network exposure (localhost-only).
+# Stable across installs — it is the username every `docker exec ... psql`
+# in this package and in the docs uses. The actual security boundary is the
+# password (generated per-install) and the fact that the database container
+# publishes no host port at all.
 POSTGRES_USER = "arcsecond_docker"
 POSTGRES_DB = "arcsecond_docker"
 
