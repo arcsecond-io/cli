@@ -59,18 +59,76 @@ def test_detail_url(endpoint):
     assert url == "https://fixture.example.io/sub/test/123/"
 
 
-@patch("httpx.get")
-def test_list_success(mock_get, endpoint):
+def _page(payload):
     mock_response = Mock()
     mock_response.status_code = 200
-    mock_response.json.return_value = {"results": []}
-    mock_response.text = '{"results": []}'
-    mock_get.return_value = mock_response
+    mock_response.json.return_value = payload
+    mock_response.text = "not empty"
+    return mock_response
+
+
+@patch("httpx.get")
+def test_list_unwraps_the_page_envelope(mock_get, endpoint):
+    mock_get.return_value = _page({"count": 0, "next": None, "results": []})
 
     response, error = endpoint.list()
     assert error is None
-    assert response == {"results": []}
+    assert response == []
     mock_get.assert_called_once()
+
+
+@patch("httpx.get")
+def test_list_returns_a_bare_array_unchanged(mock_get, endpoint):
+    """Not every list route pages."""
+    mock_get.return_value = _page([{"id": 1}])
+
+    response, error = endpoint.list()
+    assert error is None
+    assert response == [{"id": 1}]
+
+
+@patch("httpx.get")
+def test_list_walks_every_page(mock_get, endpoint):
+    mock_get.side_effect = [
+        _page({"count": 3, "next": "https://fixture.example.io/sub/test/?page=2",
+               "results": [{"id": 1}, {"id": 2}]}),
+        _page({"count": 3, "next": None, "results": [{"id": 3}]}),
+    ]
+
+    response, error = endpoint.list()
+    assert error is None
+    assert response == [{"id": 1}, {"id": 2}, {"id": 3}]
+    assert mock_get.call_count == 2
+
+
+@patch("httpx.get")
+def test_list_reports_a_failure_on_a_later_page(mock_get, endpoint):
+    failed = Mock()
+    failed.status_code = 500
+    failed.text = "boom"
+    mock_get.side_effect = [
+        _page({"count": 3, "next": "https://fixture.example.io/sub/test/?page=2",
+               "results": [{"id": 1}]}),
+        failed,
+    ]
+
+    response, error = endpoint.list()
+    assert response is None
+    assert error is not None
+
+
+@patch("httpx.get")
+def test_find_one_matches_across_pages(mock_get, endpoint):
+    """find_one counts matches; it must count them all, not the first page's."""
+    mock_get.side_effect = [
+        _page({"count": 2, "next": "https://fixture.example.io/sub/test/?page=2",
+               "results": [{"id": 1, "name": "twin"}]}),
+        _page({"count": 2, "next": None, "results": [{"id": 2, "name": "twin"}]}),
+    ]
+
+    result, error = endpoint.find_one(name="twin")
+    assert result is None
+    assert error is not None  # two matches, not one
 
 
 @patch("httpx.get")

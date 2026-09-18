@@ -91,7 +91,36 @@ class ArcsecondAPIEndpoint(object):
         return None
 
     def list(self, **filters):
-        return self._perform_request(self._list_url(**filters), "get")
+        """Every item of a list route, as a plain list.
+
+        The API pages its list routes: the answer is
+        `{count, next, previous, results}` rather than an array. Callers here
+        ask for a resource, not for a page of one — `find_one` counts the
+        matches, the uploader looks a dataset up by name — so the pages are
+        walked and flattened, and `list()` keeps the contract it has always
+        had. A route that answers a bare array (there are still a few) comes
+        back unchanged.
+        """
+        response, error = self._perform_request(self._list_url(**filters), "get")
+        if error:
+            return response, error
+
+        if not isinstance(response, dict) or "results" not in response:
+            return response, error
+
+        items = list(response.get("results") or [])
+        next_url = response.get("next")
+        # A page carries its own successor's URL, filters included.
+        while next_url:
+            page, error = self._perform_request(next_url, "get")
+            if error:
+                return None, error
+            if not isinstance(page, dict):
+                break
+            items.extend(page.get("results") or [])
+            next_url = page.get("next")
+
+        return items, None
 
     def read(self, id_name_uuid, headers=None):
         return self._perform_request(
