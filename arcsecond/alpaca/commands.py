@@ -4,7 +4,7 @@ Click command group: ``arcsecond alpaca``.
 First citizen: ``arcsecond alpaca probe dome`` — a read-only diagnostic that
 captures what surface a given Alpaca dome server exposes (device metadata,
 ``SupportedActions``, ``CommandString`` / ``CommandBool`` / ``CommandBlind``
-passthrough behaviour, and optional local host hints).
+passthrough behaviour, and local host hints when the target is this machine).
 
 Structure leaves room for ``arcsecond alpaca probe telescope`` /
 ``probe camera`` / ``probe focuser`` and ``arcsecond alpaca discover`` later
@@ -21,7 +21,7 @@ from pathlib import Path
 import click
 
 from ..errors import ArcsecondError
-from .dome_probe import ProbeProgress, probe_dome
+from .dome_probe import HOST_HINTS_REASON_LOCAL, ProbeProgress, probe_dome
 
 
 @click.group(name="alpaca", help="Diagnostics for local ASCOM Alpaca devices.")
@@ -72,12 +72,15 @@ _COMMON_OPTIONS = [
         ),
     ),
     click.option(
-        "--collect-host-info",
-        is_flag=True,
-        default=False,
+        "--collect-host-info/--no-host-info",
+        "collect_host_info",
+        default=None,
         help=(
-            "Additionally collect best-effort local OS hints (open ports, "
-            "COM ProgIDs matching TCS/Galil). Read-only."
+            "Best-effort local OS hints (open ports, COM ProgIDs matching "
+            "TCS/Galil), read-only. Collected automatically when HOST is this "
+            "machine, the only case in which they describe the Alpaca server's "
+            "host. --collect-host-info forces them for a remote HOST; "
+            "--no-host-info skips them."
         ),
     ),
     click.option(
@@ -104,6 +107,15 @@ def _default_output_path(kind: str) -> str:
     return str(Path.cwd() / f"alpaca_{kind}_probe_{stamp}.json")
 
 
+def _describe_host_hints(report: dict) -> str:
+    hints = report.get("host_hints")
+    if hints is None:
+        return f"skipped ({report.get('host_hints_skipped_reason', 'not collected')})"
+    if hints.get("collected_because") == HOST_HINTS_REASON_LOCAL:
+        return "collected (HOST is this machine)"
+    return "collected (--collect-host-info)"
+
+
 def _format_progress(label: str, ok: bool, detail: str | None) -> str:
     tag = click.style("[OK ]", fg="green") if ok else click.style("[ERR]", fg="red")
     suffix = f" — {detail}" if detail else ""
@@ -118,7 +130,8 @@ def _format_progress(label: str, ok: bool, detail: str | None) -> str:
         "legacy CommandString / CommandBool / CommandBlind passthroughs. "
         "Useful for figuring out whether a proprietary driver (e.g. TCSGalil) "
         "exposes any vendor-specific extension surface beyond the standard "
-        "ASCOM IDome interface."
+        "ASCOM IDome interface. Local host hints (open ports, COM ProgIDs) "
+        "are added when HOST is this machine."
     ),
 )
 @_add_options(_COMMON_OPTIONS)
@@ -128,7 +141,7 @@ def probe_dome_cmd(
     device_number: int,
     protocol: str,
     allow_active: bool,
-    collect_host_info: bool,
+    collect_host_info: bool | None,
     output_path: str | None,
 ) -> None:
     output_path = output_path or _default_output_path("dome")
@@ -177,4 +190,5 @@ def probe_dome_cmd(
     click.echo(click.style("Summary", bold=True))
     click.echo(f"  Probes:           {counts.ok}/{counts.total} OK")
     click.echo(f"  SupportedActions: {supported_n} entries")
+    click.echo(f"  Host hints:       {_describe_host_hints(result.report)}")
     click.echo(f"  Report written to {click.style(os.fspath(output_path), fg='cyan')}")

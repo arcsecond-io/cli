@@ -16,7 +16,9 @@ a given Alpaca dome server exposes:
 * the raw ``SupportedActions`` list
 * legacy ``CommandString`` / ``CommandBool`` / ``CommandBlind`` passthrough
   behaviour against a small set of safe candidate commands
-* optional best-effort local host hints (open ports, COM ProgIDs)
+* best-effort local host hints (open ports, COM ProgIDs), collected
+  automatically when the target is this machine, the only case in which
+  they describe the Alpaca server's host at all
 
 It never issues motion-class commands. ``CommandBlind`` and active Galil DMC
 verbs are gated behind ``allow_active=True``.
@@ -24,6 +26,7 @@ verbs are gated behind ``allow_active=True``.
 
 from __future__ import annotations
 
+import ipaddress
 import os
 import platform
 import socket
@@ -74,6 +77,15 @@ _READ_ONLY_COMMANDS: tuple[str, ...] = (
 _ACTIVE_COMMANDS: tuple[str, ...] = ("XQ#STATUS",)
 
 _RESPONSE_TRUNCATE = 2000
+
+# Why a ``host_hints`` section is in a report. The hints describe the machine
+# the probe runs on, so by default they are attached only when that is also
+# the machine the Alpaca server runs on; ``requested`` marks a caller forcing
+# them for a remote target.
+HOST_HINTS_REASON_LOCAL = "target-is-local"
+HOST_HINTS_REASON_REQUESTED = "requested"
+
+_LOOPBACK_NAMES = frozenset({"localhost", "127.0.0.1", "::1", "0.0.0.0", "::"})
 
 
 @dataclass
@@ -298,6 +310,68 @@ def _safe_subprocess(cmd: list[str], timeout: float = 5.0) -> dict:
     }
 
 
+def _address_is_bindable(family: int, address: str) -> bool:
+    """Whether ``address`` is assigned to an interface of this machine.
+
+    Binding an ephemeral UDP port is the one portable answer: it succeeds only
+    for a local address, needs no privilege, and opens nothing, on Windows,
+    macOS and Linux alike.
+    """
+    try:
+        with socket.socket(family, socket.SOCK_DGRAM) as sock:
+            sock.bind((address, 0))
+    except OSError:
+        return False
+    return True
+
+
+def _address_is_local(family: int, address: str) -> bool:
+    """Loopback, or assigned to one of this machine's interfaces."""
+    try:
+        if ipaddress.ip_address(address).is_loopback:
+            return True
+    except ValueError:
+        pass
+    return _address_is_bindable(family, address)
+
+
+def _is_own_hostname(name: str) -> bool:
+    """Whether ``name`` is this machine's hostname, qualified or not."""
+    local_name = socket.gethostname().lower()
+    return name == local_name or name.partition(".")[0] == local_name.partition(".")[0]
+
+
+def _resolves_to_local_address(name: str) -> bool:
+    """Whether any address ``name`` resolves to belongs to this machine."""
+    try:
+        infos = socket.getaddrinfo(name, None, type=socket.SOCK_DGRAM)
+    except OSError:
+        return False
+    return any(
+        _address_is_local(family, str(sockaddr[0]))
+        for family, _type, _proto, _canonical, sockaddr in infos
+    )
+
+
+def is_local_target(host: str) -> bool:
+    """Whether ``host`` names the machine running the probe.
+
+    The host hints (open ports, COM ProgIDs) describe the machine the probe
+    runs on, so they are only worth attaching when that is also the machine
+    the Alpaca server runs on. Loopback names, this machine's hostname, and
+    any address assigned to one of its interfaces count. A host that does not
+    resolve is not local.
+    """
+    name = host.strip().strip("[]").lower()
+    if not name:
+        return False
+    return (
+        name in _LOOPBACK_NAMES
+        or _is_own_hostname(name)
+        or _resolves_to_local_address(name)
+    )
+
+
 def _collect_windows_host_hints() -> dict:
     hints: dict = {"os": "windows"}
     hints["netstat"] = _safe_subprocess(["netstat", "-ano"], timeout=8.0)
@@ -354,13 +428,18 @@ def probe_dome(
     *,
     protocol: str = "http",
     allow_active: bool = False,
-    collect_host_info: bool = False,
+    collect_host_info: bool | None = None,
     dome_factory: Callable[[str, int, str], Any] | None = None,
     progress: ProbeProgress | None = None,
 ) -> ProbeResult:
     """
     Build a JSON-serialisable diagnostic report for an Alpaca dome at
     ``protocol://host:port`` (device_number).
+
+    ``collect_host_info`` left at ``None`` attaches the local host hints when
+    ``host`` is this machine and skips them otherwise, recording which in the
+    report. ``True`` forces them for a remote target (they still describe the
+    probing machine, not the target); ``False`` skips them for a local one.
 
     ``dome_factory(address, device_number, protocol)`` is only there for
     tests — production callers leave it ``None`` and the real
@@ -395,9 +474,11 @@ def probe_dome(
         connected_outcome.get("error") or str(connected_outcome.get("value")),
     )
 
+    target_is_local = is_local_target(host)
     environment = _build_environment(
         host, port, device_number, protocol, connected_outcome
     )
+    environment["target_is_local"] = target_is_local
 
     device_metadata = _probe_device_metadata(dome, progress, counts)
     supported_actions = _probe_supported_actions(dome, progress, counts)
@@ -415,8 +496,21 @@ def probe_dome(
         "command_passthrough": command_passthrough,
     }
 
+    if collect_host_info is None:
+        collect_host_info = target_is_local
+        reason = HOST_HINTS_REASON_LOCAL
+    else:
+        reason = HOST_HINTS_REASON_REQUESTED
+
     if collect_host_info:
-        report["host_hints"] = _collect_host_hints()
+        report["host_hints"] = {"collected_because": reason, **_collect_host_hints()}
+    elif reason == HOST_HINTS_REASON_REQUESTED:
+        report["host_hints_skipped_reason"] = "Disabled by the caller."
+    else:
+        report["host_hints_skipped_reason"] = (
+            f"{host} is not this machine, so the hints would describe the wrong "
+            "host; pass --collect-host-info to force them."
+        )
 
     return ProbeResult(report=report, counts=counts)
 

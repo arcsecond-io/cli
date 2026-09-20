@@ -9,6 +9,7 @@ to cover both the probe logic and the Click wiring.
 from __future__ import annotations
 
 import json
+import socket
 from enum import IntEnum
 
 import pytest
@@ -16,7 +17,14 @@ from click.testing import CliRunner
 
 from arcsecond import cli
 from arcsecond.alpaca import dome_probe
-from arcsecond.alpaca.dome_probe import probe_dome
+from arcsecond.alpaca.dome_probe import is_local_target, probe_dome
+
+# Kept so one test can run the real collector after the autouse stub below.
+_REAL_COLLECT_HOST_HINTS = dome_probe._collect_host_hints
+
+# TEST-NET-3 (RFC 5737): a documentation range never assigned to a real
+# interface, so it is a deterministic "remote" target with no DNS involved.
+REMOTE_HOST = "203.0.113.7"
 
 
 class _NotImplementedException(Exception):
@@ -180,6 +188,16 @@ def _stub_alpaca_in_cli(monkeypatch):
     sys.modules.pop("alpaca.dome", None)
 
 
+@pytest.fixture(autouse=True)
+def _stub_host_hints(monkeypatch):
+    """
+    The real collector shells out to netstat/lsof and, on Windows, walks the
+    registry. Stub it so the suite stays fast and deterministic; one test
+    restores the real one on purpose.
+    """
+    monkeypatch.setattr(dome_probe, "_collect_host_hints", lambda: {"os": "stub"})
+
+
 def _make_runner() -> CliRunner:
     return CliRunner()
 
@@ -206,13 +224,17 @@ def test_probe_dome_function_default_is_readonly(fake_dome_factory):
         "command_passthrough",
     ):
         assert key in result.report
-    assert "host_hints" not in result.report
+
+    # 127.0.0.1 is this machine, so the host hints come for free and say why.
+    assert result.report["host_hints"]["collected_because"] == "target-is-local"
+    assert "host_hints_skipped_reason" not in result.report
 
     # Environment captures connectivity.
     env = result.report["environment"]
     assert env["host"] == "127.0.0.1"
     assert env["port"] == 11111
     assert env["device_number"] == 0
+    assert env["target_is_local"] is True
     assert env["connected"]["ok"] is True
     assert env["connected"]["value"] is True
 
@@ -266,8 +288,11 @@ def test_probe_dome_function_allow_active_sends_blind(fake_dome_factory):
     assert "XQ#STATUS" in blind_commands
 
 
-def test_probe_dome_function_collect_host_info_adds_section(fake_dome_factory):
+def test_probe_dome_function_forced_host_info_runs_real_collector(
+    fake_dome_factory, monkeypatch
+):
     factory, _ = fake_dome_factory
+    monkeypatch.setattr(dome_probe, "_collect_host_hints", _REAL_COLLECT_HOST_HINTS)
 
     result = probe_dome(
         host="127.0.0.1",
@@ -276,8 +301,78 @@ def test_probe_dome_function_collect_host_info_adds_section(fake_dome_factory):
         collect_host_info=True,
         dome_factory=factory,
     )
-    assert "host_hints" in result.report
-    assert "os" in result.report["host_hints"]
+    hints = result.report["host_hints"]
+    assert hints["collected_because"] == "requested"
+    assert "os" in hints
+
+
+def test_probe_dome_function_remote_target_skips_host_hints(fake_dome_factory):
+    factory, _ = fake_dome_factory
+
+    result = probe_dome(
+        host=REMOTE_HOST,
+        port=11111,
+        protocol="http",
+        dome_factory=factory,
+    )
+    assert result.report["environment"]["target_is_local"] is False
+    assert "host_hints" not in result.report
+    reason = result.report["host_hints_skipped_reason"]
+    assert REMOTE_HOST in reason
+    assert "--collect-host-info" in reason
+
+
+def test_probe_dome_function_remote_target_can_force_host_hints(fake_dome_factory):
+    factory, _ = fake_dome_factory
+
+    result = probe_dome(
+        host=REMOTE_HOST,
+        port=11111,
+        protocol="http",
+        collect_host_info=True,
+        dome_factory=factory,
+    )
+    assert result.report["host_hints"]["collected_because"] == "requested"
+    assert "host_hints_skipped_reason" not in result.report
+
+
+def test_probe_dome_function_local_target_can_opt_out(fake_dome_factory):
+    factory, _ = fake_dome_factory
+
+    result = probe_dome(
+        host="127.0.0.1",
+        port=11111,
+        protocol="http",
+        collect_host_info=False,
+        dome_factory=factory,
+    )
+    assert "host_hints" not in result.report
+    assert result.report["host_hints_skipped_reason"] == "Disabled by the caller."
+
+
+@pytest.mark.parametrize(
+    "host", ["localhost", "LOCALHOST", "127.0.0.1", "::1", "[::1]", " 127.0.0.1 "]
+)
+def test_is_local_target_loopback(host):
+    assert is_local_target(host) is True
+
+
+def test_is_local_target_own_hostname():
+    assert is_local_target(socket.gethostname()) is True
+    assert is_local_target(socket.gethostname().upper()) is True
+
+
+def test_is_local_target_documentation_address_is_remote():
+    assert is_local_target(REMOTE_HOST) is False
+
+
+def test_is_local_target_unresolvable_or_empty_is_remote(monkeypatch):
+    def _no_dns(*args, **kwargs):
+        raise socket.gaierror("no such host")
+
+    monkeypatch.setattr(socket, "getaddrinfo", _no_dns)
+    assert is_local_target("dome.example.invalid") is False
+    assert is_local_target("") is False
 
 
 def test_cli_writes_json_report(tmp_path):
@@ -306,12 +401,60 @@ def test_cli_writes_json_report(tmp_path):
         "supported_actions",
         "command_passthrough",
     }
-    # Default invocation: no host_hints, no CommandBlind block populated.
-    assert "host_hints" not in data
+    # Default invocation against this machine: host_hints attached and
+    # attributed, no CommandBlind block populated.
+    assert data["host_hints"]["collected_because"] == "target-is-local"
+    assert "HOST is this machine" in result.output
     assert data["command_passthrough"]["command_blind"] == []
     assert data["command_passthrough"]["command_blind_skipped_reason"].startswith(
         "CommandBlind is fire-and-forget"
     )
+
+
+def test_cli_no_host_info_opts_out(tmp_path):
+    runner = _make_runner()
+    out = tmp_path / "probe.json"
+    result = runner.invoke(
+        cli.main,
+        [
+            "alpaca",
+            "probe",
+            "dome",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "11111",
+            "--no-host-info",
+            "--output",
+            str(out),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    data = json.loads(out.read_text())
+    assert "host_hints" not in data
+    assert data["host_hints_skipped_reason"] == "Disabled by the caller."
+    assert "Host hints:       skipped" in result.output
+
+
+def test_cli_remote_host_skips_hints_unless_forced(tmp_path):
+    runner = _make_runner()
+    out = tmp_path / "probe.json"
+    base = ["alpaca", "probe", "dome", "--host", REMOTE_HOST, "--port", "11111"]
+
+    result = runner.invoke(cli.main, base + ["--output", str(out)])
+    assert result.exit_code == 0, result.output
+    data = json.loads(out.read_text())
+    assert "host_hints" not in data
+    assert "--collect-host-info" in data["host_hints_skipped_reason"]
+    assert "Host hints:       skipped" in result.output
+
+    result = runner.invoke(
+        cli.main, base + ["--collect-host-info", "--output", str(out)]
+    )
+    assert result.exit_code == 0, result.output
+    data = json.loads(out.read_text())
+    assert data["host_hints"]["collected_because"] == "requested"
+    assert "collected (--collect-host-info)" in result.output
 
 
 def test_cli_default_output_path_in_cwd(tmp_path, monkeypatch):
