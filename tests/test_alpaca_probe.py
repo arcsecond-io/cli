@@ -1,26 +1,31 @@
 """
-Tests for the ``arcsecond alpaca probe dome`` CLI command.
+Tests for the ``arcsecond alpaca probe dome`` and ``probe telescope`` CLI
+commands.
 
-The real ASCOM Alpaca server is replaced with a stub ``FakeDome`` so the
-suite runs offline. We exercise the CLI through ``click.testing.CliRunner``
-to cover both the probe logic and the Click wiring.
+The real ASCOM Alpaca server is replaced with stubs (``FakeDome``,
+``FakeTelescope``) so the suite runs offline. We exercise the CLI through
+``click.testing.CliRunner`` to cover both the probe logic and the Click
+wiring.
 """
 
 from __future__ import annotations
 
 import json
 import socket
+from datetime import datetime, timezone
 from enum import IntEnum
 
 import pytest
 from click.testing import CliRunner
 
 from arcsecond import cli
-from arcsecond.alpaca import dome_probe
-from arcsecond.alpaca.dome_probe import is_local_target, probe_dome
+from arcsecond.alpaca import dome_probe, probe, telescope_probe
+from arcsecond.alpaca.dome_probe import probe_dome
+from arcsecond.alpaca.probe import is_local_target
+from arcsecond.alpaca.telescope_probe import probe_telescope
 
 # Kept so one test can run the real collector after the autouse stub below.
-_REAL_COLLECT_HOST_HINTS = dome_probe._collect_host_hints
+_REAL_COLLECT_HOST_HINTS = probe._collect_host_hints
 
 # TEST-NET-3 (RFC 5737): a documentation range never assigned to a real
 # interface, so it is a deterministic "remote" target with no DNS involved.
@@ -181,11 +186,15 @@ def _stub_alpaca_in_cli(monkeypatch):
     alpaca_pkg.__version__ = "test-stub"
     dome_mod = types.ModuleType("alpaca.dome")
     dome_mod.Dome = FakeDome
+    telescope_mod = types.ModuleType("alpaca.telescope")
+    telescope_mod.Telescope = FakeTelescope
     sys.modules["alpaca"] = alpaca_pkg
     sys.modules["alpaca.dome"] = dome_mod
+    sys.modules["alpaca.telescope"] = telescope_mod
     yield
     sys.modules.pop("alpaca", None)
     sys.modules.pop("alpaca.dome", None)
+    sys.modules.pop("alpaca.telescope", None)
 
 
 @pytest.fixture(autouse=True)
@@ -195,7 +204,7 @@ def _stub_host_hints(monkeypatch):
     registry. Stub it so the suite stays fast and deterministic; one test
     restores the real one on purpose.
     """
-    monkeypatch.setattr(dome_probe, "_collect_host_hints", lambda: {"os": "stub"})
+    monkeypatch.setattr(probe, "_collect_host_hints", lambda: {"os": "stub"})
 
 
 def _make_runner() -> CliRunner:
@@ -231,6 +240,7 @@ def test_probe_dome_function_default_is_readonly(fake_dome_factory):
 
     # Environment captures connectivity.
     env = result.report["environment"]
+    assert env["device_type"] == "dome"
     assert env["host"] == "127.0.0.1"
     assert env["port"] == 11111
     assert env["device_number"] == 0
@@ -292,7 +302,7 @@ def test_probe_dome_function_forced_host_info_runs_real_collector(
     fake_dome_factory, monkeypatch
 ):
     factory, _ = fake_dome_factory
-    monkeypatch.setattr(dome_probe, "_collect_host_hints", _REAL_COLLECT_HOST_HINTS)
+    monkeypatch.setattr(probe, "_collect_host_hints", _REAL_COLLECT_HOST_HINTS)
 
     result = probe_dome(
         host="127.0.0.1",
@@ -547,3 +557,327 @@ def test_iter_probe_labels_covers_known_probes():
     assert "SupportedActions" in labels
     assert any(label.startswith("CommandString(") for label in labels)
     assert any(label.startswith("CommandBool(") for label in labels)
+
+
+# --------------------------------------------------------------------------- #
+# Telescope                                                                    #
+# --------------------------------------------------------------------------- #
+
+
+class _EquatorialSystem(IntEnum):
+    equOther = 0
+    equTopocentric = 1
+    equJ2000 = 2
+
+
+class _DriveRates(IntEnum):
+    driveSidereal = 0
+    driveLunar = 1
+
+
+class _FakeRate:
+    """Stand-in for alpyca's ``Rate``: a range and nothing else."""
+
+    def __init__(self, maxv: float, minv: float):
+        self.Maximum = maxv
+        self.Minimum = minv
+
+
+class FakeTelescope:
+    """
+    Minimal stand-in for ``alpaca.telescope.Telescope``: a DFM-like mount
+    that answers 0 for its optics, declares JNow, and can move two of its
+    three axes. Any standard property not spelled out below reads as 0.0,
+    the way an under-implemented driver answers.
+    """
+
+    Name = "FakeTelescope"
+    Description = "A pretend mount for tests"
+    DriverInfo = ["FakeTelescope 0.1"]
+    DriverVersion = "0.1"
+    InterfaceVersion = 3
+
+    def __init__(self, address: str, device_number: int, protocol: str = "http"):
+        self.address = address
+        self.device_number = device_number
+        self.protocol = protocol
+        self.axis_rates_calls: list[int] = []
+        self.command_blind_calls: list[tuple[str, bool]] = []
+        self.command_string_calls: list[tuple[str, bool]] = []
+        self.command_bool_calls: list[tuple[str, bool]] = []
+        self.motion_invoked = False
+
+    def __getattr__(self, name: str):
+        if name[:1].isupper():
+            return 0.0
+        raise AttributeError(name)
+
+    # --- the answers the tests look at -------------------------------------
+
+    @property
+    def Connected(self) -> bool:
+        return True
+
+    @property
+    def EquatorialSystem(self) -> _EquatorialSystem:
+        return _EquatorialSystem.equTopocentric
+
+    @property
+    def FocalLength(self) -> float:
+        return 0.0
+
+    @property
+    def TrackingRates(self) -> list[_DriveRates]:
+        return [_DriveRates.driveSidereal, _DriveRates.driveLunar]
+
+    @property
+    def UTCDate(self) -> datetime:
+        return datetime(2026, 7, 29, 10, 49, 52, tzinfo=timezone.utc)
+
+    @property
+    def SiteElevation(self) -> float:
+        raise _NotImplementedException(
+            "SiteElevation is not implemented in this driver"
+        )
+
+    @property
+    def SupportedActions(self) -> list[str]:
+        return ["DFM:GetCapabilities"]
+
+    # --- axes ----------------------------------------------------------------
+
+    def CanMoveAxis(self, axis: int) -> bool:
+        return axis in (0, 1)
+
+    def AxisRates(self, axis: int) -> list[_FakeRate]:
+        self.axis_rates_calls.append(axis)
+        if axis == 2:
+            raise RuntimeError("a real server would have died here")
+        return [_FakeRate(maxv=4.0, minv=0.0)]
+
+    # --- anything that moves the mount records the fact ----------------------
+
+    def SlewToCoordinates(self, ra: float, dec: float) -> None:
+        self.motion_invoked = True
+
+    def MoveAxis(self, axis: int, rate: float) -> None:
+        self.motion_invoked = True
+
+    def Park(self) -> None:
+        self.motion_invoked = True
+
+    # --- passthroughs ----------------------------------------------------
+
+    def CommandString(self, command: str, raw: bool = False) -> str:
+        self.command_string_calls.append((command, raw))
+        if command.startswith("XQ"):
+            self.motion_invoked = True
+        return f"FakeTelescope ack: {command}"
+
+    def CommandBool(self, command: str, raw: bool = False) -> bool:
+        self.command_bool_calls.append((command, raw))
+        return False
+
+    def CommandBlind(self, command: str, raw: bool = False) -> None:
+        self.command_blind_calls.append((command, raw))
+        self.motion_invoked = True
+
+
+@pytest.fixture
+def fake_telescope_factory():
+    registry: list[FakeTelescope] = []
+
+    def factory(address: str, device_number: int, protocol: str) -> FakeTelescope:
+        scope = FakeTelescope(address, device_number, protocol)
+        registry.append(scope)
+        return scope
+
+    return factory, registry
+
+
+def test_probe_telescope_function_default_is_readonly(fake_telescope_factory):
+    factory, registry = fake_telescope_factory
+
+    result = probe_telescope(
+        host="127.0.0.1",
+        port=11111,
+        device_number=0,
+        protocol="http",
+        telescope_factory=factory,
+    )
+
+    assert len(registry) == 1
+    scope = registry[0]
+    report = result.report
+
+    # Section order: the axes sit with the device state, before the extension
+    # surface.
+    assert list(report)[:5] == [
+        "environment",
+        "device_metadata",
+        "axes",
+        "supported_actions",
+        "command_passthrough",
+    ]
+    assert report["environment"]["device_type"] == "telescope"
+
+    metadata = report["device_metadata"]
+    assert metadata["Name"] == {"ok": True, "value": "FakeTelescope"}
+    # The two answers that bit us in the field are written down verbatim,
+    # not interpreted: a 0 focal length and a topocentric frame.
+    assert metadata["FocalLength"] == {"ok": True, "value": 0.0}
+    assert metadata["EquatorialSystem"]["value"] == {
+        "name": "equTopocentric",
+        "value": 1,
+    }
+    assert metadata["TrackingRates"]["value"] == [
+        {"name": "driveSidereal", "value": 0},
+        {"name": "driveLunar", "value": 1},
+    ]
+    assert metadata["UTCDate"]["value"] == "2026-07-29T10:49:52+00:00"
+    assert metadata["SiteElevation"]["ok"] is False
+    assert "_NotImplementedException" in metadata["SiteElevation"]["error"]
+    # Every property in the list was asked for.
+    assert set(metadata) == set(telescope_probe._READ_ONLY_PROPERTIES)
+
+    # Axis rates only where the driver says the axis moves; the tertiary axis
+    # is never asked, which is the guard that keeps a fragile server alive.
+    axes = report["axes"]
+    assert axes["primary"]["CanMoveAxis"]["value"] is True
+    assert axes["primary"]["AxisRates"]["value"] == [{"minimum": 0.0, "maximum": 4.0}]
+    assert axes["secondary"]["AxisRates"]["ok"] is True
+    assert axes["tertiary"]["CanMoveAxis"]["value"] is False
+    assert "AxisRates" not in axes["tertiary"]
+    assert "not asked" in axes["tertiary"]["axis_rates_skipped_reason"]
+    assert scope.axis_rates_calls == [0, 1]
+
+    assert report["supported_actions"] == {"ok": True, "value": ["DFM:GetCapabilities"]}
+
+    # Strictly read-only.
+    assert scope.motion_invoked is False
+    assert scope.command_blind_calls == []
+    assert {cmd for cmd, _ in scope.command_string_calls} == {
+        "MG TIME",
+        "MG _BGA",
+        "TE",
+        "TP",
+    }
+    assert "command_blind_skipped_reason" in report["command_passthrough"]
+
+    # Local target, so the host hints ride along.
+    assert report["host_hints"]["collected_because"] == "target-is-local"
+
+    assert result.counts.total > 0
+    assert result.counts.ok < result.counts.total  # SiteElevation intentionally fails
+
+
+def test_probe_telescope_function_allow_active_sends_blind(fake_telescope_factory):
+    factory, registry = fake_telescope_factory
+
+    probe_telescope(
+        host="127.0.0.1",
+        port=11111,
+        protocol="http",
+        allow_active=True,
+        telescope_factory=factory,
+    )
+
+    scope = registry[0]
+    assert (
+        scope.command_blind_calls
+    ), "CommandBlind should have been invoked under --allow-active"
+    assert "XQ#STATUS" in {cmd for cmd, _ in scope.command_blind_calls}
+
+
+def test_probe_telescope_axis_rates_failure_is_data(fake_telescope_factory):
+    factory, registry = fake_telescope_factory
+
+    class _Fragile(FakeTelescope):
+        def CanMoveAxis(self, axis: int) -> bool:
+            return True  # claims the tertiary axis too
+
+    def fragile_factory(address, device_number, protocol):
+        scope = _Fragile(address, device_number, protocol)
+        registry.append(scope)
+        return scope
+
+    result = probe_telescope(
+        host="127.0.0.1", port=11111, telescope_factory=fragile_factory
+    )
+
+    tertiary = result.report["axes"]["tertiary"]
+    assert tertiary["CanMoveAxis"]["value"] is True
+    assert tertiary["AxisRates"]["ok"] is False
+    assert "RuntimeError" in tertiary["AxisRates"]["error"]
+
+
+def test_cli_probe_telescope_writes_report(tmp_path, monkeypatch):
+    runner = _make_runner()
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.main,
+        [
+            "alpaca",
+            "probe",
+            "telescope",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "11111",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    written = list(tmp_path.glob("alpaca_telescope_probe_*.json"))
+    assert len(written) == 1
+    data = json.loads(written[0].read_text())
+    assert data["environment"]["device_type"] == "telescope"
+    assert set(data.keys()) >= {
+        "environment",
+        "device_metadata",
+        "axes",
+        "supported_actions",
+        "command_passthrough",
+        "host_hints",
+    }
+    assert "Alpaca telescope probe" in result.output
+    assert "AxisRates(primary)" in result.output
+    assert "SiteElevation" in result.output
+    assert "Summary" in result.output
+
+
+def test_cli_probe_telescope_fatal_connection_error_becomes_arcsecond_error(tmp_path):
+    class _Boom(FakeTelescope):
+        def __init__(self, *args, **kwargs):
+            raise ConnectionError("nope")
+
+    import sys
+
+    sys.modules["alpaca.telescope"].Telescope = _Boom  # type: ignore[attr-defined]
+
+    runner = _make_runner()
+    result = runner.invoke(
+        cli.main,
+        [
+            "alpaca",
+            "probe",
+            "telescope",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--output",
+            str(tmp_path / "p.json"),
+        ],
+    )
+    assert result.exit_code != 0
+    assert "Could not construct Alpaca Telescope client" in str(result.exception)
+
+
+def test_iter_probe_labels_telescope_covers_axes():
+    labels = list(telescope_probe.iter_probe_labels())
+    assert labels[0] == "Connected"
+    assert "EquatorialSystem" in labels
+    assert "CanMoveAxis(primary)" in labels
+    assert "AxisRates(tertiary)" in labels
+    assert labels.index("AxisRates(tertiary)") < labels.index("SupportedActions")
+    assert any(label.startswith("CommandString(") for label in labels)

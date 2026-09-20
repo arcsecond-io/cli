@@ -1,14 +1,14 @@
 """
 Click command group: ``arcsecond alpaca``.
 
-First citizen: ``arcsecond alpaca probe dome`` — a read-only diagnostic that
-captures what surface a given Alpaca dome server exposes (device metadata,
-``SupportedActions``, ``CommandString`` / ``CommandBool`` / ``CommandBlind``
-passthrough behaviour, and local host hints when the target is this machine).
+``arcsecond alpaca probe dome`` and ``arcsecond alpaca probe telescope`` are
+read-only diagnostics that capture what surface a given Alpaca device server
+exposes (device metadata, ``SupportedActions``, ``CommandString`` /
+``CommandBool`` / ``CommandBlind`` passthrough behaviour, and local host hints
+when the target is this machine), one JSON report per run.
 
-Structure leaves room for ``arcsecond alpaca probe telescope`` /
-``probe camera`` / ``probe focuser`` and ``arcsecond alpaca discover`` later
-under the same group.
+Structure leaves room for ``probe camera`` / ``probe focuser`` and
+``arcsecond alpaca discover`` later under the same group.
 """
 
 from __future__ import annotations
@@ -17,11 +17,14 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 import click
 
 from ..errors import ArcsecondError
-from .dome_probe import HOST_HINTS_REASON_LOCAL, ProbeProgress, probe_dome
+from .dome_probe import probe_dome
+from .probe import HOST_HINTS_REASON_LOCAL, ProbeProgress, ProbeResult
+from .telescope_probe import probe_telescope
 
 
 @click.group(name="alpaca", help="Diagnostics for local ASCOM Alpaca devices.")
@@ -122,20 +125,10 @@ def _format_progress(label: str, ok: bool, detail: str | None) -> str:
     return f"  {tag} {label}{suffix}"
 
 
-@probe_group.command(
-    name="dome",
-    help=(
-        "Probe a local Alpaca dome device read-only and write a JSON report.\n\n"
-        "Captures device metadata, SupportedActions, and the behaviour of the "
-        "legacy CommandString / CommandBool / CommandBlind passthroughs. "
-        "Useful for figuring out whether a proprietary driver (e.g. TCSGalil) "
-        "exposes any vendor-specific extension surface beyond the standard "
-        "ASCOM IDome interface. Local host hints (open ports, COM ProgIDs) "
-        "are added when HOST is this machine."
-    ),
-)
-@_add_options(_COMMON_OPTIONS)
-def probe_dome_cmd(
+def _run_probe(
+    kind: str,
+    runner: Callable[..., ProbeResult],
+    *,
     host: str,
     port: int,
     device_number: int,
@@ -144,10 +137,11 @@ def probe_dome_cmd(
     collect_host_info: bool | None,
     output_path: str | None,
 ) -> None:
-    output_path = output_path or _default_output_path("dome")
+    """Drive one probe from the terminal: banner, progress lines, report, summary."""
+    output_path = output_path or _default_output_path(kind)
 
     click.echo(
-        click.style("Alpaca dome probe", bold=True)
+        click.style(f"Alpaca {kind} probe", bold=True)
         + f" → {protocol}://{host}:{port} (device {device_number})"
     )
     if allow_active:
@@ -163,7 +157,7 @@ def probe_dome_cmd(
     )
 
     try:
-        result = probe_dome(
+        result = runner(
             host=host,
             port=port,
             device_number=device_number,
@@ -192,3 +186,38 @@ def probe_dome_cmd(
     click.echo(f"  SupportedActions: {supported_n} entries")
     click.echo(f"  Host hints:       {_describe_host_hints(result.report)}")
     click.echo(f"  Report written to {click.style(os.fspath(output_path), fg='cyan')}")
+
+
+@probe_group.command(
+    name="dome",
+    help=(
+        "Probe a local Alpaca dome device read-only and write a JSON report.\n\n"
+        "Captures device metadata, SupportedActions, and the behaviour of the "
+        "legacy CommandString / CommandBool / CommandBlind passthroughs. "
+        "Useful for figuring out whether a proprietary driver (e.g. TCSGalil) "
+        "exposes any vendor-specific extension surface beyond the standard "
+        "ASCOM IDome interface. Local host hints (open ports, COM ProgIDs) "
+        "are added when HOST is this machine."
+    ),
+)
+@_add_options(_COMMON_OPTIONS)
+def probe_dome_cmd(**options) -> None:
+    _run_probe("dome", probe_dome, **options)
+
+
+@probe_group.command(
+    name="telescope",
+    help=(
+        "Probe a local Alpaca telescope (mount) device read-only and write a "
+        "JSON report.\n\n"
+        "Captures device metadata, optics, site, pointing and tracking state, "
+        "capabilities, CanMoveAxis and AxisRates per movable axis, "
+        "SupportedActions, and the behaviour of the legacy CommandString / "
+        "CommandBool / CommandBlind passthroughs. Never moves the mount. "
+        "Local host hints (open ports, COM ProgIDs) are added when HOST is "
+        "this machine."
+    ),
+)
+@_add_options(_COMMON_OPTIONS)
+def probe_telescope_cmd(**options) -> None:
+    _run_probe("telescope", probe_telescope, **options)
