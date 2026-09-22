@@ -47,7 +47,8 @@ def test_cli_api_read():
     runner = CliRunner()
     result = runner.invoke(cli.api)
     assert result.exit_code == 0 and not result.exception
-    assert "All registered API servers:" in result.output
+    assert "Registered API servers" in result.output
+    assert "* cloud:" in result.output
 
 
 def test_cli_api_write_error():

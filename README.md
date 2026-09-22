@@ -9,6 +9,21 @@ public and private ones.
 
 [Read the docs](https://docs.arcsecond.io/cli)
 
+## Which server the CLI talks to
+
+The CLI points at one API server at a time — the cloud by default, or a
+server you registered, typically your own Arcsecond.local — and every command
+follows that pointer:
+
+```bash
+$ arcsecond api                     # list them, * marks the current one
+$ arcsecond api use local           # `setup` registered `local` for you
+$ arcsecond login                   # on that server
+```
+
+Credentials are kept per server. For a script or a cron job, `ARCSECOND_API=<name>`
+selects a server for that process alone, without moving the pointer.
+
 ## Configuration
 
 Credentials and settings live in `~/.config/arcsecond/`, alongside the list of
