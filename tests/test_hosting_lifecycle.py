@@ -61,7 +61,10 @@ def test_start_brings_the_stack_up_and_says_where_it_is(install):
 def test_start_pull_and_recreate_map_onto_compose(install):
     result = _run(lifecycle.start, "--pull", "--recreate")
     assert result.exit_code == 0, result.output
-    assert install["calls"] == [("pull",), ("up", "-d", "--remove-orphans", "--force-recreate")]
+    assert install["calls"] == [
+        ("pull",),
+        ("up", "-d", "--remove-orphans", "--force-recreate"),
+    ]
 
 
 def test_start_no_wait_does_not_poll_the_backend(install, monkeypatch):

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -107,7 +108,12 @@ def test_this_suite_is_not_writing_to_the_real_configuration():
     the state this test exists to keep from coming back.
     """
     assert ArcsecondConfig.is_dir_path_overridden() is True
-    assert Path.home() not in ArcsecondConfig.dir_path().parents
+    # The override is honoured, and it is not the real location. (Not "outside
+    # the home directory": on Windows the temp folder lives under it.)
+    assert (
+        ArcsecondConfig.dir_path() == Path(os.environ[CONFIG_DIR_ENV_VAR]).expanduser()
+    )
+    assert ArcsecondConfig.dir_path() != Path.home() / ".config" / "arcsecond"
 
 
 def test_config_file_is_logged_in_no_file():

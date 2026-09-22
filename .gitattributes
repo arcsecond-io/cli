@@ -1,0 +1,6 @@
+# The packaged compose template is compared byte for byte with what an
+# installation holds; a CRLF checkout on Windows would make every file look
+# customised. Markdown and YAML stay LF everywhere.
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf

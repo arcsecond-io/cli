@@ -397,7 +397,8 @@ def packaged_compose_text() -> str:
     # arcsecond/hosting/docker/docker-compose.yml
     compose = resources.files("arcsecond.hosting.docker").joinpath("docker-compose.yml")
     with compose.open("rb") as src:
-        return src.read().decode("utf-8")
+        # LF whatever the checkout did (.gitattributes asks for LF, belt and braces).
+        return src.read().decode("utf-8").replace("\r\n", "\n")
 
 
 def template_versions(install):
@@ -440,7 +441,9 @@ def write_docker_compose_file(
         print(f"Wrote docker-compose.yml to: {dest}")
         return dest
 
-    if dest.read_bytes() == expected_content:
+    # Text, not bytes: a file written on Windows may carry CRLF and still be
+    # the packaged content.
+    if dest.read_text(encoding="utf-8") == expected_text:
         print("docker-compose.yml is already up to date.")
         return dest
 

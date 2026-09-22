@@ -90,8 +90,13 @@ def test_list_returns_a_bare_array_unchanged(mock_get, endpoint):
 @patch("httpx.get")
 def test_list_walks_every_page(mock_get, endpoint):
     mock_get.side_effect = [
-        _page({"count": 3, "next": "https://fixture.example.io/sub/test/?page=2",
-               "results": [{"id": 1}, {"id": 2}]}),
+        _page(
+            {
+                "count": 3,
+                "next": "https://fixture.example.io/sub/test/?page=2",
+                "results": [{"id": 1}, {"id": 2}],
+            }
+        ),
         _page({"count": 3, "next": None, "results": [{"id": 3}]}),
     ]
 
@@ -107,8 +112,13 @@ def test_list_reports_a_failure_on_a_later_page(mock_get, endpoint):
     failed.status_code = 500
     failed.text = "boom"
     mock_get.side_effect = [
-        _page({"count": 3, "next": "https://fixture.example.io/sub/test/?page=2",
-               "results": [{"id": 1}]}),
+        _page(
+            {
+                "count": 3,
+                "next": "https://fixture.example.io/sub/test/?page=2",
+                "results": [{"id": 1}],
+            }
+        ),
         failed,
     ]
 
@@ -121,8 +131,13 @@ def test_list_reports_a_failure_on_a_later_page(mock_get, endpoint):
 def test_find_one_matches_across_pages(mock_get, endpoint):
     """find_one counts matches; it must count them all, not the first page's."""
     mock_get.side_effect = [
-        _page({"count": 2, "next": "https://fixture.example.io/sub/test/?page=2",
-               "results": [{"id": 1, "name": "twin"}]}),
+        _page(
+            {
+                "count": 2,
+                "next": "https://fixture.example.io/sub/test/?page=2",
+                "results": [{"id": 1, "name": "twin"}],
+            }
+        ),
         _page({"count": 2, "next": None, "results": [{"id": 2, "name": "twin"}]}),
     ]
 

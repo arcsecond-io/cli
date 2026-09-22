@@ -100,36 +100,40 @@ class WindowsRunKey:
     def __init__(self, value_name: str = WINDOWS_VALUE_NAME):
         self.value_name = value_name
 
-    def _open(self, access):
-        import winreg  # only importable on Windows
-
-        return winreg.OpenKey(winreg.HKEY_CURRENT_USER, WINDOWS_RUN_KEY, 0, access)
-
     def enable(self, command: list, environment: dict) -> None:
-        import winreg
+        import winreg  # only importable on Windows
 
         quoted = subprocess.list2cmdline(command)
         if environment:
             # A Run value is one command line, with no environment of its own.
             assignments = " && ".join(f"set {k}={v}" for k, v in environment.items())
             quoted = f'cmd.exe /c "{assignments} && {quoted}"'
-        with self._open(winreg.KEY_SET_VALUE) as key:
+        # CreateKeyEx, not OpenKey: the Run key is absent from a profile that
+        # never had a login item (a fresh account, a CI runner), and opening
+        # what does not exist is a FileNotFoundError.
+        with winreg.CreateKeyEx(
+            winreg.HKEY_CURRENT_USER, WINDOWS_RUN_KEY, 0, winreg.KEY_SET_VALUE
+        ) as key:
             winreg.SetValueEx(key, self.value_name, 0, winreg.REG_SZ, quoted)
 
     def disable(self) -> None:
         import winreg
 
         try:
-            with self._open(winreg.KEY_SET_VALUE) as key:
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, WINDOWS_RUN_KEY, 0, winreg.KEY_SET_VALUE
+            ) as key:
                 winreg.DeleteValue(key, self.value_name)
         except FileNotFoundError:
-            pass
+            pass  # no key, or no value: nothing registered
 
     def is_enabled(self) -> bool:
         import winreg
 
         try:
-            with self._open(winreg.KEY_READ) as key:
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, WINDOWS_RUN_KEY, 0, winreg.KEY_READ
+            ) as key:
                 winreg.QueryValueEx(key, self.value_name)
                 return True
         except FileNotFoundError:
@@ -161,11 +165,15 @@ class LaunchAgent:
         # Unload it too, best effort, so that a logout/login cycle is not
         # needed for launchd to forget it. The file going away is what counts.
         if self.path.exists():
-            subprocess.run(
-                ["launchctl", "bootout", f"gui/{os.getuid()}/{LABEL}"],
-                capture_output=True,
-                check=False,
-            )
+            # os.getuid does not exist on Windows; the backend does not run
+            # there, but its tests do.
+            getuid = getattr(os, "getuid", None)
+            if getuid is not None:
+                subprocess.run(
+                    ["launchctl", "bootout", f"gui/{getuid()}/{LABEL}"],
+                    capture_output=True,
+                    check=False,
+                )
             self.path.unlink()
 
     def is_enabled(self) -> bool:
