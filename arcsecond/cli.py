@@ -12,6 +12,7 @@ from arcsecond.cloud import (
 from arcsecond.docgen import docs
 from arcsecond.hosting import (
     backups,
+    check_cmd,
     db,
     logs,
     restart,
@@ -71,6 +72,9 @@ main.add_command(restart)
 main.add_command(status)
 main.add_command(logs)
 main.add_command(update)
+
+# Is it reachable from the rest of the observatory, and if not, why not.
+main.add_command(check_cmd)
 
 # Browse and restore Arcsecond.local DB backups.
 main.add_command(backups)
