@@ -40,6 +40,28 @@ jobs:
           name: coverage
           path: coverage.xml
 
+  # The CLI's operators run it on Windows — the observatory PC — and until
+  # now nothing here ever executed it there. No Docker on this runner; this
+  # covers the pure-Python paths: path handling, the console, the registry
+  # backend of the proxy's login item, and every Windows branch in the suite.
+  tests-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra webcam --group dev
+
+      - name: Test
+        run: uv run pytest -q tests/
+
   scan:
     runs-on: ubuntu-latest
     needs: tests
