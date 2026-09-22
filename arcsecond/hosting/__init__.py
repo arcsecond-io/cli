@@ -6,6 +6,7 @@ from .check import check_cmd
 from .database import db
 from .lifecycle import logs, restart, start, status, stop, update
 from .local import setup
+from .registry import registry_group
 
 # Re-exported: the command groups `arcsecond.cli` mounts.
 __all__ = [
@@ -13,6 +14,7 @@ __all__ = [
     "check_cmd",
     "db",
     "setup",
+    "registry_group",
     "start",
     "stop",
     "restart",

@@ -181,7 +181,7 @@ def test_ps_json_is_parsed_in_both_shapes_compose_has_used():
         ),
         (
             "Error response from daemon: pull access denied for ghcr.io/arcsecond-io/api",
-            "docker login",
+            "arcsecond registry login",
         ),
     ],
 )

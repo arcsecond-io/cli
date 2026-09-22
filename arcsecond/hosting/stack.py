@@ -268,8 +268,7 @@ _KNOWN_FAILURES = (
     (
         ("denied", "unauthorized", "pull access denied"),
         "Docker could not download an Arcsecond image: the registry refused.\n"
-        "Log in once with your token:  echo <PAT> | docker login ghcr.io -u "
-        "arcsecond-io --password-stdin",
+        "Log in once with the token Arcsecond gave you:  arcsecond registry login",
     ),
 )
 
