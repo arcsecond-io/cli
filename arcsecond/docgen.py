@@ -22,6 +22,7 @@ committed copy honest.
 """
 
 import html
+import inspect
 import json
 import textwrap
 from pathlib import Path
@@ -54,8 +55,13 @@ def _render_help(text: Optional[str]) -> List[str]:
     Click marks a paragraph it must not rewrap with a backspace character —
     that is how command examples are written in a docstring — and such a
     paragraph is exactly what belongs in a code fence here."""
+    # Dedented the way click dedents it for --help. Python 3.13 strips a
+    # docstring's indentation at compile time and 3.12 does not, so without
+    # this the same source generated two different pages depending on the
+    # interpreter that ran it.
+    text = inspect.cleandoc(text or "")
     lines: List[str] = []
-    for paragraph in (text or "").strip().split("\n\n"):
+    for paragraph in text.split("\n\n"):
         if not paragraph.strip():
             continue
         if paragraph.lstrip().startswith("\b"):

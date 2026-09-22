@@ -126,3 +126,16 @@ def test_docs_is_hidden_from_operators():
         "docs"
         not in CliRunner().invoke(cli.main, ["--help"]).output.split("Commands:")[1]
     )
+
+
+def test_help_is_dedented_whatever_python_left_in_the_docstring():
+    """Python 3.12 keeps a docstring's indentation, 3.13 strips it; the page
+    must not depend on which one generated it."""
+    raw = (
+        "First line.\n\n    A second paragraph, indented as 3.12\n    leaves it.\n\n"
+        "    \b\n      example one\n      example two\n"
+    )
+    rendered = "\n".join(docgen._render_help(raw))
+    assert "\n    A second" not in rendered
+    assert "A second paragraph, indented as 3.12\nleaves it." in rendered
+    assert "```\nexample one\nexample two\n```" in rendered
