@@ -13,6 +13,7 @@ def _stub_env_generators(monkeypatch):
         local, "_get_random_postgres_password", lambda: "test-pg-password"
     )
     monkeypatch.setattr(local, "prompt_shared_data_path", lambda: "/tmp/shared-data")
+    monkeypatch.setattr(local, "_offer_token", lambda: None)
 
 
 def _packaged_compose_text():
@@ -31,6 +32,7 @@ def test_write_env_file_includes_jwt_signing_keys(tmp_path, monkeypatch):
         local, "_get_random_postgres_password", lambda: "test-pg-password"
     )
     monkeypatch.setattr(local, "prompt_shared_data_path", lambda: "/tmp/shared-data")
+    monkeypatch.setattr(local, "_offer_token", lambda: None)
 
     local.write_env_file()
 

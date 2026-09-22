@@ -15,12 +15,12 @@ from arcsecond.hosting import (
     check_cmd,
     db,
     logs,
-    registry_group,
     restart,
     setup,
     start,
     status,
     stop,
+    token_group,
     update,
 )
 from arcsecond.imagesources import commands as imagesources
@@ -77,8 +77,8 @@ main.add_command(update)
 # Is it reachable from the rest of the observatory, and if not, why not.
 main.add_command(check_cmd)
 
-# The image registry login, once per machine — the last `docker` an operator typed.
-main.add_command(registry_group)
+# The access token Arcsecond gave the observatory, once per machine.
+main.add_command(token_group)
 
 # Browse and restore Arcsecond.local DB backups.
 main.add_command(backups)

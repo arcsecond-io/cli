@@ -12,11 +12,11 @@ public and private ones.
 ## Running Arcsecond.local
 
 The CLI owns the whole lifecycle of a self-hosted installation; there is no
-`docker` command to type, the registry login included:
+`docker` command to type:
 
 ```bash
 $ arcsecond setup --lan-host 192.168.1.42   # writes .env and docker-compose.yml
-$ arcsecond registry login                  # once per machine, with the token Arcsecond gave you
+$ arcsecond token set                       # the access token Arcsecond gave you, once per machine (setup asks too)
 $ arcsecond start                           # first run downloads the images
 $ arcsecond status
 $ arcsecond logs backend -f

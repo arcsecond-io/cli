@@ -268,7 +268,7 @@ _KNOWN_FAILURES = (
     (
         ("denied", "unauthorized", "pull access denied"),
         "Docker could not download an Arcsecond image: the registry refused.\n"
-        "Log in once with the token Arcsecond gave you:  arcsecond registry login",
+        "Enter the token Arcsecond gave your observatory:  arcsecond token set",
     ),
 )
 

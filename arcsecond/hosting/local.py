@@ -7,6 +7,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 import click
 
 from arcsecond.api.config import ArcsecondConfig
+from arcsecond.errors import ArcsecondError
 from arcsecond.options import basic_options
 
 from .utils import (
@@ -522,6 +523,43 @@ def _register_local_api():
         config.api_server = LOCAL_API_ADDRESS
 
 
+def _offer_token():
+    """Ask for the observatory's access token, once, so that `start` can
+    download the images. Skipped when Docker already holds it, when Docker is
+    not reachable yet (the message says what to do instead), and when there is
+    no terminal to ask on."""
+    from . import stack, token
+
+    try:
+        stack.ensure_docker()
+    except ArcsecondError:
+        click.echo(
+            "\nDocker is not reachable right now. Once it is, enter the access token "
+            "Arcsecond gave your observatory:  arcsecond token set"
+        )
+        return
+    if token.has_token():
+        return
+    if not _stdin_is_interactive():
+        click.echo(
+            "\nThis machine has no access token yet. Enter it with:  arcsecond token set"
+        )
+        return
+    click.echo("\n" + token.WHAT_IT_IS)
+    click.echo("Leave it empty to do this later with `arcsecond token set`.")
+    entered = click.prompt(
+        "Access token from Arcsecond (nothing is shown while you type)",
+        hide_input=True,
+        default="",
+        show_default=False,
+    ).strip()
+    if not entered:
+        click.echo("Skipped. Before `arcsecond start`:  arcsecond token set")
+        return
+    token.store_token(entered)
+    click.echo(click.style("Token accepted.", fg="green"))
+
+
 def _normalise_lan_host(value):
     """`192.168.1.42` → `192.168.1.42:5555`; a scheme or a path is refused."""
     value = (value or "").strip()
@@ -558,7 +596,8 @@ def _normalise_lan_host(value):
 def setup(with_alerts, lan_host):
     """Write (or update) the two files an installation is made of, in the
     current folder: .env, with this installation's secrets, and
-    docker-compose.yml. Then:  arcsecond start
+    docker-compose.yml — and ask for the access token Arcsecond gave your
+    observatory, if this machine has none yet. Then:  arcsecond start
 
     Run it again after upgrading the CLI to bring docker-compose.yml up to
     date; nothing of yours is overwritten.
@@ -592,6 +631,7 @@ def setup(with_alerts, lan_host):
 
     remember_install_dir(directory)
     _register_local_api()
+    _offer_token()
 
     if "alerts" in enabled:
         click.echo(
