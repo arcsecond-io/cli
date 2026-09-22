@@ -94,7 +94,7 @@ def _wait_and_report(install) -> None:
     )
 
 
-@click.command(help="Start Arcsecond.local.")
+@click.command(short_help="Start Arcsecond.local.")
 @dir_option
 @click.option("--pull", is_flag=True, help="Download newer images first.")
 @click.option(
@@ -131,7 +131,7 @@ def start(directory, pull, recreate, no_wait):
     _hint_api_pointer()
 
 
-@click.command(help="Stop Arcsecond.local.")
+@click.command(short_help="Stop Arcsecond.local.")
 @dir_option
 @click.option(
     "--down",
@@ -156,7 +156,7 @@ def stop(directory, down):
     click.echo(click.style("Arcsecond.local is stopped.", fg="green"))
 
 
-@click.command(help="Recreate containers so they pick up a changed .env.")
+@click.command(short_help="Recreate containers so they pick up a changed .env.")
 @dir_option
 @click.argument("services", nargs=-1)
 @basic_options
@@ -257,7 +257,7 @@ def status(directory):
         _print_addresses(install)
 
 
-@click.command(help="Show the logs of Arcsecond.local, or of one service.")
+@click.command(short_help="Show the logs of Arcsecond.local, or of one service.")
 @dir_option
 @click.argument("service", required=False)
 @click.option("-f", "--follow", is_flag=True, help="Keep printing as new lines arrive.")
@@ -292,7 +292,7 @@ def logs(directory, service, follow, tail):
         )
 
 
-@click.command(help="Update Arcsecond.local to the latest images.")
+@click.command(short_help="Update Arcsecond.local to the latest images.")
 @dir_option
 @basic_options
 def update(directory):

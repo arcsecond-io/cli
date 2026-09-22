@@ -534,7 +534,7 @@ def _normalise_lan_host(value):
     return value
 
 
-@click.command(help="Prepare the installation of Arcsecond.local.")
+@click.command(short_help="Prepare the installation of Arcsecond.local.")
 @click.option(
     "--with-alerts/--without-alerts",
     "with_alerts",

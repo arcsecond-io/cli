@@ -9,7 +9,7 @@ from arcsecond.options import State, basic_options
 pass_state = click.make_pass_decorator(State, ensure=True)
 
 
-@click.command(help="Login to your Arcsecond account.")
+@click.command(short_help="Login to your Arcsecond account.")
 @click.option(
     "--username",
     required=True,

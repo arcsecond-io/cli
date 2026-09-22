@@ -1,6 +1,7 @@
 import click
 
 from arcsecond.alpaca.commands import alpaca_group
+from arcsecond.docgen import docs
 from arcsecond.cloud import (
     api,
     datasets,
@@ -88,6 +89,11 @@ main.add_command(imagesources.proxy)
 
 # Local ASCOM Alpaca diagnostics (e.g. `arcsecond alpaca probe dome ...`).
 main.add_command(alpaca_group)
+
+# The tool describing itself: `arcsecond docs commands --out DIR` writes the
+# command reference the documentation site publishes. Hidden — it is for the
+# documentation build, not for operators.
+main.add_command(docs)
 
 
 # `arcsecond proxy start` launches its detached proxy as
