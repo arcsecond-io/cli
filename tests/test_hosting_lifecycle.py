@@ -52,7 +52,7 @@ def _run(command, *args, **kwargs):
 def test_start_brings_the_stack_up_and_says_where_it_is(install):
     result = _run(lifecycle.start)
     assert result.exit_code == 0, result.output
-    assert install["calls"] == [("up", "-d")]
+    assert install["calls"] == [("up", "-d", "--remove-orphans")]
     assert "Arcsecond.local is up." in result.output
     assert "http://localhost:5555" in result.output
     assert "only works on this machine" in result.output
@@ -61,7 +61,7 @@ def test_start_brings_the_stack_up_and_says_where_it_is(install):
 def test_start_pull_and_recreate_map_onto_compose(install):
     result = _run(lifecycle.start, "--pull", "--recreate")
     assert result.exit_code == 0, result.output
-    assert install["calls"] == [("pull",), ("up", "-d", "--force-recreate")]
+    assert install["calls"] == [("pull",), ("up", "-d", "--remove-orphans", "--force-recreate")]
 
 
 def test_start_no_wait_does_not_poll_the_backend(install, monkeypatch):
@@ -308,7 +308,7 @@ def test_update_refreshes_the_files_then_pulls_and_restarts(install, monkeypatch
     result = _run(lifecycle.update)
     assert result.exit_code == 0, result.output
     assert written == {"env": Path(install["path"]), "compose": Path(install["path"])}
-    assert install["calls"] == [("pull",), ("up", "-d")]
+    assert install["calls"] == [("pull",), ("up", "-d", "--remove-orphans")]
     assert "is up" in result.output
 
 

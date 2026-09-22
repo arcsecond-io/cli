@@ -122,7 +122,9 @@ def start(directory, pull, recreate, no_wait):
     click.echo(f"Starting Arcsecond.local from {install.path} ...")
     if pull:
         _streamed(install, "docker compose pull", "pull")
-    args = ["up", "-d"] + (["--force-recreate"] if recreate else [])
+    # --remove-orphans: an optional service taken out of the compose file by
+    # `setup --without-<name>` must not keep running from a previous start.
+    args = ["up", "-d", "--remove-orphans"] + (["--force-recreate"] if recreate else [])
     _streamed(install, "docker compose up", *args)
 
     if not no_wait:
@@ -318,7 +320,7 @@ def update(directory):
     click.echo("\nDownloading the latest images:")
     _streamed(install, "docker compose pull", "pull")
     click.echo("\nRestarting what changed:")
-    _streamed(install, "docker compose up", "up", "-d")
+    _streamed(install, "docker compose up", "up", "-d", "--remove-orphans")
     _wait_and_report(install)
     _print_addresses(install)
 
