@@ -62,3 +62,43 @@ def _get_random_postgres_password():
     stripped because it triggers shell parsing weirdness in some setups.
     """
     return base64.urlsafe_b64encode(os.urandom(32)).decode("UTF8").rstrip("=")
+
+
+def _replace_env_value(text, key, new_value):
+    """Return `text` with `key`'s value replaced, preserving line order.
+
+    Only the first assignment is rewritten, matching how docker compose reads
+    the file. Returns None when the key is absent, so the caller can refuse
+    rather than silently appending a second one.
+    """
+    out = []
+    replaced = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if (
+            not replaced
+            and stripped
+            and not stripped.startswith("#")
+            and "=" in stripped
+            and stripped.split("=", 1)[0].strip() == key
+        ):
+            out.append(f"{key}={new_value}")
+            replaced = True
+        else:
+            out.append(line)
+    if not replaced:
+        return None
+    return "\n".join(out) + "\n"
+
+
+def _set_env_value(env_path, key, value):
+    """Set `key` in a .env file: rewrite it in place if present, append it
+    otherwise. Creates the file when there is none."""
+    path = Path(env_path)
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    updated = _replace_env_value(text, key, value)
+    if updated is None:
+        if text and not text.endswith("\n"):
+            text += "\n"
+        updated = text + f"{key}={value}\n"
+    path.write_text(updated, encoding="utf-8")

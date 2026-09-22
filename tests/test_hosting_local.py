@@ -410,3 +410,87 @@ def test_setup_prompt_decline_is_recorded_and_not_reasked(tmp_path, monkeypatch)
     second = CliRunner().invoke(local.setup, [])
     assert second.exit_code == 0, second.output
     assert "Include the optional" not in second.output
+
+
+# --- 4.0: the LAN address, the remembered folder, the local API ---------------
+
+
+def _setup(tmp_path, monkeypatch, *args):
+    monkeypatch.chdir(tmp_path)
+    _stub_env_generators(monkeypatch)
+    monkeypatch.setattr(local, "_stdin_is_interactive", lambda: False)
+    return CliRunner().invoke(local.setup, list(args))
+
+
+def test_setup_writes_the_frontend_host_placeholder_with_its_explanation(
+    tmp_path, monkeypatch
+):
+    result = _setup(tmp_path, monkeypatch)
+    assert result.exit_code == 0, result.output
+    env_contents = (tmp_path / ".env").read_text(encoding="utf-8")
+    assert f"{local.FRONTEND_HOST_ENV_KEY}=\n" in env_contents
+    assert "lan-access" in env_contents
+
+
+def test_setup_lan_host_fills_it_in_with_the_default_port(tmp_path, monkeypatch):
+    result = _setup(tmp_path, monkeypatch, "--lan-host", "192.168.1.42")
+    assert result.exit_code == 0, result.output
+    env_contents = (tmp_path / ".env").read_text(encoding="utf-8")
+    assert f"{local.FRONTEND_HOST_ENV_KEY}=192.168.1.42:5555\n" in env_contents
+    assert env_contents.count(local.FRONTEND_HOST_ENV_KEY + "=") == 1
+    assert "http://192.168.1.42:5555" in result.output
+
+
+def test_setup_lan_host_rewrites_an_existing_value_and_keeps_a_given_port(
+    tmp_path, monkeypatch
+):
+    _setup(tmp_path, monkeypatch, "--lan-host", "192.168.1.42")
+    result = _setup(tmp_path, monkeypatch, "--lan-host", "arcsecond.local:5556")
+    assert result.exit_code == 0, result.output
+    env_contents = (tmp_path / ".env").read_text(encoding="utf-8")
+    assert f"{local.FRONTEND_HOST_ENV_KEY}=arcsecond.local:5556\n" in env_contents
+    assert f"{local.FRONTEND_HOST_ENV_KEY}=192.168.1.42" not in env_contents
+
+
+def test_setup_lan_host_refuses_a_scheme_or_a_path(tmp_path, monkeypatch):
+    result = _setup(tmp_path, monkeypatch, "--lan-host", "http://192.168.1.42:5555")
+    assert result.exit_code != 0
+    assert "without scheme" in result.output
+
+
+def test_setup_remembers_the_folder_for_start_to_find(tmp_path, monkeypatch):
+    from arcsecond.hosting import stack
+
+    result = _setup(tmp_path, monkeypatch)
+    assert result.exit_code == 0, result.output
+    assert stack.remembered_install_dir() == tmp_path.resolve()
+
+
+def test_setup_registers_the_local_api_without_overwriting_an_operators_address(
+    tmp_path, monkeypatch
+):
+    from arcsecond.api.config import ArcsecondConfig
+
+    ArcsecondConfig(api_name=local.LOCAL_API_NAME).api_server = ""
+    _setup(tmp_path, monkeypatch)
+    assert (
+        ArcsecondConfig(api_name=local.LOCAL_API_NAME).api_server
+        == local.LOCAL_API_ADDRESS
+    )
+
+    ArcsecondConfig(api_name=local.LOCAL_API_NAME).api_server = "http://10.0.0.77:8800"
+    _setup(tmp_path, monkeypatch)
+    assert (
+        ArcsecondConfig(api_name=local.LOCAL_API_NAME).api_server
+        == "http://10.0.0.77:8800"
+    )
+
+
+def test_setup_hands_over_to_start_and_never_mentions_docker_compose(
+    tmp_path, monkeypatch
+):
+    result = _setup(tmp_path, monkeypatch, "--with-alerts")
+    assert result.exit_code == 0, result.output
+    assert "arcsecond start" in result.output
+    assert "arcsecond restart alerts" in result.output
+    assert "docker compose" not in result.output

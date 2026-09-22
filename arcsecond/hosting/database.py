@@ -27,7 +27,12 @@ import click
 
 from arcsecond.options import basic_options
 
-from .utils import _container_running, _get_random_postgres_password, _read_env_value
+from .utils import (
+    _container_running,
+    _get_random_postgres_password,
+    _read_env_value,
+    _replace_env_value,
+)
 
 DB_CONTAINER = "arcsecond-db"
 
@@ -147,33 +152,6 @@ def _validate_password(password):
     return None
 
 
-def _replace_env_value(text, key, new_value):
-    """Return `text` with `key`'s value replaced, preserving line order.
-
-    Only the first assignment is rewritten, matching how docker compose reads
-    the file. Returns None when the key is absent, so the caller can refuse
-    rather than silently appending a second one.
-    """
-    out = []
-    replaced = False
-    for line in text.splitlines():
-        stripped = line.strip()
-        if (
-            not replaced
-            and stripped
-            and not stripped.startswith("#")
-            and "=" in stripped
-            and stripped.split("=", 1)[0].strip() == key
-        ):
-            out.append(f"{key}={new_value}")
-            replaced = True
-        else:
-            out.append(line)
-    if not replaced:
-        return None
-    return "\n".join(out) + "\n"
-
-
 @click.group(name="db", help="Manage the Arcsecond.local database.")
 def db():
     pass
@@ -205,7 +183,7 @@ def _preflight_rotation(password, env_path):
     if not _container_running(DB_CONTAINER):
         click.echo(
             f"The {DB_CONTAINER} container is not running.\n"
-            "Start the stack first:  docker compose up -d db"
+            "Start the stack first:  arcsecond start"
         )
         sys.exit(1)
 
@@ -232,7 +210,7 @@ def _report_dry_run(env_path, backup_path, db_user, no_restart):
     if not no_restart:
         click.echo(
             f"  would recreate  {', '.join(_services_to_recreate())} "
-            "(docker compose up -d --force-recreate)"
+            "(arcsecond restart)"
         )
     sys.exit(0)
 
@@ -295,7 +273,7 @@ def _recreate_services(no_restart):
         click.echo(
             "\nSkipping the restart, as asked. The running containers still hold the\n"
             "old password and will fail on their next reconnect. Apply it with:\n"
-            f"    docker compose up -d --force-recreate {' '.join(services)}"
+            f"    arcsecond restart {' '.join(services)}"
         )
         return
 

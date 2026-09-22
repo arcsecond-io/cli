@@ -9,7 +9,17 @@ from arcsecond.cloud import (
     upload,
     upload_data,
 )
-from arcsecond.hosting import backups, db, setup
+from arcsecond.hosting import (
+    backups,
+    db,
+    logs,
+    restart,
+    setup,
+    start,
+    status,
+    stop,
+    update,
+)
 from arcsecond.imagesources import commands as imagesources
 
 from . import __version__
@@ -37,16 +47,14 @@ def version():
     click.echo(__version__.__version__)
 
 
-# Read/set API server to use.
+# Which API server every command talks to (`arcsecond api use <name>`).
 main.add_command(api)
 
-# Login to Arcsecond.
+# Login to that server.
 main.add_command(login)
 
-# Read the list of existing datasets (for upload purposes).
+# Read the list of existing datasets / telescopes (for upload purposes).
 main.add_command(datasets)
-
-# Read the list of existing telescopes (for upload purposes).
 main.add_command(telescopes)
 
 # Upload a folder of files to a given dataset. `upload-data` is the pre-4.0
@@ -54,8 +62,14 @@ main.add_command(telescopes)
 main.add_command(upload)
 main.add_command(upload_data)
 
-# Allow to try arcsecond by installing a local version
+# Arcsecond.local: write the installation, then run it — no `docker` to type.
 main.add_command(setup)
+main.add_command(start)
+main.add_command(stop)
+main.add_command(restart)
+main.add_command(status)
+main.add_command(logs)
+main.add_command(update)
 
 # Browse and restore Arcsecond.local DB backups.
 main.add_command(backups)

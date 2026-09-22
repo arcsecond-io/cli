@@ -6,12 +6,14 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 
 import click
 
+from arcsecond.api.config import ArcsecondConfig
 from arcsecond.options import basic_options
 
 from .utils import (
     _get_encryption_key,
     _get_random_postgres_password,
     _get_random_secret_key,
+    _set_env_value,
 )
 
 ENV_FILENAME = ".env"
@@ -42,6 +44,22 @@ GCN_ENV_COMMENT = (
     "# NASA GCN credentials (optional — used by the transient-alerts service):"
     " see https://docs.arcsecond.io/local/transient-alerts"
 )
+
+# The address other computers reach this installation at, port included
+# (e.g. 192.168.1.42:5555 or arcsecond.local:5555). Empty means localhost:5555,
+# which only works on the machine itself. The backend composes invitation and
+# password-reset links from it, so it must be what people type in a browser.
+FRONTEND_HOST_ENV_KEY = "HOSTED_FRONTEND_HOST"
+FRONTEND_HOST_ENV_COMMENT = (
+    "# Address other computers use to reach Arcsecond.local, port included"
+    " (e.g. 192.168.1.42:5555). Empty = this machine only. See"
+    " https://docs.arcsecond.io/local/lan-access"
+)
+
+# The name `setup` registers this installation's API under, so that
+# `arcsecond api use local` is all it takes to point the CLI at it.
+LOCAL_API_NAME = "local"
+LOCAL_API_ADDRESS = "http://localhost:8800"
 
 
 # Compose reads .env itself, and a backslash in a value is an escape sequence
@@ -93,6 +111,8 @@ REQUIRED_ENV_PROVIDERS = {
     # Empty placeholders: the operator pastes their own GCN credentials here.
     "GCN_CONSUMER_CLIENT_ID": lambda: "",
     "GCN_CONSUMER_CLIENT_SECRET": lambda: "",
+    # Empty placeholder: set by `arcsecond setup --lan-host`, or by hand.
+    FRONTEND_HOST_ENV_KEY: lambda: "",
 }
 
 
@@ -113,8 +133,8 @@ def _format_env_line(key, value):
     return f"{key}={value}"
 
 
-def write_env_file():
-    env_path = Path.cwd() / ENV_FILENAME
+def write_env_file(directory=None):
+    env_path = Path(directory or Path.cwd()) / ENV_FILENAME
     ordered_required_keys = [
         "SECRET_KEY",
         "AUTH_JWT_SIGNING_KEY",
@@ -126,6 +146,7 @@ def write_env_file():
         "POSTGRES_DB",
         "GCN_CONSUMER_CLIENT_ID",
         "GCN_CONSUMER_CLIENT_SECRET",
+        FRONTEND_HOST_ENV_KEY,
     ]
 
     def env_lines_for(keys):
@@ -137,6 +158,8 @@ def write_env_file():
                 # have hand-added one of the two already.
                 lines.append(GCN_ENV_COMMENT)
                 gcn_comment_pending = False
+            if key == FRONTEND_HOST_ENV_KEY:
+                lines.append(FRONTEND_HOST_ENV_COMMENT)
             lines.append(_format_env_line(key, REQUIRED_ENV_PROVIDERS[key]()))
         return lines
 
@@ -370,8 +393,25 @@ def _report_customised_compose(
     print("\n".join(messages))
 
 
+def packaged_compose_text() -> str:
+    # arcsecond/hosting/docker/docker-compose.yml
+    compose = resources.files("arcsecond.hosting.docker").joinpath("docker-compose.yml")
+    with compose.open("rb") as src:
+        return src.read().decode("utf-8")
+
+
+def template_versions(install):
+    """``(installed, packaged)`` compose template versions, for `status`.
+    ``installed`` is None when the file has no version header."""
+    try:
+        current = _compose_version(install.compose_path.read_text(encoding="utf-8"))
+    except OSError:
+        current = None
+    return current, _compose_version(packaged_compose_text())
+
+
 def write_docker_compose_file(
-    enabled_services=frozenset(), removed_services=frozenset()
+    enabled_services=frozenset(), removed_services=frozenset(), directory=None
 ) -> Path:
     """
     Materialise the packaged docker-compose.yml in the current directory.
@@ -389,13 +429,8 @@ def write_docker_compose_file(
 
     Works from any CWD and when installed from a wheel/sdist.
     """
-    dest = Path.cwd() / "docker-compose.yml"
-
-    # arcsecond/hosting/docker/docker-compose.yml
-    compose = resources.files("arcsecond.hosting.docker").joinpath("docker-compose.yml")
-
-    with compose.open("rb") as src:
-        packaged_text = src.read().decode("utf-8")
+    dest = Path(directory or Path.cwd()) / "docker-compose.yml"
+    packaged_text = packaged_compose_text()
 
     expected_text = _expected_compose_text(packaged_text, enabled_services)
     expected_content = expected_text.encode("utf-8")
@@ -476,6 +511,29 @@ def _resolve_optional_services(env_path, flags):
     return enabled, removed, to_record
 
 
+def _register_local_api():
+    """Make `arcsecond api use local` possible without a registration step.
+    Never overwrites an address the operator set themselves."""
+    config = ArcsecondConfig(api_name=LOCAL_API_NAME)
+    if not (config.api_server or "").strip():
+        config.api_server = LOCAL_API_ADDRESS
+
+
+def _normalise_lan_host(value):
+    """`192.168.1.42` → `192.168.1.42:5555`; a scheme or a path is refused."""
+    value = (value or "").strip()
+    if not value:
+        return ""
+    if "://" in value or "/" in value:
+        raise click.BadParameter(
+            "give the host and port only, without scheme or path — e.g. "
+            "192.168.1.42:5555 or arcsecond.local:5555"
+        )
+    if ":" not in value:
+        value = f"{value}:5555"
+    return value
+
+
 @click.command(help="Prepare the installation of Arcsecond.local.")
 @click.option(
     "--with-alerts/--without-alerts",
@@ -484,27 +542,60 @@ def _resolve_optional_services(env_path, flags):
     help="Include (or remove) the optional transient-alerts (ToO) service in "
     "docker-compose.yml without prompting.",
 )
+@click.option(
+    "--lan-host",
+    "lan_host",
+    default=None,
+    metavar="HOST[:PORT]",
+    help="The address other computers reach this machine at (e.g. "
+    "192.168.1.42 or arcsecond.local). Needed for invitation and "
+    "password-reset links to work from other computers. Port defaults to 5555.",
+)
 @basic_options
-def setup(with_alerts):
+def setup(with_alerts, lan_host):
+    """Write (or update) the two files an installation is made of, in the
+    current folder: .env, with this installation's secrets, and
+    docker-compose.yml. Then:  arcsecond start
+
+    Run it again after upgrading the CLI to bring docker-compose.yml up to
+    date; nothing of yours is overwritten.
+    """
     click.echo("\nWelcome to Arcsecond.local setup.")
     click.echo(
         "\nThis will write or update two files in this folder (.env and docker-compose.yml)."
     )
     click.echo("")
 
-    env_path = Path.cwd() / ENV_FILENAME
+    directory = Path.cwd()
+    env_path = directory / ENV_FILENAME
     enabled, removed, to_record = _resolve_optional_services(
         env_path, {"alerts": with_alerts}
     )
-    write_env_file()
+    write_env_file(directory=directory)
     for name, answer in to_record:
         _record_optional_service_decision(env_path, name, answer)
-    write_docker_compose_file(enabled_services=enabled, removed_services=removed)
+    if lan_host is not None:
+        host = _normalise_lan_host(lan_host)
+        _set_env_value(env_path, FRONTEND_HOST_ENV_KEY, host)
+        if host:
+            print(f"Other computers will reach this installation at http://{host}")
+        else:
+            print("This installation is reachable from this machine only.")
+    write_docker_compose_file(
+        enabled_services=enabled, removed_services=removed, directory=directory
+    )
+
+    from .stack import remember_install_dir
+
+    remember_install_dir(directory)
+    _register_local_api()
 
     if "alerts" in enabled:
         click.echo(
             "\nTransient alerts next steps: create GCN credentials (see "
             "https://docs.arcsecond.io/local/transient-alerts), paste them into "
             ".env as GCN_CONSUMER_CLIENT_ID / GCN_CONSUMER_CLIENT_SECRET, then "
-            "run: docker compose up -d"
+            "run: arcsecond restart alerts"
         )
+
+    click.echo("\nNext:  " + click.style("arcsecond start", bold=True))

@@ -9,6 +9,24 @@ public and private ones.
 
 [Read the docs](https://docs.arcsecond.io/cli)
 
+## Running Arcsecond.local
+
+The CLI owns the whole lifecycle of a self-hosted installation; there is no
+`docker` command to type:
+
+```bash
+$ arcsecond setup --lan-host 192.168.1.42   # writes .env and docker-compose.yml
+$ arcsecond start                           # first run downloads the images
+$ arcsecond status
+$ arcsecond logs backend -f
+$ arcsecond restart backend worker          # after editing .env
+$ arcsecond update                          # newer images, refreshed compose file
+$ arcsecond stop
+```
+
+Every one of these finds the installation in the current folder, or in the
+folder `arcsecond setup` last ran in, or where `--dir` points.
+
 ## Which server the CLI talks to
 
 The CLI points at one API server at a time — the cloud by default, or a

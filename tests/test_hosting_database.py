@@ -314,7 +314,7 @@ def test_no_restart_leaves_containers_alone_and_says_so(tmp_path, monkeypatch):
 
     assert result.exit_code == 0, result.output
     assert calls == []
-    assert "--force-recreate" in result.output
+    assert "arcsecond restart backend worker beat" in result.output
 
 
 def test_failed_recreate_reports_but_keeps_the_new_password(tmp_path, monkeypatch):
