@@ -42,7 +42,7 @@ OPTIONAL_SERVICES_ENV_KEY = "ARCSECOND_OPTIONAL_SERVICES"
 
 GCN_ENV_COMMENT = (
     "# NASA GCN credentials (optional — used by the transient-alerts service):"
-    " see https://docs.arcsecond.io/local/transient-alerts"
+    " see https://docs.arcsecond.io/guides/operating/transient-alerts"
 )
 
 # The address other computers reach this installation at, port included
@@ -53,7 +53,7 @@ FRONTEND_HOST_ENV_KEY = "HOSTED_FRONTEND_HOST"
 FRONTEND_HOST_ENV_COMMENT = (
     "# Address other computers use to reach Arcsecond.local, port included"
     " (e.g. 192.168.1.42:5555). Empty = this machine only. See"
-    " https://docs.arcsecond.io/local/lan-access"
+    " https://docs.arcsecond.io/start/network"
 )
 
 # The name `setup` registers this installation's API under, so that
@@ -596,7 +596,7 @@ def setup(with_alerts, lan_host):
     if "alerts" in enabled:
         click.echo(
             "\nTransient alerts next steps: create GCN credentials (see "
-            "https://docs.arcsecond.io/local/transient-alerts), paste them into "
+            "https://docs.arcsecond.io/guides/operating/transient-alerts), paste them into "
             ".env as GCN_CONSUMER_CLIENT_ID / GCN_CONSUMER_CLIENT_SECRET, then "
             "run: arcsecond restart alerts"
         )

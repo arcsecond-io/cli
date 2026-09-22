@@ -306,7 +306,7 @@ def check_env_file(install) -> List[Finding]:
                 ".env secrets",
                 WARN,
                 f"'$' in {', '.join(dollar)}: compose interpolates it (the 'variable is not set' warnings)",
-                fix="https://docs.arcsecond.io/local/troubleshooting",
+                fix="https://docs.arcsecond.io/guides/operating/troubleshooting",
             )
         )
     return findings

@@ -53,7 +53,7 @@ def _print_addresses(install) -> None:
     if len(addresses) == 1:
         click.echo(
             "\n  That address only works on this machine. To let other computers "
-            "in, see\n  https://docs.arcsecond.io/local/lan-access"
+            "in, see\n  https://docs.arcsecond.io/start/network"
         )
 
 

@@ -429,7 +429,7 @@ def test_setup_writes_the_frontend_host_placeholder_with_its_explanation(
     assert result.exit_code == 0, result.output
     env_contents = (tmp_path / ".env").read_text(encoding="utf-8")
     assert f"{local.FRONTEND_HOST_ENV_KEY}=\n" in env_contents
-    assert "lan-access" in env_contents
+    assert "start/network" in env_contents
 
 
 def test_setup_lan_host_fills_it_in_with_the_default_port(tmp_path, monkeypatch):

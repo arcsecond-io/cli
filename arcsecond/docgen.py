@@ -1,6 +1,6 @@
 """The command reference, generated from the command tree itself.
 
-`arcsecond docs commands --out DIR` writes one Markdown page per top-level
+`arcsecond docs commands --out docs/reference/commands` writes one Markdown page per top-level
 command — usage, help, arguments, options, subcommands — plus an index and a
 machine-readable `commands.json`, every page carrying the documentation
 site's frontmatter with `source: generated`.

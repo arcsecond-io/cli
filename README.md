@@ -7,7 +7,7 @@ The Command-line interface (CLI) for Arcsecond. It can be used as Python
 module too. The CLI makes it easy to login/register and access Arcsecond resources,
 public and private ones.
 
-[Read the docs](https://docs.arcsecond.io/cli)
+[Read the docs](https://docs.arcsecond.io/reference/cli)
 
 ## Running Arcsecond.local
 
