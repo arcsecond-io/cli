@@ -1,7 +1,6 @@
 import click
 
 from arcsecond.alpaca.commands import alpaca_group
-from arcsecond.docgen import docs
 from arcsecond.cloud import (
     api,
     datasets,
@@ -10,6 +9,7 @@ from arcsecond.cloud import (
     upload,
     upload_data,
 )
+from arcsecond.docgen import docs
 from arcsecond.hosting import (
     backups,
     db,

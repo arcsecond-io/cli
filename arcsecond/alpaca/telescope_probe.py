@@ -27,10 +27,12 @@ from .probe import (
     ProbeProgress,
     ProbeResult,
     capture,
+)
+from .probe import iter_probe_labels as _iter_probe_labels
+from .probe import (
     probe_device,
     record,
 )
-from .probe import iter_probe_labels as _iter_probe_labels
 
 # Read-only descriptors, optics, site, pointing, motion state and capabilities,
 # in the order we want them presented. Names are PascalCase to match alpyca.

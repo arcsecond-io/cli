@@ -17,8 +17,9 @@ from __future__ import annotations
 
 from typing import Any, Callable, Iterable
 
-from .probe import ProbeProgress, ProbeResult, probe_device
+from .probe import ProbeProgress, ProbeResult
 from .probe import iter_probe_labels as _iter_probe_labels
+from .probe import probe_device
 
 # Read-only device descriptors and dome state, in the order we want them
 # presented in the report. Names are PascalCase to match the alpyca surface.
