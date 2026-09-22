@@ -10,9 +10,13 @@ from pathlib import Path
 
 import click
 
+from arcsecond.errors import ArcsecondError
 from arcsecond.options import basic_options
 
-from .utils import _container_running, _read_env_value
+from . import stack
+from .lifecycle import dir_option
+from .utils import _container_running
+from .utils import _read_env_value as _read_env_value_from
 
 DB_CONTAINER = "arcsecond-db"
 API_CONTAINER = "arcsecond-api"
@@ -44,8 +48,16 @@ STATUS_BROKEN = "broken"
 GZIP_MAGIC = b"\x1f\x8b"
 
 
-def _cwd_env_path():
-    return Path.cwd() / ".env"
+# The installation the current command works on, resolved once by
+# _ensure_install_dir: --dir, else the current folder, else the folder
+# `arcsecond setup` last ran in (see stack.resolve_install_dir).
+_install = None
+
+
+def _read_env_value(key):
+    """A value from the installation's .env — the resolved one, not whatever
+    happens to be in the current folder."""
+    return _read_env_value_from(key, _install.env_path if _install else None)
 
 
 def _backups_dir():
@@ -55,18 +67,13 @@ def _backups_dir():
     return Path(shared) / "db_backups"
 
 
-def _print_wrong_dir_hint():
-    click.echo(
-        "Could not find an Arcsecond.local installation in the current directory.\n"
-        "Run `arcsecond backups ...` from the directory that contains your "
-        "docker-compose.yml and .env files (the one you used for `arcsecond setup`)."
-    )
-
-
-def _ensure_install_dir():
+def _ensure_install_dir(directory=None):
     """Return the backups dir, or None after printing a clear error."""
-    if not _cwd_env_path().exists():
-        _print_wrong_dir_hint()
+    global _install
+    try:
+        _install = stack.resolve_install_dir(directory)
+    except ArcsecondError as e:
+        click.echo(str(e))
         return None
     backups_dir = _backups_dir()
     if backups_dir is None:
@@ -78,9 +85,8 @@ def _ensure_install_dir():
     if not backups_dir.exists():
         click.echo(
             f"No backups directory found at: {backups_dir.resolve()}\n"
-            "Make sure you run this command from the Arcsecond.local working directory "
-            "(the one with docker-compose.yml and .env), and that the backend has been "
-            "started at least once — the boot-time backup is the first to appear."
+            "Make sure the backend has been started at least once — the boot-time "
+            "backup is the first to appear."
         )
         return None
     return backups_dir
@@ -569,9 +575,10 @@ def _print_destination_section(items):
 @backups.command(
     name="list", help="List available DB backups with compatibility status."
 )
+@dir_option
 @basic_options
-def list_cmd():
-    backups_dir = _ensure_install_dir()
+def list_cmd(directory):
+    backups_dir = _ensure_install_dir(directory)
     if backups_dir is None:
         sys.exit(1)
 
@@ -624,9 +631,10 @@ def list_cmd():
 
 @backups.command(name="inspect", help="Show detailed info about a backup.")
 @click.argument("ref", required=True)
+@dir_option
 @basic_options
-def inspect_cmd(ref):
-    backups_dir = _ensure_install_dir()
+def inspect_cmd(directory, ref):
+    backups_dir = _ensure_install_dir(directory)
     if backups_dir is None:
         sys.exit(1)
 
@@ -1085,9 +1093,8 @@ def _stop_services(dry_run):
 
 def _start_services(dry_run):
     """Bring the stack back. Compose restarts dependents; by name if it is absent."""
-    compose_file = Path.cwd() / "docker-compose.yml"
-    if compose_file.exists():
-        _run(["docker", "compose", "up", "-d"], dry_run)
+    if _install is not None and _install.compose_path.exists():
+        _run(stack.compose_command(_install, "up", "-d", "--remove-orphans"), dry_run)
     else:
         for name in reversed(SERVICES_TO_STOP):
             _run(["docker", "start", name], dry_run, capture_output=True, text=True)
@@ -1149,9 +1156,10 @@ def _perform_restore(path, backups_dir, dry_run, no_safety_backup):
 @click.option(
     "--no-safety-backup", is_flag=True, help="Skip the pre-restore safety snapshot."
 )
+@dir_option
 @basic_options
-def restore_cmd(ref, force, dry_run, no_safety_backup):
-    backups_dir = _ensure_install_dir()
+def restore_cmd(directory, ref, force, dry_run, no_safety_backup):
+    backups_dir = _ensure_install_dir(directory)
     if backups_dir is None:
         sys.exit(1)
 
