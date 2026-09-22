@@ -293,3 +293,43 @@ def docs_commands(ctx, out, check):
         )
     written = write(files, Path(out))
     click.echo(f"Wrote {len(written)} files to {out}")
+
+
+@docs.command(
+    name="compose",
+    help="Write the services and environment reference from the packaged compose template.",
+)
+@click.option(
+    "--out",
+    "out",
+    type=click.Path(file_okay=False),
+    default=None,
+    help="Folder to write into.",
+)
+@click.option(
+    "--check",
+    "check",
+    type=click.Path(file_okay=False, exists=True),
+    default=None,
+    help="Compare against this folder instead of writing; exit 1 if it is out of date.",
+)
+def docs_compose(out, check):
+    from arcsecond.hosting import composedoc
+
+    files = composedoc.generate(__version__.__version__)
+    if check:
+        changed = differences(files, Path(check))
+        if changed:
+            click.echo("The services/environment reference is out of date:")
+            for name in changed:
+                click.echo(f"  {name}")
+            click.echo("\nRegenerate it:  arcsecond docs compose --out " + check)
+            raise SystemExit(1)
+        click.echo(f"The services/environment reference in {check} is up to date.")
+        return
+    if not out:
+        raise click.UsageError(
+            "Give --out FOLDER to write, or --check FOLDER to verify."
+        )
+    written = write(files, Path(out))
+    click.echo(f"Wrote {len(written)} files to {out}")
