@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arcsecond"
-version = "3.20.2"
+version = "4.0.0"
 authors = [
     { name = "Cedric Foellmi", email = "cedric@arcsecond.io" },
 ]
@@ -25,12 +25,8 @@ classifiers = [
 ]
 dependencies = [
     'click>=8',
-    'configparser',
-    'docker',
     'httpx',
     "tqdm (>=4.67.1,<5.0.0)",
-    'py-machineid',
-    'wait-for-it',
     'alpyca==3.1.2',
 ]
 

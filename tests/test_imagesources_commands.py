@@ -14,7 +14,7 @@ import pytest
 from click.testing import CliRunner
 
 from arcsecond.imagesources import commands, runtime, store
-from arcsecond.imagesources.commands import allsky, netcam, proxy, webcam
+from arcsecond.imagesources.commands import allsky, proxy, webcam
 from arcsecond.imagesources.sources.base import DetectedDevice
 
 
@@ -512,12 +512,6 @@ def test_testing_an_all_sky_camera_on_this_disk_names_its_path(cli):
     result = _run(cli, webcam, ["test", printed])
     assert result.exit_code == 1
     assert "/srv/sky.jpg" in result.output
-
-
-def test_netcam_points_at_webcam(cli):
-    result = _run(cli, netcam, ["test", "rtsp://cam.local/s"])
-    assert result.exit_code == 1
-    assert "arcsecond webcam" in result.output
 
 
 @pytest.mark.parametrize("group", [webcam, allsky])

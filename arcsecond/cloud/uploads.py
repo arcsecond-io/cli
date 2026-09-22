@@ -14,7 +14,7 @@ from arcsecond.options import State, basic_options
 pass_state = click.make_pass_decorator(State, ensure=True)
 
 
-@click.command()
+@click.command(name="upload")
 @click.argument("folder", required=True, nargs=1)
 @click.option(
     "-d",
@@ -55,7 +55,7 @@ pass_state = click.make_pass_decorator(State, ensure=True)
 )
 @basic_options
 @pass_state
-def upload_data(
+def upload(
     state, folder, dataset=None, telescope=None, raw=None, tags=None, portal=None
 ):
     """
@@ -105,3 +105,14 @@ def upload_data(
     ok = input("\n   ----> OK? (Press Enter) ")
     if ok.strip() == "":
         walk_folder_and_upload_files(DatasetFileUploader, context, folder)
+
+
+# The pre-4.0 name. Same command object underneath, so the two never drift;
+# hidden so that `--help` shows one way of doing it.
+upload_data = click.Command(
+    name="upload-data",
+    callback=upload.callback,
+    params=upload.params,
+    help=upload.help,
+    hidden=True,
+)

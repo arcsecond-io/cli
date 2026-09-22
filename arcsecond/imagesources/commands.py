@@ -1375,18 +1375,3 @@ def allsky_start_removed(args):
         "  arcsecond proxy start                        # serve everything registered",
         "\nSee what you already have with:  arcsecond allsky",
     )
-
-
-@click.command(name="netcam", hidden=True, context_settings=_UNPROCESSED)
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def netcam(args):
-    _moved(
-        click.style("Error: ", fg="red")
-        + "`arcsecond netcam` is gone. A camera reached over the network is a "
-        "webcam.",
-        "\nThe same commands cover both:",
-        "\n  arcsecond webcam                               # list them all",
-        "  arcsecond webcam test rtsp://10.0.0.4/stream1  # check an address",
-        "  arcsecond webcam add  rtsp://10.0.0.4/stream1  # register it",
-        "  arcsecond webcam forget <ID>",
-    )

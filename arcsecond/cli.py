@@ -5,8 +5,8 @@ from arcsecond.cloud import (
     api,
     datasets,
     login,
-    me,
     telescopes,
+    upload,
     upload_data,
 )
 from arcsecond.hosting import backups, db, setup
@@ -43,16 +43,15 @@ main.add_command(api)
 # Login to Arcsecond.
 main.add_command(login)
 
-# Read the logged-in user profile.
-main.add_command(me)
-
 # Read the list of existing datasets (for upload purposes).
 main.add_command(datasets)
 
 # Read the list of existing telescopes (for upload purposes).
 main.add_command(telescopes)
 
-# Upload a folder of files to a given dataset.
+# Upload a folder of files to a given dataset. `upload-data` is the pre-4.0
+# name, kept hidden so existing scripts keep working.
+main.add_command(upload)
 main.add_command(upload_data)
 
 # Allow to try arcsecond by installing a local version
@@ -72,9 +71,6 @@ main.add_command(db)
 main.add_command(imagesources.webcam)
 main.add_command(imagesources.allsky)
 main.add_command(imagesources.proxy)
-
-# Removed: a network camera is a webcam. Kept only to say so — see commands.py.
-main.add_command(imagesources.netcam)
 
 # Local ASCOM Alpaca diagnostics (e.g. `arcsecond alpaca probe dome ...`).
 main.add_command(alpaca_group)

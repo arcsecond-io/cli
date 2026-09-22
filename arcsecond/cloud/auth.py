@@ -1,5 +1,3 @@
-import json
-
 import click
 
 from arcsecond.api import ArcsecondAPI, ArcsecondConfig
@@ -100,21 +98,3 @@ def api(state, name=None, fqdn=None):
         click.echo(
             f' • Registering the API "{name}" with the server address "{config.api_server}".'
         )
-
-
-@click.command(help="Get your complete user profile.")
-@basic_options
-@pass_state
-def me(state):
-    """Fetch your complete user profile."""
-    username = ArcsecondConfig.from_state(state).username or None
-    if not username:
-        msg = f"Invalid/missing username: {username}. Make sure to login first: $ arcsecond login"
-        raise ArcsecondError(msg)
-    response, error = ArcsecondAPI(ArcsecondConfig.from_state(state)).profiles.read(
-        username
-    )
-    if error:
-        click.echo(str(error))
-    else:
-        click.echo(json.dumps(response, indent=2))

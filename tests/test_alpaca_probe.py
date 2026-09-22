@@ -542,12 +542,11 @@ def test_cli_fatal_connection_error_becomes_arcsecond_error(monkeypatch, tmp_pat
             str(tmp_path / "probe.json"),
         ],
     )
-    assert result.exit_code != 0
-    # ArcsecondError is not auto-rendered to stderr by Click; assert that the
-    # CliRunner surfaces it as an exception rather than a stack trace from
-    # somewhere deeper.
-    assert isinstance(result.exception, BaseException)
-    assert "Could not construct Alpaca Dome client" in str(result.exception)
+    assert result.exit_code == 1
+    # ArcsecondError is a ClickException since 4.0: Click renders it as one
+    # `Error: ...` line and exits 1 — the message reaches the operator, no
+    # stack trace does.
+    assert "Error: Could not construct Alpaca Dome client" in result.output
 
 
 def test_iter_probe_labels_covers_known_probes():
@@ -869,8 +868,8 @@ def test_cli_probe_telescope_fatal_connection_error_becomes_arcsecond_error(tmp_
             str(tmp_path / "p.json"),
         ],
     )
-    assert result.exit_code != 0
-    assert "Could not construct Alpaca Telescope client" in str(result.exception)
+    assert result.exit_code == 1
+    assert "Error: Could not construct Alpaca Telescope client" in result.output
 
 
 def test_iter_probe_labels_telescope_covers_axes():
