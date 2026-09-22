@@ -13,9 +13,32 @@ import sys
 import pytest
 from click.testing import CliRunner
 
-from arcsecond.imagesources import commands, runtime, store
+from arcsecond.imagesources import autostart, commands, runtime, store
 from arcsecond.imagesources.commands import allsky, proxy, webcam
 from arcsecond.imagesources.sources.base import DetectedDevice
+
+
+class FakeAutostart:
+    """A login item that lives only for one test."""
+
+    shared = None
+
+    def __init__(self):
+        self.command = None
+        self.environment = None
+
+    def enable(self, command, environment):
+        self.command = list(command)
+        self.environment = dict(environment)
+
+    def disable(self):
+        self.command = None
+
+    def is_enabled(self):
+        return self.command is not None
+
+    def describe(self):
+        return "a fake login item"
 
 
 @pytest.fixture
@@ -30,6 +53,10 @@ def cli(tmp_path, monkeypatch):
     """
     monkeypatch.setattr(store, "store_path", lambda: tmp_path / "cameras.json")
     monkeypatch.setattr(runtime, "runtime_path", lambda: tmp_path / "proxy.json")
+    # The login item stays in memory: a real one would land in the developer's
+    # own LaunchAgents / registry / systemd units.
+    monkeypatch.setattr(autostart, "backend", lambda: FakeAutostart.shared)
+    FakeAutostart.shared = FakeAutostart()
     monkeypatch.setattr(runtime, "log_path", lambda: tmp_path / "proxy.log")
     monkeypatch.setattr(commands, "_running_proxy_port", lambda: None)
 
@@ -859,3 +886,67 @@ def test_the_proxy_is_given_the_recorded_resolution(cli, monkeypatch):
     )
     _run(cli, proxy, ["start", "--foreground"])
     assert started["cameras"][0].specs == {"width": 1280, "height": 720, "fps": 30.0}
+
+
+# --- coming back after a reboot ---------------------------------------------
+
+
+def test_a_background_proxy_registers_itself_to_start_at_login(cli, launched):
+    result = _run(cli, proxy, ["start", "--port", "9000"])
+    assert result.exit_code == 0, result.output
+    item = FakeAutostart.shared
+    assert item.is_enabled()
+    assert item.command[1:5] == ["-m", "arcsecond.cli", "proxy", "start"]
+    assert "--foreground" not in item.command
+    assert item.command[item.command.index("--port") + 1] == "9000"
+    assert "start again when you log in" in result.output
+    assert "a fake login item" in result.output
+
+
+def test_no_autostart_leaves_no_login_item(cli, launched):
+    result = _run(cli, proxy, ["start", "--no-autostart"])
+    assert result.exit_code == 0, result.output
+    assert not FakeAutostart.shared.is_enabled()
+    assert "log in" not in result.output
+
+
+def test_a_proxy_that_would_not_start_registers_nothing(cli, launched, monkeypatch):
+    monkeypatch.setattr(
+        commands.subprocess, "Popen", lambda c, **k: FakePopen(c, returncode=1, **k)
+    )
+    monkeypatch.setattr(commands, "_proxy_is_running", lambda port: False)
+    result = _run(cli, proxy, ["start"])
+    assert result.exit_code != 0
+    assert not FakeAutostart.shared.is_enabled()
+
+
+def test_stop_cancels_the_login_item_even_when_nothing_is_running(cli):
+    FakeAutostart.shared.enable(["python"], {})
+    result = _run(cli, proxy, ["stop"])
+    assert result.exit_code == 0, result.output
+    assert not FakeAutostart.shared.is_enabled()
+    assert "no longer start when you log in" in result.output
+    assert "Nothing to stop" in result.output
+
+
+def test_status_says_when_a_stopped_proxy_was_meant_to_be_running(cli):
+    result = _run(cli, proxy, ["status"])
+    assert "not stopped on purpose" not in result.output
+
+    FakeAutostart.shared.enable(["python"], {})
+    result = _run(cli, proxy, ["status"])
+    assert "The proxy is not running." in result.output
+    assert "not stopped on purpose" in result.output
+
+
+def test_a_failure_to_register_is_a_warning_not_a_failed_start(
+    cli, launched, monkeypatch
+):
+    def broken(host, port, log_level):
+        raise autostart.AutostartError("registry is read-only")
+
+    monkeypatch.setattr(autostart, "enable", broken)
+    result = _run(cli, proxy, ["start"])
+    assert result.exit_code == 0, result.output
+    assert "The proxy is running" in result.output
+    assert "Could not register" in result.output

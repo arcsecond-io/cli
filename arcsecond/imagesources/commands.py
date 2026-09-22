@@ -47,7 +47,7 @@ from urllib.parse import urlsplit
 
 import click
 
-from . import detection, runtime, store
+from . import autostart, detection, runtime, store
 from .sources.network import (
     HTTP_SCHEMES,
     RTSP_SCHEMES,
@@ -967,7 +967,14 @@ def proxy():
     "proxy: its parent has already printed the summary to the terminal, and "
     "repeating it into the log buries whatever goes wrong next.",
 )
-def proxy_start_cmd(port, host, log_level, foreground, no_banner):
+@click.option(
+    "--no-autostart",
+    is_flag=True,
+    help="Do not register the proxy to start again when you log in. By "
+    "default a background proxy comes back after a reboot until "
+    "`arcsecond proxy stop` is run.",
+)
+def proxy_start_cmd(port, host, log_level, foreground, no_banner, no_autostart):
     _check_aiohttp()
 
     running = _running_proxy_port()
@@ -986,7 +993,7 @@ def proxy_start_cmd(port, host, log_level, foreground, no_banner):
     if foreground:
         _run_in_this_terminal(host, port, log_level, cameras, banner=not no_banner)
     else:
-        _run_detached(host, port, log_level, cameras)
+        _run_detached(host, port, log_level, cameras, autostart_wanted=not no_autostart)
 
 
 def _describe_cameras(cameras):
@@ -1046,7 +1053,7 @@ def _run_in_this_terminal(host, port, log_level, cameras, banner=True):
         _fail(f"the proxy could not listen on {host}:{port}: {e}")
 
 
-def _run_detached(host, port, log_level, cameras):
+def _run_detached(host, port, log_level, cameras, autostart_wanted=True):
     """Launch the proxy in the background and give the terminal back.
 
     The proxy is a service the Arcsecond containers talk to, not something to
@@ -1127,6 +1134,37 @@ def _run_detached(host, port, log_level, cameras):
         f"  Log   →  {log_file}\n"
         "  Stop  →  arcsecond proxy stop"
     )
+    if autostart_wanted:
+        _register_autostart(host, port, log_level)
+
+
+def _register_autostart(host, port, log_level):
+    """A background proxy comes back at login until it is stopped on purpose.
+    Failing to register is a warning, not a failure: the proxy is running."""
+    try:
+        where = autostart.enable(host, port, log_level)
+    except autostart.AutostartError as e:
+        click.echo(
+            click.style(
+                "\nCould not register the proxy to start at login: ", fg="yellow"
+            )
+            + str(e)
+        )
+        return
+    click.echo(
+        f"\nIt will start again when you log in ({where}).\n"
+        "  `arcsecond proxy stop` cancels that; `--no-autostart` never registers it."
+    )
+
+
+def _forget_autostart():
+    try:
+        if autostart.disable():
+            click.echo("It will no longer start when you log in.")
+    except autostart.AutostartError as e:
+        click.echo(
+            click.style("Could not remove the login item: ", fg="yellow") + str(e)
+        )
 
 
 def _wait_until_answering(port: int, process, timeout: float) -> bool:
@@ -1176,13 +1214,22 @@ def _report_failed_start(port: int, process, log_file):
 def proxy_status_cmd():
     port = _running_proxy_port()
     if port is None:
-        click.echo("The proxy is not running.\n\nStart it with:  arcsecond proxy start")
+        click.echo("The proxy is not running.")
+        if autostart.is_enabled():
+            click.echo(
+                "It is registered to start when you log in, so it was not stopped "
+                "on purpose — see its log, or start it now."
+            )
+        click.echo("\nStart it with:  arcsecond proxy start")
         return
 
     click.echo(
         click.style("The proxy is running", fg="green")
-        + f" on port {port}  (http://127.0.0.1:{port}/detect)\n"
+        + f" on port {port}  (http://127.0.0.1:{port}/detect)"
     )
+    if autostart.is_enabled():
+        click.echo("It starts again when you log in.")
+    click.echo("")
 
     served = _call_proxy(port, "/detect")
     if not isinstance(served, list):
@@ -1232,6 +1279,10 @@ def proxy_status_cmd():
     help="Seconds to wait for it to shut down before insisting.",
 )
 def proxy_stop_cmd(timeout):
+    # Stopping means "do not run", including after the next reboot. Done
+    # first, so that a proxy that refuses to die still stays down next time.
+    _forget_autostart()
+
     running = _running_proxy()
     if running is None:
         click.echo("The proxy is not running. Nothing to stop.")
