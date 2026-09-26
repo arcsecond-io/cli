@@ -272,7 +272,7 @@ def status(directory):
 @basic_options
 def logs(directory, service, follow, tail):
     """Show recent logs. Services are named as in `arcsecond status`:
-    backend, worker, beat, web, db, broker, platesolver, alerts."""
+    backend, worker, dataworker, beat, web, db, broker, platesolver, alerts."""
     install = stack.resolve_install_dir(directory)
     stack.ensure_docker()
     args = ["logs", "--tail", str(tail)]

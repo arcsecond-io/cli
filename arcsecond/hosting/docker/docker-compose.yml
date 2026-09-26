@@ -1,6 +1,6 @@
 # === Arcsecond.local config. ===
 # *** DO NOT change any name or port number. ***
-# Version 6.4
+# Version 7.3
 
 services:
   # Database (PostgresQL)
@@ -54,6 +54,10 @@ services:
         bind:
           create_host_path: true
     stop_grace_period: 60s
+    # A ceiling, so no burst of work here can take the memory Postgres needs.
+    # Downloads no longer pass through these processes (the web container
+    # sends them), but rendering a large frame for review still does.
+    mem_limit: ${ARCSECOND_BACKEND_MEMORY:-6g}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8800/healthcheck/" ]
       interval: 10s
@@ -61,7 +65,8 @@ services:
       retries: 12
       start_period: 120s
 
-  # Arcsecond worker, for offloading background work.
+  # Arcsecond worker, for offloading background work: the Control Room's
+  # exposures and procedures, and everything else someone is waiting on.
   worker:
     image: ghcr.io/arcsecond-io/arcsecond-api:latest
     container_name: arcsecond-worker
@@ -72,6 +77,9 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      # The default queue only: the data worker below takes the rest.
+      ARCSECOND_WORKER_QUEUES: celery
     volumes:
       # Leave /data as is, it's a path inside the container, not in the host machine.
       # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
@@ -81,6 +89,36 @@ services:
         bind:
           create_host_path: true
     stop_grace_period: 120s
+    mem_limit: ${ARCSECOND_WORKER_MEMORY:-6g}
+
+  # Arcsecond data worker, for the background work nobody at the telescope is
+  # waiting on: zip archives, previews of uploaded files, pushes to your
+  # storages, database backups, keograms, catalogue refreshes. On its own
+  # queue, so a long zip can never hold up a frame the observer is waiting for.
+  dataworker:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-dataworker
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-worker.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      ARCSECOND_WORKER_QUEUES: data
+      # Few at a time: this work is heavy and none of it is urgent.
+      ARCSECOND_WORKER_CONCURRENCY: ${ARCSECOND_DATA_WORKER_CONCURRENCY:-2}
+    volumes:
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
+    stop_grace_period: 120s
+    mem_limit: ${ARCSECOND_DATA_WORKER_MEMORY:-3g}
 
   # Arcsecond beat, to launch specific background tasks at specific times.
   beat:
@@ -114,6 +152,23 @@ services:
         condition: service_started
     ports:
       - "5555:5555"
+    environment:
+      # Download limits: how many downloads one computer may have open at
+      # once, how many in total, and the speed of each (bytes per second,
+      # k and m allowed, 0 for none). They keep downloads from filling the
+      # link a remote observer drives the telescope through.
+      ARCSECOND_DOWNLOADS_PER_CLIENT: ${ARCSECOND_DOWNLOADS_PER_CLIENT:-6}
+      ARCSECOND_DOWNLOADS_TOTAL: ${ARCSECOND_DOWNLOADS_TOTAL:-24}
+      ARCSECOND_DOWNLOAD_RATE: ${ARCSECOND_DOWNLOAD_RATE:-20m}
+    volumes:
+      # The same folder, read-only: this container sends the stored files
+      # itself, once the backend has said who may read them.
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        read_only: true
+        bind:
+          create_host_path: true
 
   # >>> arcsecond:alerts
   # Arcsecond transient-alerts consumer (optional).

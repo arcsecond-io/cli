@@ -44,16 +44,20 @@ SERVICES_TO_RECREATE = ["backend", "worker", "beat"]
 
 
 def _services_to_recreate():
-    """The optional alerts consumer joins the recreate list only when the
-    operator's compose file actually carries it — naming an unknown service
-    makes `docker compose up` fail outright on installs without the block."""
+    """The optional alerts consumer, and the data worker of docker-compose.yml
+    7.3 and later, join the recreate list only when the operator's compose
+    file actually carries them — naming an unknown service makes
+    `docker compose up` fail outright on installs without them."""
     services = list(SERVICES_TO_RECREATE)
     compose_path = Path.cwd() / "docker-compose.yml"
     try:
-        if "# >>> arcsecond:alerts" in compose_path.read_text(encoding="utf-8"):
-            services.append("alerts")
+        text = compose_path.read_text(encoding="utf-8")
     except OSError:
-        pass
+        return services
+    if "container_name: arcsecond-dataworker" in text:
+        services.append("dataworker")
+    if "# >>> arcsecond:alerts" in text:
+        services.append("alerts")
     return services
 
 

@@ -19,6 +19,7 @@ def test_every_service_of_the_template_is_read():
         "broker",
         "backend",
         "worker",
+        "dataworker",
         "beat",
         "platesolver",
         "web",

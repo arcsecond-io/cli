@@ -21,6 +21,9 @@ from .utils import _read_env_value as _read_env_value_from
 DB_CONTAINER = "arcsecond-db"
 API_CONTAINER = "arcsecond-api"
 WORKER_CONTAINER = "arcsecond-worker"
+# Since docker-compose.yml 7.3; absent on older installs, which the stop loop
+# and the docker-start fallback both tolerate, as for alerts below.
+DATA_WORKER_CONTAINER = "arcsecond-dataworker"
 BEAT_CONTAINER = "arcsecond-beat"
 WEB_CONTAINER = "arcsecond-web"
 # Optional service: absent on most installs. The stop loop skips it when it
@@ -31,6 +34,7 @@ ALERTS_CONTAINER = "arcsecond-alerts"
 SERVICES_TO_STOP = [
     API_CONTAINER,
     WORKER_CONTAINER,
+    DATA_WORKER_CONTAINER,
     ALERTS_CONTAINER,
     BEAT_CONTAINER,
     WEB_CONTAINER,

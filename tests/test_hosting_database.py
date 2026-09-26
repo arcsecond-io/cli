@@ -328,3 +328,20 @@ def test_failed_recreate_reports_but_keeps_the_new_password(tmp_path, monkeypatc
     # The rotation itself succeeded, so the file must keep the new value.
     assert database._read_env_value("POSTGRES_PASSWORD", env_path) == cluster.password
     assert "password was changed successfully" in result.output
+
+
+def test_the_data_worker_is_recreated_only_where_the_compose_file_has_it(tmp_path, monkeypatch):
+    """docker-compose.yml 7.3 added it; naming it on an older install would
+    make `docker compose up` fail outright."""
+    monkeypatch.chdir(tmp_path)
+    compose = Path(tmp_path) / "docker-compose.yml"
+
+    compose.write_text("services:\n  worker:\n    container_name: arcsecond-worker\n", encoding="utf-8")
+    assert database._services_to_recreate() == ["backend", "worker", "beat"]
+
+    compose.write_text(
+        "services:\n  dataworker:\n    container_name: arcsecond-dataworker\n"
+        "  # >>> arcsecond:alerts\n  alerts:\n  # <<< arcsecond:alerts\n",
+        encoding="utf-8",
+    )
+    assert database._services_to_recreate() == ["backend", "worker", "beat", "dataworker", "alerts"]

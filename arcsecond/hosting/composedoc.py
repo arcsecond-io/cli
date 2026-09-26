@@ -251,6 +251,37 @@ ENV_KEYS: Dict[str, tuple] = {
         "How long a new member may use the installation before verifying their email, "
         "on an installation with no mail server.",
     ),
+    "ARCSECOND_DOWNLOADS_PER_CLIENT": (
+        OPERATOR,
+        "How many downloads one computer may have open at once; past it, the next one is refused with a 429 "
+        "until one finishes. Default 6. Then `arcsecond restart web`.",
+    ),
+    "ARCSECOND_DOWNLOADS_TOTAL": (
+        OPERATOR,
+        "How many downloads the installation serves at once, all computers together. Default 24.",
+    ),
+    "ARCSECOND_DOWNLOAD_RATE": (
+        OPERATOR,
+        "The speed of each download, in bytes per second, `k` and `m` allowed; `0` for no limit. Default `20m`. "
+        "Lower it when the observers work remotely over a link the downloads would otherwise fill.",
+    ),
+    "ARCSECOND_BACKEND_MEMORY": (
+        OPERATOR,
+        "The most memory the backend container may use, e.g. `6g` (the default). Past it, Docker restarts the "
+        "busiest of its processes rather than letting the machine take memory from the database.",
+    ),
+    "ARCSECOND_WORKER_MEMORY": (
+        OPERATOR,
+        "The same ceiling for the worker, which runs the exposures and procedures. Default `6g`.",
+    ),
+    "ARCSECOND_DATA_WORKER_MEMORY": (
+        OPERATOR,
+        "The same ceiling for the data worker: zip archives, previews, storage pushes, backups. Default `3g`.",
+    ),
+    "ARCSECOND_DATA_WORKER_CONCURRENCY": (
+        OPERATOR,
+        "How many jobs the data worker runs at once. Default 2; each can hold a few hundred MB.",
+    ),
 }
 
 
