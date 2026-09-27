@@ -65,6 +65,42 @@ def test_a_refused_token_is_explained_without_docker_words(docker):
     assert "registry" not in result.output.lower()
 
 
+def _login_fails_with(monkeypatch, stderr):
+    def fake_run(cmd, input=None, **kwargs):
+        return subprocess.CompletedProcess(cmd, 1, stdout="", stderr=stderr)
+
+    monkeypatch.setattr(token.subprocess, "run", fake_run)
+
+
+def test_an_uninitialised_pass_store_is_not_a_refused_token(docker, monkeypatch):
+    _login_fails_with(
+        monkeypatch,
+        "Error saving credentials: error storing credentials - err: exit status 1, "
+        'out: `pass not initialized: exit status 1: Error: password store is empty. Try "pass init".`',
+    )
+    result = _invoke("token", "set", input="ghp_good\n")
+    assert result.exit_code == 1
+    assert (
+        "token is good" in result.output
+        and "refused" not in result.output.split("\n")[0]
+    )
+    assert "pass init" in result.output and "gpg --generate-key" in result.output
+    assert "team@arcsecond.io" not in result.output
+
+
+def test_any_other_credential_store_failure_names_the_config(
+    docker, monkeypatch, tmp_path
+):
+    _login_fails_with(
+        monkeypatch,
+        "Error saving credentials: error storing credentials - err: exit status 1, out: `keychain locked`",
+    )
+    result = _invoke("token", "set", input="ghp_good\n")
+    assert result.exit_code == 1
+    assert "token is good" in result.output and "keychain locked" in result.output
+    assert "credsStore" in result.output and "gpg" not in result.output
+
+
 def test_chevrons_and_empty_input_never_reach_docker(docker):
     assert "placeholder" in _invoke("token", "set", input="<ghp_good>\n").output
     assert _invoke("token", "set", "--stdin", input="\n").exit_code == 1

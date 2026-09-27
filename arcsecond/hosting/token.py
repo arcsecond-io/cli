@@ -4,7 +4,8 @@ From the operator's side there is one fact: Arcsecond sent a token, and it
 has to be entered once so the machine can download Arcsecond.local. What it
 is underneath — a login to the container registry the images are pulled
 from, ghcr.io, as the organisation user — is this module's business, not
-theirs, and the words "registry" and "docker" stay out of what they read.
+theirs, and the words "registry" and "docker" stay out of what they read —
+except when Docker's own password store is what failed, which only they can fix.
 
 The token is asked for without echo, or read from standard input for a
 script, and handed to Docker over a pipe. There is deliberately no
@@ -96,13 +97,53 @@ def store_token(token: str) -> None:
         token=token + "\n",
     )
     if result.returncode != 0:
-        detail = (result.stderr or result.stdout or "").strip().splitlines()
+        output = (result.stderr or result.stdout or "").strip()
+        if _is_credential_store_failure(output):
+            raise ArcsecondError(_credential_store_advice(output))
+        detail = output.splitlines()
         reason = detail[-1] if detail else "Docker gave no reason"
         raise ArcsecondError(
             f"The token was refused: {reason}\n"
             "Check it is the token Arcsecond sent your observatory — not an account "
             "password — or ask team@arcsecond.io for a new one."
         )
+
+
+# Docker only saves the credential once the registry has accepted it, so these
+# words mean the token was good and the machine's own keychain failed. Docker
+# Desktop on Linux keeps credentials in `pass`, which is empty until someone
+# runs `pass init` — it says so in its install notes, and nobody reads them.
+_CREDENTIAL_STORE_FAILURES = ("error saving credentials", "error storing credentials")
+
+
+def _is_credential_store_failure(output: str) -> bool:
+    lowered = output.lower()
+    return any(words in lowered for words in _CREDENTIAL_STORE_FAILURES)
+
+
+def _credential_store_advice(output: str) -> str:
+    lowered = output.lower()
+    head = (
+        "The token is good — Arcsecond accepted it — but this machine could not "
+        "save it: Docker keeps it in a password store that refused to write.\n"
+    )
+    if "pass init" in lowered or "pass not initialized" in lowered:
+        return head + (
+            "Docker Desktop on Linux uses `pass`, and it has not been set up yet. "
+            "Set it up once, then run `arcsecond token set` again:\n"
+            "    gpg --generate-key          (any name and e-mail; note the key id it prints)\n"
+            "    pass init <that key id>\n"
+            "Or, if this machine runs Docker Engine without Docker Desktop, remove the "
+            f'"credsStore" line from {docker_config_path()} and Docker will keep the '
+            "token in that file instead."
+        )
+    detail = output.splitlines()[-1] if output else ""
+    return head + (
+        f"It said: {detail}\n"
+        'Unlock or repair that store, or remove the "credsStore" line from '
+        f"{docker_config_path()} so Docker keeps the token in that file, then run "
+        "`arcsecond token set` again."
+    )
 
 
 def prompt_for_token() -> str:
