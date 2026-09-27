@@ -53,21 +53,23 @@ def docker_config_path() -> Path:
 def has_token() -> bool:
     """Whether Docker on this machine holds a credential for the images.
 
-    Docker lists the registry under `auths` in its config even when the secret
-    itself lives in a credential store (Docker Desktop's, the OS keychain), so
-    the key's presence is the answer in the common case. When the config names
-    a store and lists nothing, the store is asked.
+    When the config names a credential store (Docker Desktop's, `pass`, the OS
+    keychain), the store is the truth and is asked: the empty entry Docker
+    leaves under `auths` survives a store being emptied or replaced, and a
+    machine whose `pass` was never initialised can carry one from an older
+    login. Without a store, the secret sits inline under `auths`. Only when
+    the store cannot answer — its helper missing, or waiting on a passphrase
+    prompt nobody sees — does the entry's presence stand in for it.
     """
     try:
         config = json.loads(docker_config_path().read_text(encoding="utf-8") or "{}")
     except (OSError, ValueError):
         return False
     auths = config.get("auths") or {}
-    if any(REGISTRY in key for key in auths):
-        return True
+    entries = [value for key, value in auths.items() if REGISTRY in key]
     store = (config.get("credHelpers") or {}).get(REGISTRY) or config.get("credsStore")
     if not store:
-        return False
+        return any(isinstance(entry, dict) and entry.get("auth") for entry in entries)
     try:
         probe = subprocess.run(
             [f"docker-credential-{store}", "get"],
@@ -78,8 +80,13 @@ def has_token() -> bool:
             timeout=15,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        return bool(entries)
+    if probe.returncode != 0:
         return False
-    return probe.returncode == 0 and REGISTRY_USER in (probe.stdout or "")
+    try:
+        return bool(json.loads(probe.stdout or "{}").get("Secret"))
+    except ValueError:
+        return False
 
 
 def store_token(token: str) -> None:

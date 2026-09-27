@@ -229,6 +229,22 @@ def compose_streaming(
     )
 
 
+REGISTRY_REFUSED = (
+    "Docker could not download an Arcsecond image: the registry refused.\n"
+    "Enter the token Arcsecond gave your observatory:  arcsecond token set"
+)
+REGISTRY_REFUSED_NO_TOKEN = (
+    "Docker could not download an Arcsecond image: this machine has no token "
+    "saved, so it asked without one.\n"
+    "Enter the token Arcsecond gave your observatory:  arcsecond token set\n"
+    'It must answer "Token accepted." before Arcsecond.local can be downloaded.'
+)
+REGISTRY_REFUSED_WITH_TOKEN = (
+    "Docker could not download an Arcsecond image: the token this machine holds "
+    "was refused. It may have expired or been replaced — enter the current one "
+    "with  arcsecond token set,  or ask team@arcsecond.io for a new one."
+)
+
 # The compose failures the troubleshooting page used to explain, matched on
 # the daemon's own words so `start` can answer them on the spot.
 _KNOWN_FAILURES = (
@@ -267,8 +283,7 @@ _KNOWN_FAILURES = (
     ),
     (
         ("denied", "unauthorized", "pull access denied"),
-        "Docker could not download an Arcsecond image: the registry refused.\n"
-        "Enter the token Arcsecond gave your observatory:  arcsecond token set",
+        REGISTRY_REFUSED,
     ),
 )
 
@@ -284,6 +299,17 @@ def explain_compose_failure(stderr: str) -> Optional[str]:
 
 def raise_compose_failure(what: str, result: subprocess.CompletedProcess) -> None:
     explanation = explain_compose_failure(result.stderr)
+    if explanation == REGISTRY_REFUSED:
+        # "Unauthorized" reads the same whether the token is wrong or was never
+        # saved (a password store that could not write it, a first `start`
+        # before `token set`); the two call for different words.
+        from . import token  # token imports this module
+
+        explanation = (
+            REGISTRY_REFUSED_WITH_TOKEN
+            if token.has_token()
+            else REGISTRY_REFUSED_NO_TOKEN
+        )
     lines = [f"`{what}` failed (exit code {result.returncode})."]
     if explanation:
         lines += ["", explanation]

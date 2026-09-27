@@ -7,6 +7,7 @@ import pytest
 from click.testing import CliRunner
 
 from arcsecond import cli
+from arcsecond.errors import ArcsecondError
 from arcsecond.hosting import local, stack, token
 
 
@@ -117,10 +118,59 @@ def test_status_reads_dockers_config(docker, tmp_path):
     result = _invoke("token")
     assert result.exit_code == 1 and "no token yet" in result.output
     (tmp_path / "config.json").write_text(
-        json.dumps({"auths": {"ghcr.io": {}}, "credsStore": "desktop"})
+        json.dumps({"auths": {"ghcr.io": {"auth": "YXJjc2Vjb25kLWlvOng="}}})
     )
     result = _invoke("token")
     assert result.exit_code == 0 and "has the token" in result.output
+
+
+def _store_answers(monkeypatch, tmp_path, config, returncode, stdout=""):
+    monkeypatch.setattr(token, "docker_config_path", lambda: tmp_path / "config.json")
+    (tmp_path / "config.json").write_text(json.dumps(config))
+
+    def fake_run(cmd, input=None, **kwargs):
+        return subprocess.CompletedProcess(cmd, returncode, stdout=stdout)
+
+    monkeypatch.setattr(token.subprocess, "run", fake_run)
+
+
+def test_an_empty_entry_is_not_a_token_when_the_store_holds_nothing(
+    monkeypatch, tmp_path
+):
+    # JB's machine: `pass` never initialised, an `auths` entry left behind.
+    _store_answers(
+        monkeypatch,
+        tmp_path,
+        {"auths": {"ghcr.io": {}}, "credsStore": "desktop"},
+        returncode=1,
+        stdout="credentials not found in native keychain",
+    )
+    assert token.has_token() is False
+
+
+def test_a_token_saved_under_another_username_still_counts(monkeypatch, tmp_path):
+    # Before 4.2 the documentation had people log in under their own name.
+    _store_answers(
+        monkeypatch,
+        tmp_path,
+        {"credsStore": "pass"},
+        returncode=0,
+        stdout=json.dumps({"Username": "jb", "Secret": "x"}),
+    )
+    assert token.has_token() is True
+
+
+def test_a_store_that_cannot_answer_falls_back_on_the_entry(monkeypatch, tmp_path):
+    monkeypatch.setattr(token, "docker_config_path", lambda: tmp_path / "config.json")
+    (tmp_path / "config.json").write_text(
+        json.dumps({"auths": {"ghcr.io": {}}, "credsStore": "pass"})
+    )
+
+    def hangs(cmd, **kwargs):
+        raise subprocess.TimeoutExpired(cmd, 15)
+
+    monkeypatch.setattr(token.subprocess, "run", hangs)
+    assert token.has_token() is True
 
 
 def test_has_token_asks_the_credential_store_when_the_config_lists_nothing(
@@ -148,6 +198,27 @@ def test_start_points_at_the_token_when_the_pull_is_denied():
     assert "arcsecond token set" in stack.explain_compose_failure(
         "pull access denied for ghcr.io/arcsecond-io/arcsecond-api"
     )
+
+
+@pytest.mark.parametrize(
+    "saved, says, never",
+    [
+        (False, "no token saved", "expired"),
+        (True, "was refused", "no token saved"),
+    ],
+)
+def test_start_tells_a_missing_token_from_a_refused_one(
+    monkeypatch, saved, says, never
+):
+    monkeypatch.setattr(token, "has_token", lambda: saved)
+    result = subprocess.CompletedProcess(
+        [], 1, stderr="Error response from daemon: error from registry: unauthorized"
+    )
+    with pytest.raises(ArcsecondError) as excinfo:
+        stack.raise_compose_failure("docker compose up", result)
+    message = str(excinfo.value)
+    assert says in message and never not in message
+    assert "arcsecond token set" in message
 
 
 # --- setup asks for it -----------------------------------------------------------
