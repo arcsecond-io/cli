@@ -11,6 +11,7 @@ class ArcsecondTargetListsResource(ArcsecondAPIEndpoint):
         "id",
         "pk",
         "object",
+        "coordinates",
         "name",
         "identifier",
         "target_class",

@@ -116,9 +116,12 @@ def _plan_manual(
 ) -> "ArcsecondTargetPayloadPlan":
     """The plan for coordinates the user gave us themselves.
 
-    The backend takes manual coordinates only as an 'AstronomicalObject', so
-    that class is assumed here and anything inferred is set aside — with a
-    warning, since silently ignoring what was inferred would be worse.
+    They go as the target's own `coordinates`, which take precedence over the
+    catalogue's — offset or not, the user is assumed right — and need no
+    object: the backend names one after the fact when the catalogue knows the
+    name. Only an 'AstronomicalObject' may carry them, so that class is
+    assumed here and anything inferred is set aside — with a warning, since
+    silently ignoring what was inferred would be worse.
     """
     if user_target_class and user_target_class != TARGET_CLASS_ASTRONOMICAL_OBJECT:
         errors.append(
@@ -142,11 +145,7 @@ def _plan_manual(
         errors.append("Manual coordinates require a target name.")
 
     payload["target_class"] = effective_target_class
-    payload["mode"] = TARGET_MODE_MANUAL
-    payload["object"] = {
-        "name": effective_name or effective_identifier,
-        "equatorial_coordinates": effective_coordinates,
-    }
+    payload["coordinates"] = effective_coordinates
 
     return ArcsecondTargetPayloadPlan(
         payload=payload,

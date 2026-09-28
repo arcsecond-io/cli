@@ -13,11 +13,14 @@ def test_plan_target_payload_uses_manual_astroobject_when_coordinates_are_provid
     assert plan.target_class == "AstronomicalObject"
     assert plan.mode == "manual"
     assert plan.payload["target_class"] == "AstronomicalObject"
-    assert plan.payload["mode"] == "manual"
-    assert plan.payload["object"]["equatorial_coordinates"] == {
+    # The user's coordinates are the target's own; no object is sent, the
+    # backend names one when the catalogue knows the name.
+    assert plan.payload["coordinates"] == {
         "right_ascension": 344.366,
         "declination": 20.768,
     }
+    assert "mode" not in plan.payload
+    assert "object" not in plan.payload
     assert "ignored" in plan.warnings[0]
 
 
