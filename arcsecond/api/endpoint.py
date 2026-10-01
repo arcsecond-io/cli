@@ -8,7 +8,16 @@ from arcsecond.api.constants import API_AUTH_PATH_VERIFY, API_AUTH_PATH_VERIFY_P
 from arcsecond.errors import ArcsecondError
 
 SAFE_METHODS = ["GET", "OPTIONS"]
-WRITABLE_MEMBERSHIPS = ["superadmin", "admin", "member"]
+
+# The portal roles allowed to write. Both "owner" and "superadmin" are listed
+# because they are the same role: the backend renamed "superadmin" to "owner",
+# and this tool talks to installations on either side of that update.
+# Observatories update the tool independently of their installation, so a
+# freshly updated tool can still be pointed at an installation that has not
+# been updated yet and answers "superadmin".
+#
+# "superadmin" can go once no supported installation predates the rename.
+WRITABLE_MEMBERSHIPS = ["owner", "superadmin", "admin", "member"]
 
 
 class ArcsecondAPIEndpoint(object):

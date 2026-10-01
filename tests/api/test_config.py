@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from arcsecond.api.config import CONFIG_DIR_ENV_VAR, ArcsecondConfig
+from arcsecond.api.endpoint import WRITABLE_MEMBERSHIPS
 from arcsecond.errors import ArcsecondError
 from arcsecond.options import State
 from tests.utils import random_string, save_test_credentials
@@ -145,11 +146,22 @@ def test_config_memberships():
     config = ArcsecondConfig(api_name=random_api_name)
     assert config.memberships == {}
     ms = [
-        {"organisation": "oma", "role": "superadmin"},
+        {"organisation": "oma", "role": "owner"},
         {"organisation": "arcsecond", "role": "member"},
     ]
     config.save_memberships(ms)
-    assert config.memberships == {"oma": "superadmin", "arcsecond": "member"}
+    assert config.memberships == {"oma": "owner", "arcsecond": "member"}
+
+
+def test_owner_membership_is_writable():
+    assert "owner" in WRITABLE_MEMBERSHIPS
+
+
+def test_superadmin_membership_is_still_writable():
+    # An installation that predates the rename of "superadmin" to "owner"
+    # still answers with the old name, and the tool must keep treating it as
+    # the same role until no supported installation does.
+    assert "superadmin" in WRITABLE_MEMBERSHIPS
 
 
 def test_config_access_key():
@@ -192,10 +204,8 @@ def test_default_logged_in_state():
 def test_default_logged_in_with_membership_state():
     random_api_name = random_string()
     save_test_credentials(
-        random_api_name, "cedric", [{"organisation": "saao", "role": "superadmin"}]
+        random_api_name, "cedric", [{"organisation": "saao", "role": "owner"}]
     )
     assert ArcsecondConfig(api_name=random_api_name).is_logged_in is True
     assert ArcsecondConfig(api_name=random_api_name).username == "cedric"
-    assert ArcsecondConfig(api_name=random_api_name).memberships == {
-        "saao": "superadmin"
-    }
+    assert ArcsecondConfig(api_name=random_api_name).memberships == {"saao": "owner"}
