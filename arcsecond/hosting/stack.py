@@ -255,8 +255,8 @@ _KNOWN_FAILURES = (
             "port is already allocated",
         ),
         "A port Arcsecond.local needs is taken by something else on this machine.\n"
-        f"Port {WEB_PORT} is the web interface and {API_PORT} the API; 8900 is the plate "
-        "solver. Find what holds it (`netstat -ano | findstr :PORT` on Windows, "
+        f"Port {WEB_PORT} is the web interface and {API_PORT} the API. "
+        "Find what holds it (`netstat -ano | findstr :PORT` on Windows, "
         "`lsof -i :PORT` elsewhere) and stop it, or check with `docker ps` for a "
         "container left over from an older installation.",
     ),

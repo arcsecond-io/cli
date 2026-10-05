@@ -31,12 +31,12 @@ def test_facts_are_read_where_the_template_states_them():
     s = _services()
     assert s["backend"].container_name == "arcsecond-api"
     assert s["backend"].image.startswith("ghcr.io/arcsecond-io/arcsecond-api")
-    assert s["backend"].ports == ["8800:8800"]
+    assert s["backend"].ports == ["127.0.0.1:8800:8800"]  # this machine only
     assert s["backend"].depends_on == ["db", "broker"]
     assert s["backend"].healthcheck is True
     assert s["backend"].stop_grace_period == "60s"
     assert "SHARED_DATA_PATH" in s["backend"].env_vars
-    assert s["platesolver"].ports == ["8900:8900"]  # the inline-list form
+    assert s["platesolver"].ports == []  # reached over the Docker network only
     assert s["web"].ports == ["5555:5555"]
     assert s["worker"].depends_on == ["backend"]  # the mapping form with a condition
     assert s["db"].ports == [] and s["broker"].ports == []

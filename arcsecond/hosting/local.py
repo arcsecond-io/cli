@@ -560,6 +560,12 @@ def _offer_token():
     click.echo(click.style("Token accepted.", fg="green"))
 
 
+def _offer_sky_map(env_path, flag):
+    from . import skybrightness
+
+    skybrightness.offer(env_path, flag=flag, interactive=_stdin_is_interactive())
+
+
 def _normalise_lan_host(value):
     """`192.168.1.42` → `192.168.1.42:5555`; a scheme or a path is refused."""
     value = (value or "").strip()
@@ -592,8 +598,15 @@ def _normalise_lan_host(value):
     "192.168.1.42 or arcsecond.local). Needed for invitation and "
     "password-reset links to work from other computers. Port defaults to 5555.",
 )
+@click.option(
+    "--with-sky-map/--without-sky-map",
+    "with_sky_map",
+    default=None,
+    help="Keep (or not) a copy of the sky-brightness map on this machine, "
+    "without prompting. With a copy, no outside lookup is made for it.",
+)
 @basic_options
-def setup(with_alerts, lan_host):
+def setup(with_alerts, lan_host, with_sky_map):
     """Write (or update) the two files an installation is made of, in the
     current folder: .env, with this installation's secrets, and
     docker-compose.yml — and ask for the access token Arcsecond gave your
@@ -632,6 +645,7 @@ def setup(with_alerts, lan_host):
     remember_install_dir(directory)
     _register_local_api()
     _offer_token()
+    _offer_sky_map(env_path, with_sky_map)
 
     if "alerts" in enabled:
         click.echo(

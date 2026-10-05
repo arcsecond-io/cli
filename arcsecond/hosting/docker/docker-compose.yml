@@ -1,6 +1,6 @@
 # === Arcsecond.local config. ===
 # *** DO NOT change any name or port number. ***
-# Version 7.3
+# Version 7.4
 
 services:
   # Database (PostgresQL)
@@ -33,8 +33,12 @@ services:
     container_name: arcsecond-api
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-server.sh
+    # This machine only. Browsers and other computers go through the webapp's
+    # port, which serves the very same API under /api/; 8800 is for the
+    # `arcsecond` command and scripts run on this computer. Published on every
+    # interface, it was a second, unneeded door onto the network.
     ports:
-      - "8800:8800"
+      - "127.0.0.1:8800:8800"
     depends_on:
       - db
       - broker
@@ -138,7 +142,8 @@ services:
     image: ghcr.io/arcsecond-io/arcsecond-service-platesolver-astrometry:latest
     container_name: arcsecond-platesolver
     restart: unless-stopped
-    ports: [ "8900:8900" ]
+    # No host port. Only the backend calls the solver, over the internal Docker
+    # network; it has no authentication and nothing outside the stack needs it.
 
   # Arcsecond webapp. Served on 5555 only: a self-hosted install is
   # organisation-based and therefore always a portal, so the second port that
@@ -172,8 +177,9 @@ services:
 
   # >>> arcsecond:alerts
   # Arcsecond transient-alerts consumer (optional).
-  # Long-lived Kafka client for NASA GCN. Outbound TLS to kafka.gcn.nasa.gov
-  # and auth.gcn.nasa.gov only — nothing listens. Requires GCN_CONSUMER_CLIENT_ID /
+  # Long-lived Kafka client for NASA GCN. Outbound TLS only — nothing listens:
+  # auth.gcn.nasa.gov on 443, then kafka, kafka1, kafka2 and
+  # kafka3.gcn.nasa.gov on 9092. Requires GCN_CONSUMER_CLIENT_ID /
   # GCN_CONSUMER_CLIENT_SECRET in .env; idles harmlessly when they are absent.
   # Single instance only — do not scale it.
   alerts:

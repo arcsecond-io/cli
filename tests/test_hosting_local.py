@@ -14,6 +14,7 @@ def _stub_env_generators(monkeypatch):
     )
     monkeypatch.setattr(local, "prompt_shared_data_path", lambda: "/tmp/shared-data")
     monkeypatch.setattr(local, "_offer_token", lambda: None)
+    monkeypatch.setattr(local, "_offer_sky_map", lambda env_path, flag: None)
 
 
 def _packaged_compose_text():

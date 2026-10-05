@@ -241,6 +241,12 @@ ENV_KEYS: Dict[str, tuple] = {
         "Comma-separated origins, scheme included, to trust besides private-network addresses — a public domain, "
         "a Tailscale name. Not needed for a LAN address.",
     ),
+    "SKY_BRIGHTNESS_GEOTIFF_PATH": (
+        SETUP,
+        "Where the backend finds the sky-brightness map kept on this machine (a path under `/data`). "
+        "Empty: the map is looked up on statics.arcsecond.io instead. Change the answer with "
+        "`arcsecond setup --with-sky-map` or `--without-sky-map`.",
+    ),
     "LIVE_IMAGE_PROXY_URL": (
         BACKEND,
         "Where the backend reaches the live-image proxy for cameras. Default http://host.docker.internal:8765; "

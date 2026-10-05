@@ -439,6 +439,31 @@ def check_ports(host: Host, expect_listening: bool) -> List[Finding]:
                     data={"bound": []},
                 )
             )
+        elif port == stack.API_PORT and all(bound_to_loopback(h) for h in hosts):
+            # Where the packaged compose file puts it since 7.4: the API port
+            # is for this machine, and the network reaches the same API
+            # through the web interface's port, under /api/.
+            findings.append(
+                Finding(
+                    f"ports.{port}",
+                    f"Port {port} ({name})",
+                    OK,
+                    f"bound to {', '.join(hosts)} — this machine only, as intended",
+                    data={"bound": hosts},
+                )
+            )
+        elif port == stack.API_PORT and any(bound_everywhere(h) for h in hosts):
+            findings.append(
+                Finding(
+                    f"ports.{port}",
+                    f"Port {port} ({name})",
+                    WARN,
+                    "listening on every interface — the network does not need it: "
+                    f"other computers reach the API through port {stack.WEB_PORT}, under /api/",
+                    fix="`arcsecond update` restores the packaged mapping, which keeps this port to this machine",
+                    data={"bound": hosts},
+                )
+            )
         elif any(bound_everywhere(h) for h in hosts):
             findings.append(
                 Finding(

@@ -197,6 +197,24 @@ def test_a_loopback_bound_port_is_the_failure_it_is(install):
     assert "this machine alone" in findings["ports.5555"].detail
 
 
+def test_the_api_port_belongs_to_this_machine(install):
+    """Since compose 7.4 the API is published on the loopback: that is the
+    packaged state, not a fault. Only the web interface must face the network."""
+    host = FakeHost(sockets=[("*", 5555), ("127.0.0.1", 8800)], http=HEALTHY)
+    findings = _by_key(check.run_checks(install, host))
+    assert findings["ports.8800"].status == check.OK
+    assert "this machine only" in findings["ports.8800"].detail
+
+
+def test_an_api_port_open_to_the_network_is_worth_a_word(install):
+    """An install whose compose file predates 7.4, or was edited: it works,
+    and it leaves a door open that nothing needs."""
+    host = FakeHost(sockets=[("*", 5555), ("*", 8800)], http=HEALTHY)
+    findings = _by_key(check.run_checks(install, host))
+    assert findings["ports.8800"].status == check.WARN
+    assert "arcsecond update" in findings["ports.8800"].fix
+
+
 def test_nothing_listening_is_a_failure_only_when_containers_run(install, monkeypatch):
     findings = _by_key(check.run_checks(install, FakeHost(sockets=[], http={})))
     assert findings["ports.5555"].status == check.FAIL
