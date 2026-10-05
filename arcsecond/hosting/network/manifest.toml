@@ -1,0 +1,613 @@
+# The network manifest of Arcsecond.local.
+#
+# Every connection an installation makes or accepts, one entry each. This file
+# is the single source: the network sheet handed to an administrator is
+# generated from it, `arcsecond doctor` tests what it lists, and a guard in
+# continuous integration fails when the running stack contacts a destination
+# that is not here. Nothing about the network is to be written anywhere else
+# by hand.
+#
+# Established by the audit of 2026-10-05 (packet capture of a fresh stack, and
+# a reading of the code). `evidence` says which: "captured" was seen on the
+# wire, "code" was read in the source and not exercised.
+#
+# The text fields are read by administrators: plain sentences, no acronyms.
+#
+# Fields of a [[destination]]:
+#   id            stable identifier
+#   from          who opens the connection: "stack" (the containers),
+#                 "browser" (the user's workstation), "tool" (the arcsecond
+#                 command on the host), "docker" (image downloads)
+#   direction     "outbound" or "local-network" (never leaves the site)
+#   names         host names; empty when the administrator chooses the server
+#   port          destination port
+#   transport     "tcp" or "udp"
+#   encrypted     true when protected by transport layer security
+#   need          "required", "recommended" or "optional"
+#   enabled_by    what turns it on; "always" for a default installation
+#   purpose       one plain sentence
+#   feature       what a person does that triggers it
+#   frequency     when, and how often
+#   data_sent     categories that leave
+#   without_it    what stops working
+#   proxy         "yes", "no" or "untested"
+#   test          how doctor checks it: "handshake", "connect" or "none"
+#   evidence      "captured" or "code"
+
+version = 1
+audited = "2026-10-05"
+
+# What never leaves the site, whatever is configured below.
+never_sent = [
+    "images and data files",
+    "night logs, sessions and observing conditions",
+    "equipment configuration and instrument state",
+    "accounts, passwords and access keys of the installation's users",
+    "usage statistics, error reports or any other telemetry",
+]
+
+# ---------------------------------------------------------------------------
+# Listening ports on the machine running Arcsecond.local
+# ---------------------------------------------------------------------------
+
+[[listening]]
+id = "web"
+port = 5555
+bound_to = "every interface"
+encrypted = false
+purpose = "The application itself: pages, programming interface under /api/, live streams, file downloads, bundled documentation."
+reached_by = "browsers and scripts on the local network"
+
+[[listening]]
+id = "api-local"
+port = 8800
+bound_to = "this machine only"
+encrypted = false
+purpose = "The programming interface, for the arcsecond command and scripts run on the machine itself."
+reached_by = "this machine"
+
+[[listening]]
+id = "live-image-proxy"
+port = 8765
+bound_to = "every interface"
+encrypted = false
+optional = true
+purpose = "Relays webcam and all-sky camera images to the installation. Runs only when cameras are registered."
+reached_by = "the installation, and browsers on the local network"
+
+# ---------------------------------------------------------------------------
+# Outbound, from the installation — always on
+# ---------------------------------------------------------------------------
+
+[[destination]]
+id = "licensing"
+from = "stack"
+direction = "outbound"
+names = ["licensing.arcsecond.io"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "required"
+enabled_by = "always"
+purpose = "Activates the installation and checks its licence."
+feature = "Verifying the owner's email address; then automatic."
+frequency = "At every start, once a day, and when the owner activates."
+data_sent = ["the owner's email address", "a hashed identifier of the machine", "the licence key", "the verification code typed by the owner"]
+without_it = "A new installation cannot be activated. An activated one keeps running."
+proxy = "yes"
+test = "handshake"
+evidence = "captured"
+
+[[destination]]
+id = "catalogue-exoplanets"
+from = "stack"
+direction = "outbound"
+names = ["exoplanetarchive.ipac.caltech.edu"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "always"
+purpose = "NASA Exoplanet Archive: planets and their transits."
+feature = "Automatic refresh; looking up a planet by name."
+frequency = "At first start, then once a day."
+data_sent = ["catalogue queries", "planet names being looked up"]
+without_it = "No exoplanet or transit data."
+proxy = "yes"
+test = "handshake"
+evidence = "captured"
+
+[[destination]]
+id = "catalogue-microlensing"
+from = "stack"
+direction = "outbound"
+names = ["ogle.astrouw.edu.pl"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "always"
+purpose = "Optical Gravitational Lensing Experiment: current microlensing candidates."
+feature = "Automatic refresh."
+frequency = "At first start, then once a day."
+data_sent = []
+without_it = "No microlensing candidate list."
+proxy = "yes"
+test = "handshake"
+evidence = "captured"
+
+[[destination]]
+id = "catalogue-minor-planets"
+from = "stack"
+direction = "outbound"
+names = ["minorplanetcenter.net", "cgi.minorplanetcenter.net"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "always"
+purpose = "Minor Planet Center: near-Earth objects awaiting confirmation, and where to point for them."
+feature = "Automatic refresh; opening one candidate."
+frequency = "At every start, then every 10 minutes."
+data_sent = ["object designations", "the observing site's position, when one candidate's path is computed"]
+without_it = "The list of near-Earth object candidates goes stale."
+proxy = "yes"
+test = "handshake"
+evidence = "captured"
+
+[[destination]]
+id = "catalogue-satellites"
+from = "stack"
+direction = "outbound"
+names = ["celestrak.org"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "always"
+purpose = "Celestrak: orbits of satellites, to predict their passes through a field."
+feature = "Automatic refresh; looking up one satellite."
+frequency = "At first start, then once a day."
+data_sent = ["satellite numbers or group names"]
+without_it = "No satellite tracks."
+proxy = "yes"
+test = "handshake"
+evidence = "captured"
+
+[[destination]]
+id = "catalogue-objects"
+from = "stack"
+direction = "outbound"
+names = ["simbad.cds.unistra.fr"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "always"
+purpose = "SIMBAD, Strasbourg astronomical data centre: names and coordinates of celestial objects."
+feature = "Adding a target by name; receiving a new image, to name what it shows."
+frequency = "On each lookup, on each new image that carries coordinates, and once a day."
+data_sent = ["object names", "the sky coordinates an image was pointed at"]
+without_it = "Targets and images are not named automatically. Images are still recorded."
+proxy = "yes"
+test = "handshake"
+evidence = "captured"
+
+[[destination]]
+id = "time-zones"
+from = "stack"
+direction = "outbound"
+names = ["timezonedb.com"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "always"
+purpose = "Refreshes the table of time zones. A copy ships with the installation."
+feature = "Automatic."
+frequency = "Once a week."
+data_sent = []
+without_it = "The time-zone table stays as shipped."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "sky-brightness"
+from = "stack"
+direction = "outbound"
+names = ["statics.arcsecond.io"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "always, unless setup downloaded the map to this machine"
+purpose = "Reads how dark the sky is at a site, out of a map kept by Arcsecond."
+feature = "Showing an observing site; clicking on the light-pollution map."
+frequency = "Once per site position after each start."
+data_sent = ["which part of the map is read, which reveals the site's approximate position"]
+without_it = "No sky-darkness value. Avoided entirely with the local copy offered by setup."
+proxy = "yes"
+test = "handshake"
+evidence = "captured"
+
+# ---------------------------------------------------------------------------
+# Outbound, from the installation — when someone asks
+# ---------------------------------------------------------------------------
+
+[[destination]]
+id = "ephemerides"
+from = "stack"
+direction = "outbound"
+names = ["ssd.jpl.nasa.gov", "ssd-api.jpl.nasa.gov"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "always"
+purpose = "Jet Propulsion Laboratory: positions of comets and asteroids, and their names."
+feature = "Pointing at, or searching for, a comet or an asteroid."
+frequency = "On demand."
+data_sent = ["object designations", "the observing site's position"]
+without_it = "Comets and asteroids cannot be found by name or pointed at."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "finding-charts"
+from = "stack"
+direction = "outbound"
+names = ["skyview.gsfc.nasa.gov"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "always"
+purpose = "NASA SkyView: a picture of the sky around a target."
+feature = "Creating a target; opening its finding charts."
+frequency = "On demand."
+data_sent = ["the target's sky coordinates"]
+without_it = "No ready-made finding chart."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "publications"
+from = "stack"
+direction = "outbound"
+names = ["scixplorer.org"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "a user saving their own access token for the service"
+purpose = "Science Explorer: published papers about a target."
+feature = "Opening the publications of a target."
+frequency = "On demand."
+data_sent = ["the user's own token for that service", "the target's name"]
+without_it = "No publication list."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "earth-rotation"
+from = "stack"
+direction = "outbound"
+names = ["datacenter.iers.org", "maia.usno.navy.mil", "hpiers.obspm.fr", "data.iana.org"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "always"
+purpose = "Earth rotation and leap-second tables, for precise sidereal time. A copy ships with the installation."
+feature = "Automatic, and only once the shipped copy is more than a month old."
+frequency = "Rare."
+data_sent = []
+without_it = "The shipped tables are used."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+# ---------------------------------------------------------------------------
+# Outbound, from the installation — only when the administrator sets it up
+# ---------------------------------------------------------------------------
+
+[[destination]]
+id = "alerts-sign-in"
+from = "stack"
+direction = "outbound"
+names = ["auth.gcn.nasa.gov"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "the transient-alerts service, with credentials from NASA in the configuration file"
+purpose = "NASA General Coordinates Network: signs the alert receiver in."
+feature = "Receiving transient alerts."
+frequency = "At start, then at each renewal of the session."
+data_sent = ["the installation's own credentials for the network"]
+without_it = "No alerts from the network. Alerts from other sources still work."
+proxy = "untested"
+test = "handshake"
+evidence = "captured"
+
+[[destination]]
+id = "alerts-feed"
+from = "stack"
+direction = "outbound"
+names = ["kafka.gcn.nasa.gov", "kafka1.gcn.nasa.gov", "kafka2.gcn.nasa.gov", "kafka3.gcn.nasa.gov"]
+port = 9092
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "the transient-alerts service, with credentials from NASA in the configuration file"
+purpose = "NASA General Coordinates Network: the alerts themselves, over a connection kept open."
+feature = "Receiving transient alerts."
+frequency = "Continuous while the service runs."
+data_sent = ["a subscriber identifier derived from the machine", "acknowledgements of what was received"]
+without_it = "No alerts from the network."
+proxy = "no"
+test = "handshake"
+evidence = "captured"
+
+[[destination]]
+id = "weather-forecast"
+from = "stack"
+direction = "outbound"
+names = ["api.tomorrow.io"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "a Tomorrow.io key in the configuration file"
+purpose = "Weather forecast for each observing site."
+feature = "Forecast panels."
+frequency = "Every 5 minutes per site."
+data_sent = ["the observing site's position and time zone", "the key"]
+without_it = "No forecast. Weather read from the observatory's own station is unaffected."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "transient-names"
+from = "stack"
+direction = "outbound"
+names = ["www.wis-tns.org"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "Transient Name Server credentials in the configuration file"
+purpose = "Transient Name Server: looks up and imports reported transients."
+feature = "Importing a transient by name."
+frequency = "On demand."
+data_sent = ["the credentials", "transient names"]
+without_it = "No import from the Transient Name Server."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "attached-storage"
+from = "stack"
+direction = "outbound"
+names = []
+port = 0
+transport = "tcp"
+encrypted = false
+need = "optional"
+enabled_by = "an administrator attaching a storage"
+purpose = "Copies data files and database backups to a storage the observatory chose: a network share (445), secure file transfer (22), file transfer (21), or a cloud bucket (443)."
+feature = "Attached storages."
+frequency = "Every 2 minutes for new files; once an hour for backups."
+data_sent = ["data files and database backups, to the server the administrator named, and nowhere else"]
+without_it = "Files stay on the installation's own disk."
+proxy = "untested"
+test = "none"
+evidence = "code"
+
+[[destination]]
+id = "outgoing-mail"
+from = "stack"
+direction = "outbound"
+names = []
+port = 587
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "an administrator entering the observatory's mail server"
+purpose = "Sends invitations and password resets through the observatory's own mail server (587, 465 or 25, as configured)."
+feature = "Inviting a member; resetting a password."
+frequency = "On demand."
+data_sent = ["the messages themselves, to the observatory's mail server"]
+without_it = "No email is sent. Members are added with a password instead."
+proxy = "no"
+test = "none"
+evidence = "code"
+
+# ---------------------------------------------------------------------------
+# Outbound, at installation and update only
+# ---------------------------------------------------------------------------
+
+[[destination]]
+id = "software-images"
+from = "docker"
+direction = "outbound"
+names = ["ghcr.io", "pkg-containers.githubusercontent.com"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "required"
+enabled_by = "installing or updating"
+purpose = "Downloads Arcsecond.local itself."
+feature = "arcsecond start, the first time; arcsecond update."
+frequency = "At installation and at each update."
+data_sent = ["the observatory's download credential"]
+without_it = "No installation and no update. A running installation is unaffected."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "software-images-base"
+from = "docker"
+direction = "outbound"
+names = ["registry-1.docker.io", "auth.docker.io", "production.cloudflare.docker.com"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "required"
+enabled_by = "installing or updating"
+purpose = "Downloads the database and the message broker the installation runs on."
+feature = "arcsecond start, the first time; arcsecond update."
+frequency = "At installation and at each update."
+data_sent = []
+without_it = "No installation and no update. A running installation is unaffected."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "tool-updates"
+from = "tool"
+direction = "outbound"
+names = ["pypi.org", "files.pythonhosted.org"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "the administrator upgrading the arcsecond command"
+purpose = "Downloads a new version of the arcsecond command."
+feature = "pip install --upgrade arcsecond."
+frequency = "When the administrator decides."
+data_sent = []
+without_it = "The command stays at its version."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+# ---------------------------------------------------------------------------
+# Outbound, from the user's browser
+# ---------------------------------------------------------------------------
+
+[[destination]]
+id = "browser-maps"
+from = "browser"
+direction = "outbound"
+names = ["server.arcgisonline.com", "tile.openstreetmap.org", "global.ssl.fastly.net", "api.maptiler.com"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "always"
+purpose = "Map backgrounds, loaded by the browser from the map provider chosen in the map's menu."
+feature = "Any map: observing sites, the site editor."
+frequency = "While a map is on screen."
+data_sent = ["which map tiles are shown, which reveals the area being looked at"]
+without_it = "Maps have no background."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "browser-sky"
+from = "browser"
+direction = "outbound"
+names = ["alasky.cds.unistra.fr", "alaskybis.cds.unistra.fr", "alasky.unistra.fr", "skyview.gsfc.nasa.gov"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "recommended"
+enabled_by = "always"
+purpose = "Sky survey pictures, loaded by the browser for the interactive sky views. A survey picked by hand may be served from another public archive."
+feature = "Night Studio sky views, finding charts, target suggestions."
+frequency = "While a sky view is on screen."
+data_sent = ["the sky coordinates and field being looked at"]
+without_it = "Sky views are empty."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+[[destination]]
+id = "browser-arcsecond-statics"
+from = "browser"
+direction = "outbound"
+names = ["statics.arcsecond.io"]
+port = 443
+transport = "tcp"
+encrypted = true
+need = "optional"
+enabled_by = "always"
+purpose = "The light-pollution layer of the maps, and a few illustrations, kept by Arcsecond."
+feature = "The light-pollution map layer; the About page and the layout preferences."
+frequency = "While those are on screen."
+data_sent = ["which map tiles are shown"]
+without_it = "No light-pollution layer; a few pictures missing."
+proxy = "yes"
+test = "handshake"
+evidence = "code"
+
+# ---------------------------------------------------------------------------
+# Local network — never leaves the site
+# ---------------------------------------------------------------------------
+
+[[destination]]
+id = "instruments"
+from = "stack"
+direction = "local-network"
+names = []
+port = 0
+transport = "tcp"
+encrypted = false
+need = "required"
+enabled_by = "registering equipment"
+purpose = "Drives telescopes, domes, cameras and weather stations that speak ASCOM Alpaca, at the addresses the observatory enters."
+feature = "The Control Room."
+frequency = "Continuous: state is read every 30 seconds, weather every 10."
+data_sent = ["commands to the instruments, and their answers"]
+without_it = "No instrument control."
+proxy = "no"
+test = "none"
+evidence = "captured"
+
+[[destination]]
+id = "instrument-discovery"
+from = "stack"
+direction = "local-network"
+names = []
+port = 32227
+transport = "udp"
+encrypted = false
+need = "optional"
+enabled_by = "always"
+purpose = "Asks the local network which ASCOM Alpaca instruments are present."
+feature = "The discovery button when registering equipment."
+frequency = "On demand."
+data_sent = ["a fixed discovery message"]
+without_it = "Instruments are registered by typing their address."
+proxy = "no"
+test = "none"
+evidence = "code"
+
+[[destination]]
+id = "cameras"
+from = "tool"
+direction = "local-network"
+names = []
+port = 554
+transport = "tcp"
+encrypted = false
+need = "optional"
+enabled_by = "registering a webcam or an all-sky camera"
+purpose = "Reads the pictures of webcams and all-sky cameras on the local network (554, 80 or 443, as the camera requires)."
+feature = "Webcam and all-sky panels."
+frequency = "While a camera is watched or recorded."
+data_sent = ["the camera's own sign-in, to the camera"]
+without_it = "No camera pictures."
+proxy = "no"
+test = "none"
+evidence = "code"
