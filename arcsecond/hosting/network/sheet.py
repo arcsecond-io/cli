@@ -348,6 +348,9 @@ def render_firewall_request(manifest: Manifest) -> str:
 PAGE = "index.md"
 PRINTABLE = "network-sheet.html"
 REQUEST = "firewall-request.txt"
+# Printed from PRINTABLE when the documentation is deployed
+# (scripts/network-sheet-pdf.mjs in the documentation repository).
+PDF = "arcsecond-local-network-sheet.pdf"
 STATIC_ADDRESS = "/network"  # where the documentation site serves the two files below
 
 
@@ -356,8 +359,8 @@ def generate_page(manifest: Manifest) -> dict:
     also = [
         "## To print, and to paste",
         "",
-        f"- [The same sheet on one printable page]({STATIC_ADDRESS}/{PRINTABLE}) "
-        "(print it, or save it as a PDF, from your browser).",
+        f"- [The same sheet as a one-page PDF]({STATIC_ADDRESS}/{PDF}).",
+        f"- [The same sheet on one printable page]({STATIC_ADDRESS}/{PRINTABLE}), to print from your browser.",
         f"- [The request to send to whoever runs your firewall]({STATIC_ADDRESS}/{REQUEST}), as plain text.",
         "",
     ]
