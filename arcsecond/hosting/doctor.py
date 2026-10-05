@@ -1,4 +1,4 @@
-"""`arcsecond check`: is this installation reachable, and if not, why not.
+"""`arcsecond doctor`: is this installation reachable, and if not, why not.
 
 The failure this exists for is invisible from where the operator sits: the
 page does not load from the laptop, and nothing anywhere says why. The
@@ -16,18 +16,32 @@ the rules, not from probing, and says so.
 prints it otherwise. It never changes the network profile: that changes what
 every other program on the machine is exposed to, and is the operator's call.
 `--json` is for pasting into a support conversation.
+
+It also looks outward. Every destination the network manifest declares
+(`network/manifest.toml`) is probed from this machine — name, connection,
+encrypted handshake, certificate, and the clock against one reference — and
+each failure comes with the sentence to send to whoever runs the firewall.
+The probes carry nothing about the observatory. `--report` writes the whole
+result to a dated file for an administrator's ticket, with the local
+network's addresses left out unless `--show-local` asks for them.
+
+Exit code: 0 when everything required works, 1 when only an optional
+destination is out of reach, 2 when something required fails.
 """
 
 import ctypes
 import json
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 
 import click
@@ -239,6 +253,21 @@ class Host:
             return e.code
         except (urllib.error.URLError, OSError, ValueError):
             return None
+
+    def free_bytes(self, path: str) -> Optional[int]:
+        try:
+            return shutil.disk_usage(path).free
+        except OSError:
+            return None
+
+    def host_name(self) -> str:
+        return socket.gethostname()
+
+    def outbound_findings(self) -> List["Finding"]:
+        from . import network
+        from .network import outbound
+
+        return outbound.check_destinations(network.load())
 
     def is_admin(self) -> bool:
         if self.platform != "win32":
@@ -644,6 +673,93 @@ def check_proxy() -> List[Finding]:
     return findings
 
 
+DISK_WARN_GB = 20
+DISK_FAIL_GB = 2
+
+
+def check_disk(install, host: "Host") -> Finding:
+    """Images fill a disk quietly, and a full one stops the database."""
+    shared = install.read_env("SHARED_DATA_PATH")
+    if not shared:
+        return Finding("disk", "Disk space", SKIP, "no SHARED_DATA_PATH in .env")
+    free = host.free_bytes(shared)
+    if free is None:
+        return Finding("disk", "Disk space", SKIP, "the data folder does not exist yet")
+    gigabytes = free / 1e9
+    detail = f"{gigabytes:.0f} GB free where the data is kept"
+    if gigabytes < DISK_FAIL_GB:
+        return Finding(
+            "disk",
+            "Disk space",
+            FAIL,
+            detail,
+            fix="Free some space, or move the data folder to a larger disk.",
+        )
+    if gigabytes < DISK_WARN_GB:
+        return Finding("disk", "Disk space", WARN, detail)
+    return Finding("disk", "Disk space", OK, detail)
+
+
+def check_privileges(install, host: "Host") -> Finding:
+    """What the containers are allowed to do on this machine: the question a
+    security review asks first."""
+    try:
+        names = [
+            row.get("Name") for row in stack.services_status(install) if row.get("Name")
+        ]
+    except ArcsecondError:
+        names = []
+    if not names:
+        return Finding(
+            "privileges", "Container privileges", SKIP, "no container to inspect"
+        )
+    result = host.run(
+        [
+            "docker",
+            "inspect",
+            "--format",
+            "{{.Name}}|{{.HostConfig.Privileged}}|{{json .HostConfig.CapAdd}}|{{.HostConfig.NetworkMode}}|{{.Config.User}}",
+            *names,
+        ]
+    )
+    if result is None or result.returncode != 0:
+        return Finding(
+            "privileges",
+            "Container privileges",
+            SKIP,
+            "could not inspect the containers",
+        )
+    rows = [
+        line.split("|") for line in result.stdout.splitlines() if line.count("|") == 4
+    ]
+    privileged = [r[0].lstrip("/") for r in rows if r[1] == "true"]
+    capabilities = [r[0].lstrip("/") for r in rows if r[2] not in ("null", "[]")]
+    on_host_network = [r[0].lstrip("/") for r in rows if r[3] == "host"]
+    as_root = [r[0].lstrip("/") for r in rows if r[4] in ("", "0", "root")]
+    data = {
+        "privileged": privileged,
+        "added_capabilities": capabilities,
+        "host_network": on_host_network,
+        "run_as_root_inside": as_root,
+    }
+    worries = privileged + capabilities + on_host_network
+    if worries:
+        return Finding(
+            "privileges",
+            "Container privileges",
+            WARN,
+            f"{', '.join(sorted(set(worries)))} run with more than the packaged configuration grants",
+            fix="`arcsecond update` restores the packaged configuration",
+            data=data,
+        )
+    detail = f"{len(rows)} containers: none privileged, none on the machine's own network, no added capability"
+    if as_root:
+        data["note"] = (
+            f"{len(as_root)} of them run as root inside their container: {', '.join(as_root)}."
+        )
+    return Finding("privileges", "Container privileges", OK, detail, data=data)
+
+
 def check_api_pointer() -> Finding:
     current = ArcsecondConfig.current_api_name()
     if current == LOCAL_API_NAME:
@@ -670,7 +786,9 @@ def check_api_pointer() -> Finding:
     )
 
 
-def run_checks(install, host: Host, fix: bool = False) -> List[Finding]:
+def run_checks(
+    install, host: Host, fix: bool = False, outbound: bool = False
+) -> List[Finding]:
     findings: List[Finding] = []
     docker = check_docker(host)
     findings.append(docker)
@@ -696,7 +814,43 @@ def run_checks(install, host: Host, fix: bool = False) -> List[Finding]:
 
     findings += check_proxy()
     findings.append(check_api_pointer())
+    findings.append(check_disk(install, host))
+    if docker.status == OK:
+        findings.append(check_privileges(install, host))
+    if outbound:
+        findings += host.outbound_findings()
     return findings
+
+
+def exit_code(findings: List[Finding]) -> int:
+    """0: everything required works. 1: only an optional outside destination
+    is out of reach. 2: something required fails."""
+    if any(f.status == FAIL for f in findings):
+        return 2
+    if any(
+        f.key.startswith("net.") and f.data.get("reachable") is False for f in findings
+    ):
+        return 1
+    return 0
+
+
+_PRIVATE_ADDRESS = re.compile(
+    r"\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01])|169\.254)\.\d{1,3}\.\d{1,3}\b"
+)
+
+
+def redact_local(text: str, host_name: Optional[str] = None) -> str:
+    """The same text without what identifies the local network: its private
+    addresses and this machine's name. A report leaves the observatory; what
+    its network looks like inside is not the recipient's business."""
+    text = _PRIVATE_ADDRESS.sub("<local address>", text)
+    if host_name:
+        for name in {host_name, host_name.split(".")[0]}:
+            if len(name) > 2:
+                text = re.sub(
+                    re.escape(name), "<this machine>", text, flags=re.IGNORECASE
+                )
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -711,38 +865,108 @@ MARKS = {
 }
 
 
-def print_findings(findings: List[Finding], install) -> None:
-    click.echo(f"Installation: {install.path}\n")
+PROMISE = "This check sends nothing about your observatory: it only tests what can be reached."
+
+SECTIONS = (
+    ("This machine", lambda f: not f.key.startswith("net.")),
+    ("Outside destinations", lambda f: f.key.startswith("net.")),
+)
+
+
+def _finding_lines(f: Finding, width: int) -> List[str]:
+    """One finding: its line, then its remedy and its note when it has them."""
+    entry = f"  [{f.data['manifest']}]" if f.data.get("manifest") else ""
+    lines = [
+        f"  {MARKS[f.status]} {f.label.ljust(width)}  {f.detail}{click.style(entry, dim=True)}"
+    ]
+    if f.fix and f.status in (WARN, FAIL):
+        lines += [f"    {' ' * width}  → {line}" for line in f.fix.splitlines()]
+    note = f.data.get("note")
+    if note and f.status != SKIP:
+        lines.append(click.style(f"    {' ' * width}  {note}", dim=True))
+    return lines
+
+
+def render_findings(findings: List[Finding], install) -> str:
+    """The report as text, the same on screen and in a file."""
+    out = [PROMISE, "", f"Installation: {install.path}"]
     width = max(len(f.label) for f in findings)
-    for f in findings:
-        click.echo(f"  {MARKS[f.status]} {f.label.ljust(width)}  {f.detail}")
-        if f.fix and f.status in (WARN, FAIL):
-            for line in f.fix.splitlines():
-                click.echo(f"    {' ' * width}  → {line}")
-        note = f.data.get("note")
-        if note and f.status != SKIP:
-            click.echo(click.style(f"    {' ' * width}  {note}", dim=True))
+    for title, belongs in SECTIONS:
+        section = [f for f in findings if belongs(f)]
+        if not section:
+            continue
+        out += ["", f"{title}:"]
+        for f in section:
+            out += _finding_lines(f, width)
     fails = sum(1 for f in findings if f.status == FAIL)
     warns = sum(1 for f in findings if f.status == WARN)
-    click.echo("")
+    out.append("")
     if fails:
-        click.echo(
+        out.append(
             click.style(f"{fails} problem(s), {warns} warning(s).", fg="red", bold=True)
         )
     elif warns:
-        click.echo(click.style(f"No problem, {warns} warning(s).", fg="yellow"))
+        out.append(click.style(f"No problem, {warns} warning(s).", fg="yellow"))
     else:
-        click.echo(click.style("Everything checks out.", fg="green", bold=True))
+        out.append(click.style("Everything checks out.", fg="green", bold=True))
+
+    from .network import outbound
+
+    lost = outbound.unavailable(findings)
+    if lost:
+        out += [
+            "",
+            "With the destinations that could not be reached, this installation does without:",
+        ]
+        out += [f"  - {line}" for line in dict.fromkeys(lost)]
     lan = next((f for f in findings if f.key == "lan.host"), None)
     if lan and lan.data.get("lan_ipv4"):
-        click.echo(
-            f"\nFrom another computer on this network:  http://{lan.data['lan_ipv4']}:{stack.WEB_PORT}"
-        )
+        out += [
+            "",
+            f"From another computer on this network:  http://{lan.data['lan_ipv4']}:{stack.WEB_PORT}",
+        ]
+    return "\n".join(out)
+
+
+def print_findings(findings: List[Finding], install) -> None:
+    click.echo(render_findings(findings, install))
+
+
+def _payload(findings: List[Finding], install, host: "Host") -> dict:
+    return {
+        "installation": str(install.path),
+        "platform": host.platform,
+        "cli": _cli_version(),
+        "checked_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "exit_code": exit_code(findings),
+        "findings": [asdict(f) for f in findings],
+    }
+
+
+def write_report(
+    findings: List[Finding], install, host: "Host", folder: Path, show_local: bool
+) -> Path:
+    """One dated text file an administrator can attach to a ticket: the
+    readable report, then the same content as JSON."""
+    text = click.unstyle(render_findings(findings, install))
+    body = json.dumps(_payload(findings, install, host), indent=2)
+    stamp = f"{datetime.now().astimezone():%Y-%m-%d %H:%M %Z}"
+    content = (
+        f"Arcsecond.local doctor report, {stamp}\n\n{text}\n\n"
+        f"--- machine-readable ---\n{body}\n"
+    )
+    if not show_local:
+        content = redact_local(content, host.host_name())
+        content = content.replace(str(install.path), "<installation folder>")
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"arcsecond-doctor-{datetime.now():%Y%m%d-%H%M}.txt"
+    path.write_text(content, encoding="utf-8")
+    return path
 
 
 @click.command(
-    name="check",
-    short_help="Check that the installation works, and is reachable from other computers.",
+    name="doctor",
+    short_help="Check that the installation works, is reachable, and can reach what it needs.",
 )
 @dir_option
 @click.option(
@@ -757,30 +981,58 @@ def print_findings(findings: List[Finding], install) -> None:
     help="Apply the remedies this command can apply itself (the Windows firewall rule, "
     "from an Administrator shell). The network profile is never changed.",
 )
+@click.option(
+    "--local-only",
+    is_flag=True,
+    help="Skip the outside destinations: test this machine and nothing beyond it.",
+)
+@click.option(
+    "--report",
+    "report",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=None,
+    is_flag=False,
+    flag_value=Path("."),
+    help="Also write the result to a dated file, in this folder (default: the current one), "
+    "to attach to a ticket. Local addresses and this machine's name are left out.",
+)
+@click.option(
+    "--show-local",
+    is_flag=True,
+    help="With --report: keep the local network's addresses and this machine's name in the file.",
+)
 @basic_options
-def check_cmd(directory, as_json, fix):
+def doctor_cmd(directory, as_json, fix, local_only, report, show_local):
     """Run every check an installation can run on itself: Docker, the
-    configuration files, the containers, the ports and what they are bound
-    to, the address other computers use, and on Windows the network profile
-    and the firewall rule. Each problem comes with its remedy.
+    configuration files, the containers and what they are allowed to do, the
+    ports and what they are bound to, the address other computers use, disk
+    space, and on Windows the network profile and the firewall rule.
 
-    Exit code 1 when something fails, 0 otherwise — so it can gate a script.
+    Then look outward: every destination Arcsecond.local may contact is
+    tested from this machine (name, connection, encryption, certificate),
+    and this machine's clock is compared with a reference. Nothing about your
+    observatory is sent. Each problem comes with its remedy, or with the
+    sentence to send to whoever runs your network.
+
+    Exit code 0 when everything required works, 1 when only an optional
+    outside destination is out of reach, 2 when something required fails.
+
+    `arcsecond check` is this same command, under its former name.
     """
     install = stack.resolve_install_dir(directory)
     host = Host()
-    findings = run_checks(install, host, fix=fix)
+    findings = run_checks(install, host, fix=fix, outbound=not local_only)
     if as_json:
-        payload = {
-            "installation": str(install.path),
-            "platform": host.platform,
-            "cli": _cli_version(),
-            "findings": [asdict(f) for f in findings],
-        }
-        click.echo(json.dumps(payload, indent=2))
+        click.echo(json.dumps(_payload(findings, install, host), indent=2))
     else:
         print_findings(findings, install)
-    if any(f.status == FAIL for f in findings):
-        raise SystemExit(1)
+    if report is not None:
+        path = write_report(findings, install, host, report, show_local)
+        if not as_json:
+            click.echo(f"\nReport written to {path}")
+    code = exit_code(findings)
+    if code:
+        raise SystemExit(code)
 
 
 def _cli_version() -> str:

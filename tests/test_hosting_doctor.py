@@ -1,12 +1,14 @@
-"""`arcsecond check`: the parsers, the verdicts, and the command."""
+"""`arcsecond doctor`: the parsers, the verdicts, and the command."""
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from click.testing import CliRunner
 
 from arcsecond.errors import ArcsecondError
-from arcsecond.hosting import check, local, stack
+from arcsecond.hosting import doctor as check
+from arcsecond.hosting import local, stack
 
 # --- parsers ----------------------------------------------------------------
 
@@ -109,6 +111,9 @@ class FakeHost(check.Host):
         http=None,
         admin=False,
         powershell=None,
+        outbound=None,
+        free=500e9,
+        inspect=None,
     ):
         self.platform = platform
         self._sockets = sockets
@@ -117,6 +122,23 @@ class FakeHost(check.Host):
         self._admin = admin
         self._powershell = powershell or {}
         self.powershell_calls = []
+        self.outbound = outbound or []
+        self.free = free
+        self.inspect = inspect
+
+    def outbound_findings(self):
+        return list(self.outbound)
+
+    def free_bytes(self, path):
+        return self.free
+
+    def host_name(self):
+        return "dome-pc.observatory.example"
+
+    def run(self, cmd, timeout=10.0):
+        if cmd[:2] == ["docker", "inspect"] and self.inspect is not None:
+            return SimpleNamespace(returncode=0, stdout=self.inspect)
+        return None
 
     def listening_sockets(self):
         return self._sockets
@@ -432,8 +454,8 @@ def test_the_command_prints_marks_remedies_and_the_lan_url(install, monkeypatch)
         "Host",
         lambda: FakeHost(sockets=[("127.0.0.1", 5555), ("*", 8800)], http=HEALTHY),
     )
-    result = CliRunner().invoke(check.check_cmd)
-    assert result.exit_code == 1, result.output
+    result = CliRunner().invoke(check.doctor_cmd)
+    assert result.exit_code == 2, result.output
     assert "✗" in result.output and "→" in result.output
     assert "problem(s)" in result.output
     assert "http://10.0.0.77:5555" in result.output
@@ -441,13 +463,13 @@ def test_the_command_prints_marks_remedies_and_the_lan_url(install, monkeypatch)
 
 def test_the_command_exits_zero_when_nothing_fails(install, monkeypatch):
     monkeypatch.setattr(check, "Host", lambda: FakeHost(sockets=OPEN, http=HEALTHY))
-    result = CliRunner().invoke(check.check_cmd)
+    result = CliRunner().invoke(check.doctor_cmd)
     assert result.exit_code == 0, result.output
 
 
 def test_json_output_is_structured(install, monkeypatch):
     monkeypatch.setattr(check, "Host", lambda: FakeHost(sockets=OPEN, http=HEALTHY))
-    result = CliRunner().invoke(check.check_cmd, ["--json"])
+    result = CliRunner().invoke(check.doctor_cmd, ["--json"])
     payload = json.loads(result.output)
     assert payload["installation"] == str(install.path)
     assert payload["platform"] == "darwin"
@@ -463,3 +485,168 @@ def test_check_is_mounted():
     from arcsecond import cli
 
     assert "check" in cli.main.commands
+
+
+# --- looking outward --------------------------------------------------------------------
+
+
+def _net(ident, status, need="recommended", without="No catalogue."):
+    return check.Finding(
+        f"net.{ident}",
+        f"{ident}.example :443",
+        status,
+        "detail",
+        fix="Please allow outbound connections …" if status != check.OK else None,
+        data={
+            "manifest": ident,
+            "need": need,
+            "without_it": without,
+            "reachable": status == check.OK,
+        },
+    )
+
+
+def test_the_report_opens_with_the_promise_and_names_each_manifest_entry(
+    install, monkeypatch
+):
+    host = FakeHost(
+        sockets=[("*", 5555), ("127.0.0.1", 8800)],
+        http=HEALTHY,
+        outbound=[_net("licensing", check.OK)],
+    )
+    monkeypatch.setattr(check, "Host", lambda: host)
+    result = CliRunner().invoke(check.doctor_cmd)
+    assert result.exit_code == 0, result.output
+    assert result.output.splitlines()[0] == check.PROMISE
+    assert "Outside destinations:" in result.output and "[licensing]" in result.output
+
+
+def test_exit_codes_tell_required_from_optional(install):
+    ok = [_net("licensing", check.OK)]
+    optional_out = ok + [_net("catalogue", check.WARN)]
+    required_out = [_net("licensing", check.FAIL, need="required")]
+    local_warning = ok + [check.Finding("ports.8800", "Port 8800", check.WARN, "open")]
+    assert check.exit_code(ok) == 0
+    assert check.exit_code(optional_out) == 1
+    assert check.exit_code(required_out) == 2
+    # A warning about this machine is advice, not an unreachable destination.
+    assert check.exit_code(local_warning) == 0
+
+
+def test_with_no_way_out_the_report_says_what_the_installation_does_without(
+    install, monkeypatch
+):
+    out = [
+        _net(
+            "licensing",
+            check.FAIL,
+            need="required",
+            without="A new installation cannot be activated.",
+        ),
+        _net("catalogue", check.WARN, without="No exoplanet or transit data."),
+    ]
+    monkeypatch.setattr(
+        check, "Host", lambda: FakeHost(sockets=OPEN, http=HEALTHY, outbound=out)
+    )
+    result = CliRunner().invoke(check.doctor_cmd)
+    assert result.exit_code == 2
+    assert "does without:" in result.output
+    assert "A new installation cannot be activated." in result.output
+    assert "No exoplanet or transit data." in result.output
+
+
+def test_local_only_never_looks_outward(install, monkeypatch):
+    host = FakeHost(sockets=OPEN, http=HEALTHY)
+    host.outbound_findings = lambda: pytest.fail("looked outward")
+    monkeypatch.setattr(check, "Host", lambda: host)
+    result = CliRunner().invoke(check.doctor_cmd, ["--local-only"])
+    assert result.exit_code == 0, result.output
+    assert "Outside destinations" not in result.output
+
+
+def test_the_report_file_leaves_the_local_network_out(install, monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        check,
+        "Host",
+        lambda: FakeHost(
+            sockets=OPEN, http=HEALTHY, outbound=[_net("licensing", check.OK)]
+        ),
+    )
+    folder = tmp_path / "reports"
+    result = CliRunner().invoke(check.doctor_cmd, ["--report", str(folder)])
+    assert result.exit_code == 0, result.output
+    (written,) = folder.glob("arcsecond-doctor-*.txt")
+    text = written.read_text()
+    assert text.startswith("Arcsecond.local doctor report, ")
+    assert check.PROMISE in text and "--- machine-readable ---" in text
+    assert "10.0.0.77" not in text and "<local address>" in text
+    assert str(install.path) not in text
+    assert "\x1b[" not in text  # no terminal colours in a file
+    json.loads(
+        text.split("--- machine-readable ---\n", 1)[1]
+    )  # the second half is JSON
+
+
+def test_show_local_keeps_them(install, monkeypatch, tmp_path):
+    monkeypatch.setattr(check, "Host", lambda: FakeHost(sockets=OPEN, http=HEALTHY))
+    result = CliRunner().invoke(
+        check.doctor_cmd, ["--report", str(tmp_path), "--show-local"]
+    )
+    assert result.exit_code == 0, result.output
+    (written,) = tmp_path.glob("arcsecond-doctor-*.txt")
+    assert "10.0.0.77" in written.read_text()
+
+
+def test_redaction_takes_private_addresses_and_the_machine_name_only():
+    text = "dome-pc at 192.168.1.42, gateway 10.0.0.1, 172.20.3.4; licensing at 52.1.2.3, DOME-PC.observatory.example"
+    out = check.redact_local(text, "dome-pc.observatory.example")
+    assert (
+        "192.168.1.42" not in out and "10.0.0.1" not in out and "172.20.3.4" not in out
+    )
+    assert "52.1.2.3" in out
+    assert "dome-pc" not in out.lower()
+
+
+def test_disk_space_is_measured_where_the_data_is_kept(install):
+    (install.path / ".env").write_text(
+        (install.path / ".env").read_text() + "SHARED_DATA_PATH=/data\n"
+    )
+    assert check.check_disk(install, FakeHost(free=500e9)).status == check.OK
+    assert check.check_disk(install, FakeHost(free=10e9)).status == check.WARN
+    low = check.check_disk(install, FakeHost(free=1e9))
+    assert low.status == check.FAIL and "1 GB" in low.detail
+    assert check.check_disk(install, FakeHost(free=None)).status == check.SKIP
+
+
+INSPECT_PACKAGED = (
+    "/arcsecond-api|false|null|arcsecond_default|arcsecond\n"
+    "/arcsecond-db|false|null|arcsecond_default|\n"
+)
+
+
+def test_container_privileges_are_reported_as_they_are(install, monkeypatch):
+    monkeypatch.setattr(
+        stack,
+        "services_status",
+        lambda install: [
+            {"Service": "backend", "Name": "arcsecond-api"},
+            {"Service": "db", "Name": "arcsecond-db"},
+        ],
+    )
+    packaged = check.check_privileges(install, FakeHost(inspect=INSPECT_PACKAGED))
+    assert packaged.status == check.OK and "none privileged" in packaged.detail
+    assert packaged.data["run_as_root_inside"] == ["arcsecond-db"]
+
+    edited = INSPECT_PACKAGED.replace(
+        "/arcsecond-api|false|null", '/arcsecond-api|true|["NET_ADMIN"]'
+    )
+    worry = check.check_privileges(install, FakeHost(inspect=edited))
+    assert worry.status == check.WARN and "arcsecond-api" in worry.detail
+
+
+def test_check_still_answers_as_doctor():
+    """`check` was this command's name until 4.4; scripts and habits keep working."""
+    from arcsecond import cli
+
+    assert cli.main.commands["doctor"].name == "doctor"
+    assert cli.main.commands["check"] is cli.main.commands["doctor"]

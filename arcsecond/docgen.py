@@ -78,7 +78,9 @@ def _visible_commands(
     commands = []
     for name in group.list_commands(ctx):
         command = group.get_command(ctx, name)
-        if command is not None and not command.hidden:
+        # A command mounted a second time under another name is an alias
+        # (`check` for `doctor`): it works, and has no page of its own.
+        if command is not None and not command.hidden and command.name == name:
             commands.append((name, command))
     return commands
 
@@ -339,3 +341,60 @@ def docs_compose(out, check):
         )
     written = write(files, Path(out))
     click.echo(f"Wrote {len(written)} files to {out}")
+
+
+@docs.command(
+    name="network",
+    help="Write the one-page network sheet, and the firewall request, from the network manifest.",
+)
+@click.option(
+    "--out",
+    "out",
+    type=click.Path(file_okay=False),
+    default=None,
+    help="Folder for the documentation page (index.md).",
+)
+@click.option(
+    "--static",
+    "static",
+    type=click.Path(file_okay=False),
+    default=None,
+    help="Folder for the printable page and the plain-text firewall request, served as they are.",
+)
+@click.option(
+    "--check",
+    "check",
+    is_flag=True,
+    help="Compare against the folders instead of writing; exit 1 if either is out of date.",
+)
+def docs_network(out, static, check):
+    from arcsecond.hosting import network
+    from arcsecond.hosting.network import sheet
+
+    if not out or not static:
+        raise click.UsageError(
+            "Give both --out FOLDER (the page) and --static FOLDER (the files to print and paste)."
+        )
+    manifest = network.load()
+    targets = (
+        (sheet.generate_page(manifest), Path(out)),
+        (sheet.generate_static(manifest), Path(static)),
+    )
+    if check:
+        changed = [
+            f"{folder}/{name}"
+            for files, folder in targets
+            for name in differences(files, folder)
+        ]
+        if changed:
+            click.echo("The network sheet is out of date:")
+            for name in changed:
+                click.echo(f"  {name}")
+            click.echo(
+                f"\nRegenerate it:  arcsecond docs network --out {out} --static {static}"
+            )
+            raise SystemExit(1)
+        click.echo("The network sheet is up to date.")
+        return
+    written = sum(len(write(files, folder)) for files, folder in targets)
+    click.echo(f"Wrote {written} files to {out} and {static}")

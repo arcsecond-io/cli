@@ -15,12 +15,14 @@
 #
 # Fields of a [[destination]]:
 #   id            stable identifier
+#   short         what it is for, in a few words: the line of the one-page sheet
 #   from          who opens the connection: "stack" (the containers),
 #                 "browser" (the user's workstation), "tool" (the arcsecond
 #                 command on the host), "docker" (image downloads)
 #   direction     "outbound" or "local-network" (never leaves the site)
 #   names         host names; empty when the administrator chooses the server
 #   port          destination port
+#   ports_note    optional: what to print instead, when the port is the observatory's choice
 #   transport     "tcp" or "udp"
 #   encrypted     true when protected by transport layer security
 #   need          "required", "recommended" or "optional"
@@ -36,6 +38,9 @@
 
 version = 1
 audited = "2026-10-05"
+
+# Where an administrator writes with a security question.
+contact = "team@arcsecond.io"
 
 # What never leaves the site, whatever is configured below.
 never_sent = [
@@ -81,6 +86,7 @@ reached_by = "the installation, and browsers on the local network"
 
 [[destination]]
 id = "licensing"
+short = "Licence activation and daily check"
 from = "stack"
 direction = "outbound"
 names = ["licensing.arcsecond.io"]
@@ -100,6 +106,7 @@ evidence = "captured"
 
 [[destination]]
 id = "catalogue-exoplanets"
+short = "Exoplanets and transits (NASA archive)"
 from = "stack"
 direction = "outbound"
 names = ["exoplanetarchive.ipac.caltech.edu"]
@@ -119,6 +126,7 @@ evidence = "captured"
 
 [[destination]]
 id = "catalogue-microlensing"
+short = "Microlensing candidates (OGLE)"
 from = "stack"
 direction = "outbound"
 names = ["ogle.astrouw.edu.pl"]
@@ -138,6 +146,7 @@ evidence = "captured"
 
 [[destination]]
 id = "catalogue-minor-planets"
+short = "Near-Earth object candidates"
 from = "stack"
 direction = "outbound"
 names = ["minorplanetcenter.net", "cgi.minorplanetcenter.net"]
@@ -157,6 +166,7 @@ evidence = "captured"
 
 [[destination]]
 id = "catalogue-satellites"
+short = "Satellite orbits"
 from = "stack"
 direction = "outbound"
 names = ["celestrak.org"]
@@ -176,6 +186,7 @@ evidence = "captured"
 
 [[destination]]
 id = "catalogue-objects"
+short = "Object names and coordinates (SIMBAD)"
 from = "stack"
 direction = "outbound"
 names = ["simbad.cds.unistra.fr"]
@@ -195,6 +206,7 @@ evidence = "captured"
 
 [[destination]]
 id = "time-zones"
+short = "Time-zone table refresh"
 from = "stack"
 direction = "outbound"
 names = ["timezonedb.com"]
@@ -214,6 +226,7 @@ evidence = "code"
 
 [[destination]]
 id = "sky-brightness"
+short = "Sky darkness of a site"
 from = "stack"
 direction = "outbound"
 names = ["statics.arcsecond.io"]
@@ -237,6 +250,7 @@ evidence = "captured"
 
 [[destination]]
 id = "ephemerides"
+short = "Comet and asteroid positions"
 from = "stack"
 direction = "outbound"
 names = ["ssd.jpl.nasa.gov", "ssd-api.jpl.nasa.gov"]
@@ -256,6 +270,7 @@ evidence = "code"
 
 [[destination]]
 id = "finding-charts"
+short = "Finding charts (NASA SkyView)"
 from = "stack"
 direction = "outbound"
 names = ["skyview.gsfc.nasa.gov"]
@@ -275,6 +290,7 @@ evidence = "code"
 
 [[destination]]
 id = "publications"
+short = "Papers about a target"
 from = "stack"
 direction = "outbound"
 names = ["scixplorer.org"]
@@ -294,6 +310,7 @@ evidence = "code"
 
 [[destination]]
 id = "earth-rotation"
+short = "Earth rotation tables"
 from = "stack"
 direction = "outbound"
 names = ["datacenter.iers.org", "maia.usno.navy.mil", "hpiers.obspm.fr", "data.iana.org"]
@@ -317,6 +334,7 @@ evidence = "code"
 
 [[destination]]
 id = "alerts-sign-in"
+short = "Transient alerts: sign-in"
 from = "stack"
 direction = "outbound"
 names = ["auth.gcn.nasa.gov"]
@@ -336,6 +354,7 @@ evidence = "captured"
 
 [[destination]]
 id = "alerts-feed"
+short = "Transient alerts: the feed"
 from = "stack"
 direction = "outbound"
 names = ["kafka.gcn.nasa.gov", "kafka1.gcn.nasa.gov", "kafka2.gcn.nasa.gov", "kafka3.gcn.nasa.gov"]
@@ -355,6 +374,7 @@ evidence = "captured"
 
 [[destination]]
 id = "weather-forecast"
+short = "Weather forecast"
 from = "stack"
 direction = "outbound"
 names = ["api.tomorrow.io"]
@@ -374,6 +394,7 @@ evidence = "code"
 
 [[destination]]
 id = "transient-names"
+short = "Transient Name Server lookups"
 from = "stack"
 direction = "outbound"
 names = ["www.wis-tns.org"]
@@ -393,10 +414,12 @@ evidence = "code"
 
 [[destination]]
 id = "attached-storage"
+short = "Copies to a storage you attach"
 from = "stack"
 direction = "outbound"
 names = []
 port = 0
+ports_note = "445, 22, 21 or 443"
 transport = "tcp"
 encrypted = false
 need = "optional"
@@ -412,10 +435,12 @@ evidence = "code"
 
 [[destination]]
 id = "outgoing-mail"
+short = "Email through your mail server"
 from = "stack"
 direction = "outbound"
 names = []
 port = 587
+ports_note = "587, 465 or 25"
 transport = "tcp"
 encrypted = true
 need = "optional"
@@ -435,6 +460,7 @@ evidence = "code"
 
 [[destination]]
 id = "software-images"
+short = "Arcsecond.local itself"
 from = "docker"
 direction = "outbound"
 names = ["ghcr.io", "pkg-containers.githubusercontent.com"]
@@ -454,6 +480,7 @@ evidence = "code"
 
 [[destination]]
 id = "software-images-base"
+short = "Database and message broker"
 from = "docker"
 direction = "outbound"
 names = ["registry-1.docker.io", "auth.docker.io", "production.cloudflare.docker.com"]
@@ -473,6 +500,7 @@ evidence = "code"
 
 [[destination]]
 id = "tool-updates"
+short = "The arcsecond command"
 from = "tool"
 direction = "outbound"
 names = ["pypi.org", "files.pythonhosted.org"]
@@ -496,6 +524,7 @@ evidence = "code"
 
 [[destination]]
 id = "browser-maps"
+short = "Map backgrounds"
 from = "browser"
 direction = "outbound"
 names = ["server.arcgisonline.com", "tile.openstreetmap.org", "global.ssl.fastly.net", "api.maptiler.com"]
@@ -515,6 +544,7 @@ evidence = "code"
 
 [[destination]]
 id = "browser-sky"
+short = "Sky survey pictures"
 from = "browser"
 direction = "outbound"
 names = ["alasky.cds.unistra.fr", "alaskybis.cds.unistra.fr", "alasky.unistra.fr", "skyview.gsfc.nasa.gov"]
@@ -534,6 +564,7 @@ evidence = "code"
 
 [[destination]]
 id = "browser-arcsecond-statics"
+short = "Light-pollution layer, illustrations"
 from = "browser"
 direction = "outbound"
 names = ["statics.arcsecond.io"]
@@ -557,10 +588,12 @@ evidence = "code"
 
 [[destination]]
 id = "instruments"
+short = "Telescopes, domes, cameras, weather"
 from = "stack"
 direction = "local-network"
 names = []
 port = 0
+ports_note = "set per device"
 transport = "tcp"
 encrypted = false
 need = "required"
@@ -576,6 +609,7 @@ evidence = "captured"
 
 [[destination]]
 id = "instrument-discovery"
+short = "Finding instruments on the network"
 from = "stack"
 direction = "local-network"
 names = []
@@ -595,10 +629,12 @@ evidence = "code"
 
 [[destination]]
 id = "cameras"
+short = "Webcams and all-sky cameras"
 from = "tool"
 direction = "local-network"
 names = []
 port = 554
+ports_note = "554, 80 or 443"
 transport = "tcp"
 encrypted = false
 need = "optional"

@@ -28,10 +28,14 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from . import Manifest, load
 
-_QUERY = re.compile(r"IP6? (\S+)\.(\d+) > \S+\.53: (\d+)\+?[^ ]* (?:A|AAAA)\? (\S+?)\.? ")
+_QUERY = re.compile(
+    r"IP6? (\S+)\.(\d+) > \S+\.53: (\d+)\+?[^ ]* (?:A|AAAA)\? (\S+?)\.? "
+)
 _ANSWER = re.compile(r"IP6? \S+\.53 > (\S+)\.(\d+): (\d+)[^ ]* \d+/\d+/\d+ (.*)$")
 _ADDRESS = re.compile(r"\bA{1,4} ([0-9a-fA-F:.]+)")
-_SYN = re.compile(r"IP (\d+\.\d+\.\d+\.\d+)\.\d+ > (\d+\.\d+\.\d+\.\d+)\.(\d+): Flags \[S\]")
+_SYN = re.compile(
+    r"IP (\d+\.\d+\.\d+\.\d+)\.\d+ > (\d+\.\d+\.\d+\.\d+)\.(\d+): Flags \[S\]"
+)
 
 
 @dataclass(frozen=True)
@@ -53,7 +57,9 @@ class Verdict:
         return not self.undeclared
 
 
-def parse_capture(lines: Iterable[str]) -> Tuple[Dict[str, Set[str]], List[Tuple[str, str, int]]]:
+def parse_capture(
+    lines: Iterable[str],
+) -> Tuple[Dict[str, Set[str]], List[Tuple[str, str, int]]]:
     """(address -> names it was looked up under, [(source, address, port)])."""
     asked: Dict[Tuple[str, str, str], str] = {}
     names: Dict[str, Set[str]] = {}
@@ -83,7 +89,13 @@ def parse_capture(lines: Iterable[str]) -> Tuple[Dict[str, Set[str]], List[Tuple
 # guard should not wave through more than it can name.
 _ON_SITE = tuple(
     ipaddress.ip_network(n)
-    for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16")
+    for n in (
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "127.0.0.0/8",
+        "169.254.0.0/16",
+    )
 )
 
 
@@ -112,29 +124,42 @@ def check(
             continue
         if ipaddress.ip_address(address) in network:
             continue  # one container to another
-        connection = Connection(source, address, port, tuple(sorted(names.get(address, ()))))
+        connection = Connection(
+            source, address, port, tuple(sorted(names.get(address, ())))
+        )
         key = (address, port)
         if _stays_on_site(address):
             local[key] = connection
             continue
         entry = next(
-            (d for name in connection.names if (d := manifest.find(name, port, origin="stack"))),
+            (
+                d
+                for name in connection.names
+                if (d := manifest.find(name, port, origin="stack"))
+            ),
             None,
         )
         if entry is not None:
             declared[key] = (entry.id, connection)
         else:
             undeclared[key] = connection
-    return Verdict(tuple(declared.values()), tuple(local.values()), tuple(undeclared.values()))
+    return Verdict(
+        tuple(declared.values()), tuple(local.values()), tuple(undeclared.values())
+    )
 
 
 def report(verdict: Verdict) -> str:
     out = []
     by_entry: Dict[str, Set[str]] = {}
     for ident, connection in verdict.declared:
-        by_entry.setdefault(ident, set()).update(f"{n}:{connection.port}" for n in connection.names)
+        by_entry.setdefault(ident, set()).update(
+            f"{n}:{connection.port}" for n in connection.names
+        )
     out.append(f"Declared in the manifest ({len(by_entry)} entries):")
-    out += [f"  {ident:<26} {', '.join(sorted(seen))}" for ident, seen in sorted(by_entry.items())]
+    out += [
+        f"  {ident:<26} {', '.join(sorted(seen))}"
+        for ident, seen in sorted(by_entry.items())
+    ]
     if verdict.local:
         out.append(f"On the local network ({len(verdict.local)}):")
         out += [f"  {c.address}:{c.port}" for c in verdict.local]
@@ -157,10 +182,18 @@ def report(verdict: Verdict) -> str:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("capture", help="tcpdump text output, or - for standard input")
-    parser.add_argument("--subnet", required=True, help="the compose network, e.g. 172.21.0.0/16")
-    parser.add_argument("--ignore-source", action="append", default=[], metavar="ADDRESS")
+    parser.add_argument(
+        "--subnet", required=True, help="the compose network, e.g. 172.21.0.0/16"
+    )
+    parser.add_argument(
+        "--ignore-source", action="append", default=[], metavar="ADDRESS"
+    )
     args = parser.parse_args(argv)
-    handle = sys.stdin if args.capture == "-" else open(args.capture, encoding="utf-8", errors="replace")
+    handle = (
+        sys.stdin
+        if args.capture == "-"
+        else open(args.capture, encoding="utf-8", errors="replace")
+    )
     with handle:
         verdict = check(handle, args.subnet, ignore_sources=args.ignore_source)
     print(report(verdict))

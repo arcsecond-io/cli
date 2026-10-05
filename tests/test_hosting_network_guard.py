@@ -10,7 +10,8 @@ LOOKUP_SIMBAD = [
     "12:24:37.142728 ?     In  IP 192.168.65.7.53 > 192.168.65.6.55805: 32028 1/0/0 A 130.79.128.4 (76)",
 ]
 OPEN_SIMBAD = (
-    "12:24:37.149820 ?     P   IP 172.21.0.12.33040 > 130.79.128.4.443: Flags [S], seq 490477156, win 64240, length 0"
+    "12:24:37.149820 ?     P   IP 172.21.0.12.33040 > 130.79.128.4.443: "
+    "Flags [S], seq 490477156, win 64240, length 0"
 )
 LOOKUP_STATICS = [
     "12:19:31.212715 ?     Out IP 192.168.65.6.63966 > 192.168.65.7.53: 6503+ A? statics.arcsecond.io. (38)",
@@ -36,13 +37,17 @@ def test_a_declared_destination_passes_under_its_manifest_entry():
 def test_a_name_behind_an_alias_is_named_by_what_was_asked_for():
     """statics.arcsecond.io answers through a content network's alias; the
     connection is to what the stack asked for, not to the alias."""
-    verdict = guard.check(LOOKUP_STATICS + [_syn("172.21.0.7", "3.165.190.24", 443)], SUBNET)
+    verdict = guard.check(
+        LOOKUP_STATICS + [_syn("172.21.0.7", "3.165.190.24", 443)], SUBNET
+    )
     assert verdict.ok
     assert verdict.declared[0][0] == "sky-brightness"
 
 
 def test_an_undeclared_destination_fails_and_is_named():
-    verdict = guard.check(LOOKUP_GITHUB + [_syn("172.21.0.7", "140.82.121.5", 443)], SUBNET)
+    verdict = guard.check(
+        LOOKUP_GITHUB + [_syn("172.21.0.7", "140.82.121.5", 443)], SUBNET
+    )
     assert not verdict.ok
     assert verdict.undeclared[0].names == ("api.github.com",)
     assert "api.github.com" in guard.report(verdict)
@@ -50,7 +55,9 @@ def test_an_undeclared_destination_fails_and_is_named():
 
 
 def test_the_right_name_on_an_undeclared_port_fails():
-    verdict = guard.check(LOOKUP_SIMBAD + [_syn("172.21.0.12", "130.79.128.4", 80)], SUBNET)
+    verdict = guard.check(
+        LOOKUP_SIMBAD + [_syn("172.21.0.12", "130.79.128.4", 80)], SUBNET
+    )
     assert not verdict.ok
 
 
@@ -71,7 +78,9 @@ def test_a_declared_browser_destination_is_not_the_stacks_to_use():
 
 def test_instruments_on_the_site_are_local_and_containers_talking_to_each_other_are_nothing():
     lines = [
-        _syn("172.21.0.12", "192.168.65.254", 32423),  # the simulator, through the host gateway
+        _syn(
+            "172.21.0.12", "192.168.65.254", 32423
+        ),  # the simulator, through the host gateway
         _syn("172.21.0.7", "172.21.0.6", 5432),  # backend to database
     ]
     verdict = guard.check(lines, SUBNET)
@@ -81,8 +90,12 @@ def test_instruments_on_the_site_are_local_and_containers_talking_to_each_other_
 
 def test_other_stacks_and_ignored_containers_are_not_ours_to_answer_for():
     lines = LOOKUP_GITHUB + [
-        _syn("172.20.0.5", "140.82.121.5", 443),  # another compose project on the same machine
-        _syn("172.21.0.2", "140.82.121.5", 443),  # the instrument simulator, checking for its own updates
+        _syn(
+            "172.20.0.5", "140.82.121.5", 443
+        ),  # another compose project on the same machine
+        _syn(
+            "172.21.0.2", "140.82.121.5", 443
+        ),  # the instrument simulator, checking for its own updates
     ]
     assert guard.check(lines, SUBNET, ignore_sources=["172.21.0.2"]).ok
     assert not guard.check(lines, SUBNET).ok
@@ -90,7 +103,9 @@ def test_other_stacks_and_ignored_containers_are_not_ours_to_answer_for():
 
 def test_the_command_exits_non_zero_on_an_undeclared_destination(tmp_path, capsys):
     capture = tmp_path / "capture.txt"
-    capture.write_text("\n".join(LOOKUP_GITHUB + [_syn("172.21.0.7", "140.82.121.5", 443)]))
+    capture.write_text(
+        "\n".join(LOOKUP_GITHUB + [_syn("172.21.0.7", "140.82.121.5", 443)])
+    )
     assert guard.main([str(capture), "--subnet", SUBNET]) == 1
     assert "NOT DECLARED" in capsys.readouterr().out
     capture.write_text("\n".join(LOOKUP_SIMBAD + [OPEN_SIMBAD]))

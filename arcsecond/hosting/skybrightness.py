@@ -37,9 +37,12 @@ def download(target: Path, url: str = MAP_URL) -> None:
     with httpx.stream("GET", url, timeout=60, follow_redirects=True) as response:
         response.raise_for_status()
         total = int(response.headers.get("content-length") or 0) or None
-        with open(partial, "wb") as handle, click.progressbar(
-            length=total, label="Downloading the sky-brightness map"
-        ) as bar:
+        with (
+            open(partial, "wb") as handle,
+            click.progressbar(
+                length=total, label="Downloading the sky-brightness map"
+            ) as bar,
+        ):
             for chunk in response.iter_bytes(chunk_size=1024 * 1024):
                 handle.write(chunk)
                 bar.update(len(chunk))
@@ -76,7 +79,9 @@ def offer(env_path, flag=None, interactive=True) -> None:
 
     shared = _read_env_value("SHARED_DATA_PATH", env_path)
     if not shared:
-        click.echo(f"No SHARED_DATA_PATH in .env yet, so no place for the map. Later:  {LATER}")
+        click.echo(
+            f"No SHARED_DATA_PATH in .env yet, so no place for the map. Later:  {LATER}"
+        )
         return
     target = Path(shared) / RELATIVE_PATH
     if not target.exists():
@@ -90,4 +95,6 @@ def offer(env_path, flag=None, interactive=True) -> None:
             )
             return
     _set_env_value(env_path, ENV_KEY, CONTAINER_PATH)
-    click.echo(f"Sky-brightness map kept at {target}. No outside lookup is made for it.")
+    click.echo(
+        f"Sky-brightness map kept at {target}. No outside lookup is made for it."
+    )

@@ -34,7 +34,10 @@ def test_yes_downloads_under_the_shared_folder_and_records_the_backend_path(
     skybrightness.offer(path, flag=True)
 
     assert calls == [shared / "skybrightness" / "skyglow_2024.tif"]
-    assert "SKY_BRIGHTNESS_GEOTIFF_PATH=/data/skybrightness/skyglow_2024.tif" in path.read_text()
+    assert (
+        "SKY_BRIGHTNESS_GEOTIFF_PATH=/data/skybrightness/skyglow_2024.tif"
+        in path.read_text()
+    )
     assert "No outside lookup" in capsys.readouterr().out
 
 

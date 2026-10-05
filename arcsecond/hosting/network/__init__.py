@@ -32,6 +32,7 @@ class ManifestError(ValueError):
 @dataclass(frozen=True)
 class Destination:
     id: str
+    short: str
     origin: str  # `from` in the file; a reserved word here
     direction: str
     names: Tuple[str, ...]
@@ -48,6 +49,7 @@ class Destination:
     proxy: str
     test: str
     evidence: str
+    ports_note: str = ""
 
     @property
     def always_on(self) -> bool:
@@ -78,11 +80,14 @@ class Listening:
 class Manifest:
     version: int
     audited: str
+    contact: str
     never_sent: Tuple[str, ...]
     destinations: Tuple[Destination, ...] = field(default_factory=tuple)
     listening: Tuple[Listening, ...] = field(default_factory=tuple)
 
-    def find(self, name: str, port: int, origin: Optional[str] = None) -> Optional[Destination]:
+    def find(
+        self, name: str, port: int, origin: Optional[str] = None
+    ) -> Optional[Destination]:
         for d in self.destinations:
             if origin is not None and d.origin != origin:
                 continue
@@ -107,7 +112,21 @@ def _require(entry: dict, key: str, kind, where: str):
 def _one_of(entry: dict, key: str, allowed, where: str) -> str:
     value = _require(entry, key, str, where)
     if value not in allowed:
-        raise ManifestError(f"{where}: `{key}` is {value!r}, not one of {', '.join(allowed)}")
+        raise ManifestError(
+            f"{where}: `{key}` is {value!r}, not one of {', '.join(allowed)}"
+        )
+    return value
+
+
+SHORT_LIMIT = 44
+
+
+def _short(entry: dict, where: str) -> str:
+    """The sheet is one page: its lines are held to a length here, where they
+    are written, rather than discovered too long when the page overflows."""
+    value = _require(entry, "short", str, where).strip()
+    if not value or len(value) > SHORT_LIMIT:
+        raise ManifestError(f"{where}: `short` must be 1 to {SHORT_LIMIT} characters")
     return value
 
 
@@ -125,6 +144,7 @@ def _destination(entry: dict, index: int) -> Destination:
         raise ManifestError(f"{where}: port {port} is not a port")
     return Destination(
         id=_require(entry, "id", str, where),
+        short=_short(entry, where),
         origin=_one_of(entry, "from", FROM, where),
         direction=direction,
         names=names,
@@ -141,6 +161,7 @@ def _destination(entry: dict, index: int) -> Destination:
         proxy=_one_of(entry, "proxy", PROXY, where),
         test=_one_of(entry, "test", TESTS, where),
         evidence=_one_of(entry, "evidence", EVIDENCE, where),
+        ports_note=str(entry.get("ports_note", "")),
     )
 
 
@@ -149,7 +170,9 @@ def _listening(entry: dict, index: int) -> Listening:
     return Listening(
         id=_require(entry, "id", str, where),
         port=_require(entry, "port", int, where),
-        bound_to=_one_of(entry, "bound_to", ("every interface", "this machine only"), where),
+        bound_to=_one_of(
+            entry, "bound_to", ("every interface", "this machine only"), where
+        ),
         encrypted=_require(entry, "encrypted", bool, where),
         purpose=_require(entry, "purpose", str, where),
         reached_by=_require(entry, "reached_by", str, where),
@@ -162,7 +185,9 @@ def parse(text: str) -> Manifest:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ManifestError(f"not valid TOML: {e}") from None
-    destinations = tuple(_destination(e, i) for i, e in enumerate(data.get("destination", [])))
+    destinations = tuple(
+        _destination(e, i) for i, e in enumerate(data.get("destination", []))
+    )
     listening = tuple(_listening(e, i) for i, e in enumerate(data.get("listening", [])))
     for kind, entries in (("destination", destinations), ("listening", listening)):
         ids = [e.id for e in entries]
@@ -172,6 +197,7 @@ def parse(text: str) -> Manifest:
     return Manifest(
         version=_require(data, "version", int, "manifest"),
         audited=_require(data, "audited", str, "manifest"),
+        contact=_require(data, "contact", str, "manifest"),
         never_sent=tuple(_require(data, "never_sent", list, "manifest")),
         destinations=destinations,
         listening=listening,
@@ -179,7 +205,9 @@ def parse(text: str) -> Manifest:
 
 
 def packaged_text() -> str:
-    return resources.files(__name__).joinpath("manifest.toml").read_text(encoding="utf-8")
+    return (
+        resources.files(__name__).joinpath("manifest.toml").read_text(encoding="utf-8")
+    )
 
 
 def load() -> Manifest:

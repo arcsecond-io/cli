@@ -12,8 +12,8 @@ from arcsecond.cloud import (
 from arcsecond.docgen import docs
 from arcsecond.hosting import (
     backups,
-    check_cmd,
     db,
+    doctor_cmd,
     logs,
     restart,
     setup,
@@ -75,7 +75,9 @@ main.add_command(logs)
 main.add_command(update)
 
 # Is it reachable from the rest of the observatory, and if not, why not.
-main.add_command(check_cmd)
+main.add_command(doctor_cmd)
+# Its name until 4.4, kept so that scripts and habits go on working.
+main.add_command(doctor_cmd, name="check")
 
 # The access token Arcsecond gave the observatory, once per machine.
 main.add_command(token_group)

@@ -15,7 +15,7 @@ def _pages():
 def test_every_visible_command_has_a_page_and_hidden_ones_do_not():
     pages = _pages()
     for name, command in cli.main.commands.items():
-        if command.hidden:
+        if command.hidden or command.name != name:  # hidden, or an alias
             assert f"{name}.md" not in pages, name
         else:
             assert f"{name}.md" in pages, name
@@ -89,7 +89,10 @@ def test_the_index_and_manifest_cover_the_same_commands():
     pages = _pages()
     manifest = json.loads(pages[docgen.MANIFEST_FILENAME])
     names = [entry["name"] for entry in manifest["commands"]]
-    assert names == sorted(n for n, c in cli.main.commands.items() if not c.hidden)
+    # An alias (`check` for `doctor`) works and has no page of its own.
+    assert names == sorted(
+        n for n, c in cli.main.commands.items() if not c.hidden and c.name == n
+    )
     assert manifest["version"] == __version__.__version__
     index = pages[docgen.INDEX_FILENAME]
     for name in names:
