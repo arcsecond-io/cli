@@ -25,6 +25,7 @@ from arcsecond.errors import ArcsecondError
 from .utils import _read_env_value
 
 COMPOSE_FILENAME = "docker-compose.yml"
+OVERRIDE_FILENAME = "docker-compose.override.yml"
 ENV_FILENAME = ".env"
 
 CLI_KEY_INSTALL_DIR = "install_dir"
@@ -53,6 +54,10 @@ class InstallDir:
     @property
     def compose_path(self) -> Path:
         return self.path / COMPOSE_FILENAME
+
+    @property
+    def override_path(self) -> Path:
+        return self.path / OVERRIDE_FILENAME
 
     @property
     def env_path(self) -> Path:
@@ -175,15 +180,20 @@ def ensure_docker() -> str:
 
 
 def compose_command(install: InstallDir, *args: str) -> list:
-    # --project-directory is where compose reads .env from; -f pins the file so
-    # a docker-compose.override.yml an operator may have added still applies.
+    # --project-directory is where compose reads .env from; -f pins the file.
+    # An explicit -f turns off compose's own pick-up of
+    # docker-compose.override.yml, so it is named too when present: it is
+    # where an operator's local changes live, since the CLI rewrites
+    # docker-compose.yml on every update.
+    files = ["-f", str(install.compose_path)]
+    if install.override_path.is_file():
+        files += ["-f", str(install.override_path)]
     return [
         "docker",
         "compose",
         "--project-directory",
         str(install.path),
-        "-f",
-        str(install.compose_path),
+        *files,
         *args,
     ]
 

@@ -298,8 +298,10 @@ def logs(directory, service, follow, tail):
 @dir_option
 @basic_options
 def update(directory):
-    """Bring the installation up to date: refresh docker-compose.yml from this
-    CLI, download the latest images, and restart what changed.
+    """Bring the installation up to date: rewrite docker-compose.yml from this
+    CLI, add what .env lacks, download the latest images, and restart what
+    changed. A docker-compose.yml that differed is kept aside as a backup;
+    local changes belong in docker-compose.override.yml, which is left alone.
 
     Update the CLI itself first, so that the compose file it writes is the
     newest one:  pip install --upgrade arcsecond
@@ -309,13 +311,16 @@ def update(directory):
 
     click.echo(f"Updating Arcsecond.local in {install.path} ...\n")
     click.echo("Refreshing the configuration files:")
-    enabled, removed, to_record = _resolve_optional_services(install.env_path, {})
+    enabled, to_record = _resolve_optional_services(
+        install.env_path, {}, compose_path=install.compose_path
+    )
     write_env_file(directory=install.path)
     for name, answer in to_record:
         _record_optional_service_decision(install.env_path, name, answer)
-    write_docker_compose_file(
-        enabled_services=enabled, removed_services=removed, directory=install.path
-    )
+    write_docker_compose_file(enabled_services=enabled, directory=install.path)
+    # Installations set up before 4.0 never recorded where they are; from now
+    # on the other commands find this one from any folder.
+    stack.remember_install_dir(install.path)
 
     click.echo("\nDownloading the latest images:")
     _streamed(install, "docker compose pull", "pull")

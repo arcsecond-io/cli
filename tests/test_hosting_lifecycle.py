@@ -298,14 +298,14 @@ def test_update_refreshes_the_files_then_pulls_and_restarts(install, monkeypatch
     monkeypatch.setattr(
         lifecycle,
         "write_docker_compose_file",
-        lambda enabled_services, removed_services, directory=None: written.setdefault(
+        lambda enabled_services, directory=None: written.setdefault(
             "compose", directory
         ),
     )
     monkeypatch.setattr(
         lifecycle,
         "_resolve_optional_services",
-        lambda env_path, flags: (set(), set(), []),
+        lambda env_path, flags, compose_path=None: (set(), []),
     )
 
     result = _run(lifecycle.update)
@@ -313,6 +313,59 @@ def test_update_refreshes_the_files_then_pulls_and_restarts(install, monkeypatch
     assert written == {"env": Path(install["path"]), "compose": Path(install["path"])}
     assert install["calls"] == [("pull",), ("up", "-d", "--remove-orphans")]
     assert "is up" in result.output
+
+
+def test_update_remembers_an_installation_setup_never_recorded(install, monkeypatch):
+    """Installations from before 4.0 were never recorded in config.ini; after
+    one update the other commands find them from any folder."""
+    monkeypatch.setattr(lifecycle, "write_env_file", lambda directory=None: None)
+    monkeypatch.setattr(
+        lifecycle,
+        "write_docker_compose_file",
+        lambda enabled_services, directory=None: None,
+    )
+    monkeypatch.setattr(
+        lifecycle,
+        "_resolve_optional_services",
+        lambda env_path, flags, compose_path=None: (set(), []),
+    )
+    stack.ArcsecondConfig.write_cli_setting(stack.CLI_KEY_INSTALL_DIR, None)
+    assert stack.remembered_install_dir() is None
+
+    result = _run(lifecycle.update)
+    assert result.exit_code == 0, result.output
+    assert stack.remembered_install_dir() == Path(install["path"]).resolve()
+
+
+def test_update_brings_a_3_20_installation_to_the_packaged_compose_file(
+    install, monkeypatch
+):
+    """End to end on the files: the 6.4 template 3.20 wrote, alerts included
+    and no decision in .env, comes out as the packaged file with alerts kept."""
+    path = Path(install["path"])
+    # Every key 3.19 and 3.20 wrote: nothing is generated, nothing prompts.
+    (path / ".env").write_text(
+        "SECRET_KEY=s\nAUTH_JWT_SIGNING_KEY=a\nAGENT_JWT_SIGNING_KEY=g\n"
+        'FIELD_ENCRYPTION_KEY=f\nSHARED_DATA_PATH="/data"\n'
+        "POSTGRES_USER=arcsecond_docker\nPOSTGRES_PASSWORD=p\n"
+        "POSTGRES_DB=arcsecond_docker\nGCN_CONSUMER_CLIENT_ID=\n"
+        "GCN_CONSUMER_CLIENT_SECRET=\n",
+        encoding="utf-8",
+    )
+    fixtures = Path(__file__).parent / "fixtures"
+    (path / "docker-compose.yml").write_text(
+        (fixtures / "docker-compose-6.4.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(local, "_stdin_is_interactive", lambda: False)
+
+    result = _run(lifecycle.update)
+    assert result.exit_code == 0, result.output
+    assert (path / "docker-compose.yml").read_text(
+        encoding="utf-8"
+    ) == local.packaged_compose_text()
+    assert "alerts:yes" in (path / ".env").read_text(encoding="utf-8")
+    assert list(path.glob("docker-compose.backup-*.yml"))
 
 
 # --- the surface ------------------------------------------------------------

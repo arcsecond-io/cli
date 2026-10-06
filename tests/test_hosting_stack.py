@@ -143,6 +143,17 @@ def test_compose_commands_pin_the_project_directory_and_file(tmp_path):
     assert cmd[cmd.index("--project-directory") + 1] == str(install.path)
     assert cmd[cmd.index("-f") + 1] == str(install.compose_path)
     assert cmd[-2:] == ["up", "-d"]
+    assert cmd.count("-f") == 1
+
+
+def test_compose_commands_name_the_override_file_when_there_is_one(tmp_path):
+    """An explicit -f turns off compose's own pick-up of the override file, and
+    the override is where local changes survive docker-compose.yml rewrites."""
+    install = stack.InstallDir(_make_install(tmp_path))
+    install.override_path.write_text("services: {}\n", encoding="utf-8")
+    cmd = stack.compose_command(install, "up", "-d")
+    files = [cmd[i + 1] for i, arg in enumerate(cmd) if arg == "-f"]
+    assert files == [str(install.compose_path), str(install.override_path)]
 
 
 def test_ps_json_is_parsed_in_both_shapes_compose_has_used():

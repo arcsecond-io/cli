@@ -1,0 +1,123 @@
+# === Arcsecond.local config. ===
+# *** DO NOT change any name or port number. ***
+# Version 6.2
+
+services:
+  # Database (PostgresQL)
+  db:
+    image: postgres:16
+    container_name: arcsecond-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - arcsecond_postgres_data:/var/lib/postgresql/data
+    env_file:
+      # You must have a .env file with database credentials beside this yml file.
+      - .env
+
+  # Broker (Redis) - Shared messaging service between different services.
+  broker:
+    image: redis:7.4
+    container_name: arcsecond-broker
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  # Arcsecond backend (REST APIs). Can be used for API calls and external pipelines, scripts etc.
+  backend:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-api
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-server.sh
+    ports:
+      - "8800:8800"
+    depends_on:
+      - db
+      - broker
+    # Allows the backend to reach the host machine via host.docker.internal.
+    # Required on Linux; Docker Desktop on Windows/macOS adds this automatically.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      # You must have a .env file with secret keys beside this yml file.
+      - .env
+    volumes:
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
+    stop_grace_period: 60s
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8800/healthcheck/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+  # Arcsecond worker, for offloading background work.
+  worker:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-worker
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-worker.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
+    stop_grace_period: 120s
+
+  # Arcsecond beat, to launch specific background tasks at specific times.
+  beat:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-beat
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-beat.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    stop_grace_period: 30s
+
+  # Arcsecond plate solver service, for solving coordinates from raw images.
+  platesolver:
+    image: ghcr.io/arcsecond-io/arcsecond-service-platesolver-astrometry:latest
+    container_name: arcsecond-platesolver
+    ports: [ "8900:8900" ]
+    volumes:
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
+
+  # Arcsecond webapp.
+  web:
+    image: ghcr.io/arcsecond-io/arcsecond-web:latest
+    container_name: arcsecond-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "5555:5555"
+      - "5577:5577"
+
+volumes:
+  arcsecond_postgres_data:
+

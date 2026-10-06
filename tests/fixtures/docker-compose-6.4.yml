@@ -1,0 +1,139 @@
+# === Arcsecond.local config. ===
+# *** DO NOT change any name or port number. ***
+# Version 6.4
+
+services:
+  # Database (PostgresQL)
+  db:
+    image: postgres:16
+    container_name: arcsecond-db
+    restart: unless-stopped
+    # No host port. The backend reaches the DB over the internal Docker
+    # network (hostname `arcsecond-db`), and every CLI command that needs
+    # the DB (backups, restore, password rotation) goes through `docker exec`
+    # into this container. Publishing 5432 on the host bought nothing and
+    # failed the whole stack whenever another Postgres already held it.
+    volumes:
+      - arcsecond_postgres_data:/var/lib/postgresql/data
+    env_file:
+      # You must have a .env file with database credentials beside this yml file.
+      - .env
+
+  # Broker (Redis) - Shared messaging service between different services.
+  broker:
+    image: redis:7.4
+    container_name: arcsecond-broker
+    restart: unless-stopped
+    # No host port either: Redis with no auth must never be reachable from
+    # outside the stack, and the backend reaches it over the Docker network.
+
+  # Arcsecond backend (REST APIs). Can be used for API calls and external pipelines, scripts etc.
+  backend:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-api
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-server.sh
+    ports:
+      - "8800:8800"
+    depends_on:
+      - db
+      - broker
+    # Allows the backend to reach the host machine via host.docker.internal.
+    # Required on Linux; Docker Desktop on Windows/macOS adds this automatically.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      # You must have a .env file with secret keys beside this yml file.
+      - .env
+    volumes:
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
+    stop_grace_period: 60s
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8800/healthcheck/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+  # Arcsecond worker, for offloading background work.
+  worker:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-worker
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-worker.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      # Leave /data as is, it's a path inside the container, not in the host machine.
+      # SHARED_DATA_PATH must be a path of your host machine, specified in the .env file.
+      - type: bind
+        source: ${SHARED_DATA_PATH}
+        target: /data
+        bind:
+          create_host_path: true
+    stop_grace_period: 120s
+
+  # Arcsecond beat, to launch specific background tasks at specific times.
+  beat:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-beat
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-beat.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    stop_grace_period: 30s
+
+  # Arcsecond plate solver service, for solving coordinates from raw images.
+  platesolver:
+    image: ghcr.io/arcsecond-io/arcsecond-service-platesolver-astrometry:latest
+    container_name: arcsecond-platesolver
+    restart: unless-stopped
+    ports: [ "8900:8900" ]
+
+  # Arcsecond webapp. Served on 5555 only: a self-hosted install is
+  # organisation-based and therefore always a portal, so the second port that
+  # used to be here (5577) served the very same app.
+  web:
+    image: ghcr.io/arcsecond-io/arcsecond-web:latest
+    container_name: arcsecond-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "5555:5555"
+
+  # >>> arcsecond:alerts
+  # Arcsecond transient-alerts consumer (optional).
+  # Long-lived Kafka client for NASA GCN. Outbound TLS to kafka.gcn.nasa.gov
+  # and auth.gcn.nasa.gov only — nothing listens. Requires GCN_CONSUMER_CLIENT_ID /
+  # GCN_CONSUMER_CLIENT_SECRET in .env; idles harmlessly when they are absent.
+  # Single instance only — do not scale it.
+  alerts:
+    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    container_name: arcsecond-alerts
+    restart: unless-stopped
+    entrypoint: /home/app/entrypoint-alerts.sh
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    stop_grace_period: 30s
+  # <<< arcsecond:alerts
+
+volumes:
+  arcsecond_postgres_data:
+

@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+from datetime import datetime
 from importlib import resources
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
@@ -28,7 +29,7 @@ POSTGRES_DB = "arcsecond_docker"
 
 # Services an installation can opt out of. Each one lives in the packaged
 # docker-compose.yml between "# >>> arcsecond:<name>" / "# <<< arcsecond:<name>"
-# marker lines, and is added or removed by splicing those blocks as text —
+# marker lines; a declined one is cut out of the packaged text as text —
 # never by parsing and re-emitting YAML, which would destroy the compose
 # file's comments (they are operator documentation).
 OPTIONAL_SERVICES = {
@@ -244,18 +245,6 @@ def _optional_service_markers(name):
     return f"# >>> arcsecond:{name}", f"# <<< arcsecond:{name}"
 
 
-def _extract_optional_service_block(packaged_text, name):
-    begin, end = _optional_service_markers(name)
-    lines = packaged_text.splitlines()
-    begin_index = next(
-        (i for i, line in enumerate(lines) if line.strip() == begin), None
-    )
-    end_index = next((i for i, line in enumerate(lines) if line.strip() == end), None)
-    if begin_index is None or end_index is None or end_index < begin_index:
-        return None
-    return lines[begin_index : end_index + 1]
-
-
 def _with_trailing_newline_like(lines, original_text):
     return "\n".join(lines) + ("\n" if original_text.endswith("\n") else "")
 
@@ -270,61 +259,25 @@ def _strip_optional_service_block(text, name):
     if begin_index is None or end_index is None or end_index < begin_index:
         return text
     del lines[begin_index : end_index + 1]
-    # Drop the blank separator the block carried, so strip(splice(x)) == x.
+    # Drop the blank separator the block carried, so the file reads the same
+    # as if the service had never been there.
     if begin_index < len(lines) and not lines[begin_index].strip():
         del lines[begin_index]
     return _with_trailing_newline_like(lines, text)
 
 
-def _splice_optional_service_block(current_text, packaged_text, name):
-    """Insert the packaged block before the top-level "volumes:" line.
-    Returns the new text, current_text if the block is already there,
-    or None when there is no anchor to splice against."""
+def _compose_carries_service(text, name):
+    """Whether a compose file runs this optional service — between our
+    markers, or added by hand under its fixed container name."""
     begin, _ = _optional_service_markers(name)
-    lines = current_text.splitlines()
-    if any(line.strip() == begin for line in lines):
-        return current_text
-    block = _extract_optional_service_block(packaged_text, name)
-    if block is None:
-        return None
-    anchor = next(
-        (
-            i
-            for i, line in enumerate(lines)
-            if line.rstrip() == "volumes:" and not line[:1].isspace()
-        ),
-        None,
+    return any(line.strip() == begin for line in text.splitlines()) or (
+        f"container_name: arcsecond-{name}" in text
     )
-    if anchor is None:
-        return None
-    new_lines = lines[:anchor] + block + [""] + lines[anchor:]
-    return _with_trailing_newline_like(new_lines, current_text)
-
-
-VERSION_HEADER_RE = re.compile(r"^# Version .+$", flags=re.MULTILINE)
 
 
 def _compose_version(text):
     match = re.search(r"^# Version (.+)$", text, flags=re.MULTILINE)
     return match.group(1).strip() if match else None
-
-
-def _reconcile_version_header(current_text, expected_text):
-    """When the *only* remaining difference is the '# Version X.Y' comment
-    line, adopt the packaged one — the header is ours, not operator content.
-    Without this, every pre-existing install would trail one version behind
-    forever and collect a spurious docker-compose.latest.yml on every run.
-    Returns the updated text, or None when the files differ beyond it."""
-    current_match = VERSION_HEADER_RE.search(current_text)
-    expected_match = VERSION_HEADER_RE.search(expected_text)
-    if current_match is None or expected_match is None:
-        return None
-    updated = (
-        current_text[: current_match.start()]
-        + expected_match.group(0)
-        + current_text[current_match.end() :]
-    )
-    return updated if updated == expected_text else None
 
 
 def _expected_compose_text(packaged_text: str, enabled_services) -> str:
@@ -334,64 +287,6 @@ def _expected_compose_text(packaged_text: str, enabled_services) -> str:
         if name not in enabled_services:
             text = _strip_optional_service_block(text, name)
     return text
-
-
-def _apply_optional_services(
-    current_text: str, packaged_text: str, enabled_services, removed_services
-):
-    """Splice enabled services in and take disabled ones out, idempotently.
-
-    Returns ``(text, changes, unspliceable)`` — ``unspliceable`` naming any
-    service with nowhere to go, which the caller reports rather than dropping.
-    """
-    changes: list = []
-    unspliceable: list = []
-
-    for name in sorted(enabled_services):
-        spliced = _splice_optional_service_block(current_text, packaged_text, name)
-        if spliced is None:
-            unspliceable.append(name)
-        elif spliced != current_text:
-            current_text = spliced
-            changes.append(f"added the optional '{name}' service")
-
-    for name in sorted(removed_services):
-        stripped = _strip_optional_service_block(current_text, name)
-        if stripped != current_text:
-            current_text = stripped
-            changes.append(f"removed the optional '{name}' service")
-
-    return current_text, changes, unspliceable
-
-
-def _report_customised_compose(
-    dest: Path,
-    current_text: str,
-    expected_text: str,
-    expected_content: bytes,
-    unspliceable,
-) -> None:
-    """Leave a customised file alone, and put the packaged one beside it.
-
-    Overwriting would throw away whatever the operator changed on purpose, so
-    the two are left side by side for them to merge deliberately.
-    """
-    current_version = _compose_version(current_text)
-    yours = f"Version {current_version}" if current_version else "no Version header"
-    latest = dest.with_name("docker-compose.latest.yml")
-    latest.write_bytes(expected_content)
-
-    messages = [
-        "docker-compose.yml differs from the packaged version "
-        f"(yours: {yours}, packaged: Version {_compose_version(expected_text)}); "
-        f"leaving it untouched and writing the latest packaged copy to: {latest}"
-    ]
-    for name in unspliceable:
-        messages.append(
-            f"Could not find a top-level 'volumes:' line to splice the "
-            f"'{name}' service into — merge it from {latest.name} by hand."
-        )
-    print("\n".join(messages))
 
 
 def packaged_compose_text() -> str:
@@ -412,66 +307,69 @@ def template_versions(install):
     return current, _compose_version(packaged_compose_text())
 
 
-def write_docker_compose_file(
-    enabled_services=frozenset(), removed_services=frozenset(), directory=None
-) -> Path:
-    """
-    Materialise the packaged docker-compose.yml in the current directory.
+COMPOSE_OVERRIDE_FILENAME = "docker-compose.override.yml"
 
-    The expected content is the packaged file minus the marker-delimited
-    blocks of optional services that are not enabled. Three cases:
-      1. No file present → write the expected content.
-      2. File present and identical to the expected content → no-op.
-      3. File present but different → splice enabled optional services in
-         (idempotently, before the top-level "volumes:" line) and remove
-         explicitly-disabled ones; if the file still differs — it carries
-         local customisations — leave it untouched and drop the expected
-         version next to it as docker-compose.latest.yml so the operator
-         can diff and merge intentionally.
+# What CLIs before 4.4 wrote beside an edited docker-compose.yml, for the
+# operator to merge by hand. Nothing reads it any more.
+STALE_LATEST_FILENAME = "docker-compose.latest.yml"
+
+
+def _backup_path(dest: Path) -> Path:
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    candidate = dest.with_name(f"docker-compose.backup-{stamp}.yml")
+    counter = 2
+    while candidate.exists():
+        candidate = dest.with_name(f"docker-compose.backup-{stamp}-{counter}.yml")
+        counter += 1
+    return candidate
+
+
+def write_docker_compose_file(enabled_services=frozenset(), directory=None) -> Path:
+    """Make docker-compose.yml exactly the packaged one, with the enabled
+    optional services and without the others.
+
+    The file belongs to the CLI: it is what makes an installation the one
+    this version of the CLI knows how to run, so `setup` and `update` always
+    leave it current. A file that differs — an older template, a service
+    missing, an edit by hand — is moved aside as
+    docker-compose.backup-<date>-<time>.yml first, so nothing is lost. Local
+    changes that must survive updates go in docker-compose.override.yml,
+    which compose layers on top and the CLI never touches.
 
     Works from any CWD and when installed from a wheel/sdist.
     """
     dest = Path(directory or Path.cwd()) / "docker-compose.yml"
-    packaged_text = packaged_compose_text()
+    expected_text = _expected_compose_text(packaged_compose_text(), enabled_services)
+    expected_version = _compose_version(expected_text)
 
-    expected_text = _expected_compose_text(packaged_text, enabled_services)
-    expected_content = expected_text.encode("utf-8")
+    stale_latest = dest.with_name(STALE_LATEST_FILENAME)
+    if stale_latest.exists():
+        stale_latest.unlink()
+        print(f"Removed {STALE_LATEST_FILENAME}, which is no longer used.")
 
     if not dest.exists():
-        dest.write_bytes(expected_content)
-        print(f"Wrote docker-compose.yml to: {dest}")
+        dest.write_bytes(expected_text.encode("utf-8"))
+        print(f"Wrote docker-compose.yml (version {expected_version}) to: {dest}")
         return dest
 
     # Text, not bytes: a file written on Windows may carry CRLF and still be
     # the packaged content.
-    if dest.read_text(encoding="utf-8") == expected_text:
-        print("docker-compose.yml is already up to date.")
+    current_text = dest.read_text(encoding="utf-8")
+    if current_text == expected_text:
+        print(f"docker-compose.yml is up to date (version {expected_version}).")
         return dest
 
-    current_text, changes, unspliceable = _apply_optional_services(
-        dest.read_text(encoding="utf-8"),
-        packaged_text,
-        enabled_services,
-        removed_services,
-    )
+    backup = _backup_path(dest)
+    dest.replace(backup)
+    dest.write_bytes(expected_text.encode("utf-8"))
 
-    if current_text.encode("utf-8") != expected_content:
-        reconciled = _reconcile_version_header(current_text, expected_text)
-        if reconciled is not None:
-            current_text = reconciled
-            changes.append(
-                f"updated the version header to {_compose_version(expected_text)}"
-            )
-
-    if changes:
-        dest.write_text(current_text, encoding="utf-8")
-        print(f"Updated docker-compose.yml: {', '.join(changes)}.")
-
-    if current_text.encode("utf-8") == expected_content:
-        return dest
-
-    _report_customised_compose(
-        dest, current_text, expected_text, expected_content, unspliceable
+    current_version = _compose_version(current_text)
+    was = f"version {current_version}" if current_version else "no version header"
+    print(
+        f"Replaced docker-compose.yml with version {expected_version} (it had {was}).\n"
+        f"The previous file is kept as {backup.name}. If you had changed it by "
+        f"hand, put those changes in {COMPOSE_OVERRIDE_FILENAME}: compose applies "
+        "it on top, and the CLI never touches it."
     )
     return dest
 
@@ -480,39 +378,60 @@ def _stdin_is_interactive():
     return sys.stdin.isatty()
 
 
-def _resolve_optional_services(env_path, flags):
-    """Fold the explicit flags, the recorded decisions and (on a TTY) the
-    operator's answers into (enabled, removed, decisions_to_record)."""
+def _decide_optional_service(name, label, flag, decisions, current_compose):
+    """``(enabled, record)`` for one service; ``enabled`` is None when nobody
+    decided and there is no terminal to ask on. ``record`` says whether the
+    answer goes into .env."""
+    if flag is not None:
+        # An explicit flag always wins and rewrites the recorded answer.
+        return flag, True
+    if name in decisions:
+        return decisions[name], False
+    if _compose_carries_service(current_compose, name):
+        # Installed before decisions were recorded, or added by hand: the
+        # service runs today, and rewriting the file must not drop it.
+        return True, True
+    if _stdin_is_interactive():
+        answer = click.confirm(
+            f"Include the optional {label} service in docker-compose.yml?",
+            default=False,
+        )
+        return answer, True
+    return None, False
+
+
+def _resolve_optional_services(env_path, flags, compose_path=None):
+    """Fold the explicit flags, the recorded decisions, what the current
+    compose file already runs, and (on a TTY) the operator's answers into
+    (enabled, decisions_to_record)."""
     decisions = _read_optional_service_decisions(env_path)
-    enabled, removed, to_record = set(), set(), []
+    try:
+        current_compose = (
+            compose_path.read_text(encoding="utf-8") if compose_path else ""
+        )
+    except OSError:
+        current_compose = ""
+    enabled, to_record = set(), []
     prompts_skipped = False
 
     for name, label in OPTIONAL_SERVICES.items():
-        flag = flags.get(name)
-        if flag is not None:
-            # An explicit flag always wins and rewrites the recorded answer.
-            (enabled if flag else removed).add(name)
-            to_record.append((name, flag))
-        elif name in decisions:
-            if decisions[name]:
-                enabled.add(name)
-        elif _stdin_is_interactive():
-            answer = click.confirm(
-                f"Include the optional {label} service in docker-compose.yml?",
-                default=False,
-            )
-            if answer:
-                enabled.add(name)
-            to_record.append((name, answer))
-        else:
+        answer, record = _decide_optional_service(
+            name, label, flags.get(name), decisions, current_compose
+        )
+        if answer is None:
             prompts_skipped = True
+            continue
+        if answer:
+            enabled.add(name)
+        if record:
+            to_record.append((name, answer))
 
     if prompts_skipped:
         print(
             "Skipping optional-service prompts (non-interactive run); "
             "use --with-alerts/--without-alerts to decide."
         )
-    return enabled, removed, to_record
+    return enabled, to_record
 
 
 def _register_local_api():
@@ -612,8 +531,8 @@ def setup(with_alerts, lan_host, with_sky_map):
     docker-compose.yml — and ask for the access token Arcsecond gave your
     observatory, if this machine has none yet. Then:  arcsecond start
 
-    Run it again after upgrading the CLI to bring docker-compose.yml up to
-    date; nothing of yours is overwritten.
+    Run again, it keeps .env and its secrets, and brings docker-compose.yml
+    up to date; a file that differed is kept aside as a backup.
     """
     click.echo("\nWelcome to Arcsecond.local setup.")
     click.echo(
@@ -623,8 +542,8 @@ def setup(with_alerts, lan_host, with_sky_map):
 
     directory = Path.cwd()
     env_path = directory / ENV_FILENAME
-    enabled, removed, to_record = _resolve_optional_services(
-        env_path, {"alerts": with_alerts}
+    enabled, to_record = _resolve_optional_services(
+        env_path, {"alerts": with_alerts}, compose_path=directory / "docker-compose.yml"
     )
     write_env_file(directory=directory)
     for name, answer in to_record:
@@ -636,9 +555,7 @@ def setup(with_alerts, lan_host, with_sky_map):
             print(f"Other computers will reach this installation at http://{host}")
         else:
             print("This installation is reachable from this machine only.")
-    write_docker_compose_file(
-        enabled_services=enabled, removed_services=removed, directory=directory
-    )
+    write_docker_compose_file(enabled_services=enabled, directory=directory)
 
     from .stack import remember_install_dir
 

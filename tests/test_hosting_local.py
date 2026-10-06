@@ -5,6 +5,8 @@ from click.testing import CliRunner
 
 from arcsecond.hosting import local
 
+FIXTURES = Path(__file__).parent / "fixtures"
+
 
 def _stub_env_generators(monkeypatch):
     monkeypatch.setattr(local, "_get_random_secret_key", lambda: "test-secret")
@@ -119,25 +121,6 @@ def test_write_env_file_preserves_existing_values_and_adds_missing(
     assert "POSTGRES_DB=arcsecond_docker" in env_contents
 
 
-def test_write_docker_compose_file_keeps_existing_and_writes_latest_when_different(
-    tmp_path, monkeypatch
-):
-    monkeypatch.chdir(tmp_path)
-
-    local.write_docker_compose_file()
-
-    compose_path = Path(tmp_path) / "docker-compose.yml"
-    original_generated = compose_path.read_text(encoding="utf-8")
-
-    compose_path.write_text("custom-compose-content\n", encoding="utf-8")
-    local.write_docker_compose_file()
-
-    latest_path = Path(tmp_path) / "docker-compose.latest.yml"
-    assert compose_path.read_text(encoding="utf-8") == "custom-compose-content\n"
-    assert latest_path.exists()
-    assert latest_path.read_text(encoding="utf-8") == original_generated
-
-
 def test_write_env_file_adds_gcn_placeholder_keys(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _stub_env_generators(monkeypatch)
@@ -242,105 +225,156 @@ def test_compose_fresh_write_without_alerts_strips_the_block(tmp_path, monkeypat
     assert "\n\n\n" not in text  # the blank separator went with the block
 
 
-def test_strip_then_splice_roundtrips_the_packaged_file():
-    packaged = _packaged_compose_text()
-    stripped = local._strip_optional_service_block(packaged, "alerts")
-    respliced = local._splice_optional_service_block(stripped, packaged, "alerts")
-    assert respliced == packaged
+def _backups(tmp_path):
+    return sorted(Path(tmp_path).glob("docker-compose.backup-*.yml"))
 
 
-def test_compose_splices_alerts_into_a_previously_declined_file(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    local.write_docker_compose_file()  # declined: no alerts block
-
-    local.write_docker_compose_file(enabled_services={"alerts"})
-
-    compose_path = Path(tmp_path) / "docker-compose.yml"
-    assert compose_path.read_text(encoding="utf-8") == _packaged_compose_text()
-    # The splice made the file equal to the expected content: no .latest.yml.
-    assert not (Path(tmp_path) / "docker-compose.latest.yml").exists()
-
-
-def test_compose_splice_preserves_customizations_and_is_idempotent(
-    tmp_path, monkeypatch
+def test_compose_already_current_is_left_alone_and_backs_nothing_up(
+    tmp_path, monkeypatch, capsys
 ):
     monkeypatch.chdir(tmp_path)
     local.write_docker_compose_file()
-    compose_path = Path(tmp_path) / "docker-compose.yml"
-    customized = "# my local note\n" + compose_path.read_text(encoding="utf-8")
-    compose_path.write_text(customized, encoding="utf-8")
-
-    local.write_docker_compose_file(enabled_services={"alerts"})
-    local.write_docker_compose_file(enabled_services={"alerts"})
-
-    text = compose_path.read_text(encoding="utf-8")
-    assert text.startswith("# my local note\n")
-    assert text.count("# >>> arcsecond:alerts") == 1
-    # Still customized, so the packaged copy lands beside it.
-    assert (Path(tmp_path) / "docker-compose.latest.yml").exists()
-
-
-def test_compose_upgrade_from_prior_version_converges_with_alerts(
-    tmp_path, monkeypatch
-):
-    """A pristine older-version file must converge to the packaged one —
-    header included — instead of collecting .latest.yml on every run."""
-    monkeypatch.chdir(tmp_path)
-    packaged = _packaged_compose_text()
-    old = local._strip_optional_service_block(packaged, "alerts").replace(
-        f"# Version {local._compose_version(packaged)}", "# Version 6.2"
-    )
-    compose_path = Path(tmp_path) / "docker-compose.yml"
-    compose_path.write_text(old, encoding="utf-8")
-
-    local.write_docker_compose_file(enabled_services={"alerts"})
-
-    assert compose_path.read_text(encoding="utf-8") == packaged
-    assert not (Path(tmp_path) / "docker-compose.latest.yml").exists()
-
-
-def test_compose_upgrade_from_prior_version_converges_when_declined(
-    tmp_path, monkeypatch
-):
-    monkeypatch.chdir(tmp_path)
-    packaged = _packaged_compose_text()
-    expected = local._strip_optional_service_block(packaged, "alerts")
-    old = expected.replace(
-        f"# Version {local._compose_version(packaged)}", "# Version 6.2"
-    )
-    compose_path = Path(tmp_path) / "docker-compose.yml"
-    compose_path.write_text(old, encoding="utf-8")
+    capsys.readouterr()
 
     local.write_docker_compose_file()
 
-    assert compose_path.read_text(encoding="utf-8") == expected
-    assert not (Path(tmp_path) / "docker-compose.latest.yml").exists()
+    assert _backups(tmp_path) == []
+    assert "up to date" in capsys.readouterr().out
 
 
-def test_compose_explicit_removal_strips_the_block(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    local.write_docker_compose_file(enabled_services={"alerts"})
-
-    local.write_docker_compose_file(removed_services={"alerts"})
-
-    text = (Path(tmp_path) / "docker-compose.yml").read_text(encoding="utf-8")
-    assert "arcsecond:alerts" not in text
-    assert not (Path(tmp_path) / "docker-compose.latest.yml").exists()
-
-
-def test_compose_without_volumes_anchor_falls_back_to_latest(
+def test_compose_edited_by_hand_is_backed_up_and_replaced(
     tmp_path, monkeypatch, capsys
 ):
     monkeypatch.chdir(tmp_path)
     compose_path = Path(tmp_path) / "docker-compose.yml"
     compose_path.write_text("custom-compose-content\n", encoding="utf-8")
 
-    local.write_docker_compose_file(enabled_services={"alerts"})
+    local.write_docker_compose_file()
 
-    assert compose_path.read_text(encoding="utf-8") == "custom-compose-content\n"
-    assert (Path(tmp_path) / "docker-compose.latest.yml").exists()
+    expected = local._strip_optional_service_block(_packaged_compose_text(), "alerts")
+    assert compose_path.read_text(encoding="utf-8") == expected
+    [backup] = _backups(tmp_path)
+    assert backup.read_text(encoding="utf-8") == "custom-compose-content\n"
     out = capsys.readouterr().out
-    assert "volumes:" in out and "alerts" in out
+    assert backup.name in out
+    assert "docker-compose.override.yml" in out
+
+
+def test_compose_from_before_4_0_becomes_the_packaged_one(tmp_path, monkeypatch):
+    """The installation 3.20 left: template 6.4, untouched. It used to be taken
+    for an edited file and kept, so the new images ran on the old file."""
+    monkeypatch.chdir(tmp_path)
+    old = (FIXTURES / "docker-compose-6.4.yml").read_text(encoding="utf-8")
+    compose_path = Path(tmp_path) / "docker-compose.yml"
+    compose_path.write_text(old, encoding="utf-8")
+
+    local.write_docker_compose_file()
+
+    text = compose_path.read_text(encoding="utf-8")
+    assert local._compose_version(text) == local._compose_version(
+        _packaged_compose_text()
+    )
+    assert "container_name: arcsecond-dataworker" in text
+    [backup] = _backups(tmp_path)
+    assert backup.read_text(encoding="utf-8") == old
+
+
+def test_compose_crlf_copy_of_the_packaged_file_counts_as_current(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    expected = local._strip_optional_service_block(_packaged_compose_text(), "alerts")
+    (Path(tmp_path) / "docker-compose.yml").write_bytes(
+        expected.replace("\n", "\r\n").encode("utf-8")
+    )
+
+    local.write_docker_compose_file()
+
+    assert _backups(tmp_path) == []
+
+
+def test_compose_backups_never_overwrite_each_other(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    compose_path = Path(tmp_path) / "docker-compose.yml"
+    for content in ("first\n", "second\n"):
+        compose_path.write_text(content, encoding="utf-8")
+        local.write_docker_compose_file()
+
+    contents = {b.read_text(encoding="utf-8") for b in _backups(tmp_path)}
+    assert contents == {"first\n", "second\n"}
+
+
+def test_compose_enabling_and_disabling_alerts_rewrites_the_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    compose_path = Path(tmp_path) / "docker-compose.yml"
+    local.write_docker_compose_file()
+
+    local.write_docker_compose_file(enabled_services={"alerts"})
+    assert compose_path.read_text(encoding="utf-8") == _packaged_compose_text()
+
+    local.write_docker_compose_file()
+    assert "arcsecond:alerts" not in compose_path.read_text(encoding="utf-8")
+
+
+def test_compose_removes_the_latest_copy_older_clis_left(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    latest = Path(tmp_path) / "docker-compose.latest.yml"
+    latest.write_text("an older packaged copy\n", encoding="utf-8")
+
+    local.write_docker_compose_file()
+
+    assert not latest.exists()
+
+
+def test_alerts_running_in_an_undecided_install_are_kept(tmp_path, monkeypatch):
+    """3.20 put the alerts block in the file before .env recorded the answer.
+    Rewriting the file must not drop a service that runs today."""
+    monkeypatch.setattr(local, "_stdin_is_interactive", lambda: False)
+    compose_path = tmp_path / "docker-compose.yml"
+    compose_path.write_text(
+        (FIXTURES / "docker-compose-6.4.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+
+    enabled, to_record = local._resolve_optional_services(
+        tmp_path / ".env", {}, compose_path=compose_path
+    )
+
+    assert enabled == {"alerts"}
+    assert to_record == [("alerts", True)]
+
+
+def test_an_undecided_install_without_alerts_is_still_asked(tmp_path, monkeypatch):
+    """A file from before the alerts service existed says nothing about it:
+    the operator is offered it, as on a fresh setup."""
+    monkeypatch.setattr(local, "_stdin_is_interactive", lambda: True)
+    monkeypatch.setattr(local.click, "confirm", lambda *a, **k: True)
+    compose_path = tmp_path / "docker-compose.yml"
+    compose_path.write_text(
+        (FIXTURES / "docker-compose-6.2.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+
+    enabled, to_record = local._resolve_optional_services(
+        tmp_path / ".env", {}, compose_path=compose_path
+    )
+
+    assert enabled == {"alerts"}
+    assert to_record == [("alerts", True)]
+
+
+def test_a_recorded_no_wins_over_the_file(tmp_path):
+    env_path = tmp_path / ".env"
+    local._record_optional_service_decision(env_path, "alerts", False)
+    compose_path = tmp_path / "docker-compose.yml"
+    compose_path.write_text(_packaged_compose_text(), encoding="utf-8")
+
+    enabled, to_record = local._resolve_optional_services(
+        env_path, {}, compose_path=compose_path
+    )
+
+    assert enabled == set()
+    assert to_record == []
 
 
 def test_optional_service_decisions_roundtrip(tmp_path):
@@ -370,7 +404,7 @@ def test_optional_service_decisions_preserve_unknown_tokens(tmp_path):
     assert local._read_optional_service_decisions(env_path) == {"alerts": True}
 
 
-def test_setup_with_alerts_flag_records_and_splices(tmp_path, monkeypatch):
+def test_setup_with_alerts_flag_records_and_includes_it(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _stub_env_generators(monkeypatch)
 
