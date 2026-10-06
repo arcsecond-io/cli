@@ -85,7 +85,9 @@ def self_signed(tmp_path_factory):
 
 
 def test_a_port_nothing_listens_on_is_refused_not_timed_out():
-    result = probing.probe("localhost", _free_port(), timeout=2)
+    # The probe's own timeout, not a shorter one: Windows retries a refused
+    # connection for about two seconds per address before saying so.
+    result = probing.probe("localhost", _free_port(), timeout=probing.TIMEOUT)
     assert not result.ok and result.failure == probing.REFUSED
 
 

@@ -87,7 +87,11 @@ def _issuer_of(der: bytes) -> str:
     Python only decodes certificates it has verified, except through this one
     helper; when it is not there, the issuer is simply not reported."""
     try:
-        with tempfile.NamedTemporaryFile("w", suffix=".pem") as handle:
+        # Reopened by name while still open: Windows refuses that unless the
+        # file is kept past close. It still goes when the block ends.
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".pem", delete_on_close=False
+        ) as handle:
             handle.write(ssl.DER_cert_to_PEM_cert(der))
             handle.flush()
             decoded = ssl._ssl._test_decode_cert(handle.name)  # type: ignore[attr-defined]
