@@ -226,7 +226,8 @@ ENV_KEYS: Dict[str, tuple] = {
         OPERATOR,
         "The address other computers reach the installation at, port included (e.g. 192.168.1.42:5555). The backend "
         "builds invitation and password-reset links from it. Empty means localhost:5555. "
-        "Set with `arcsecond setup --lan-host`.",
+        "`arcsecond setup` fills it in with this machine's network address when it is empty; "
+        "set it with `arcsecond setup --lan-host`.",
     ),
     OPTIONAL_SERVICES_ENV_KEY: (
         SETUP,

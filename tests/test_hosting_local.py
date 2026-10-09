@@ -17,6 +17,9 @@ def _stub_env_generators(monkeypatch):
     monkeypatch.setattr(local, "prompt_shared_data_path", lambda: "/tmp/shared-data")
     monkeypatch.setattr(local, "_offer_token", lambda: None)
     monkeypatch.setattr(local, "_offer_sky_map", lambda env_path, flag: None)
+    # The machine running the tests has a LAN address of its own; tests that
+    # want one give it.
+    monkeypatch.setattr(local, "lan_ipv4", lambda: None)
 
 
 def _packaged_compose_text():
@@ -493,6 +496,72 @@ def test_setup_lan_host_refuses_a_scheme_or_a_path(tmp_path, monkeypatch):
     result = _setup(tmp_path, monkeypatch, "--lan-host", "http://192.168.1.42:5555")
     assert result.exit_code != 0
     assert "without scheme" in result.output
+
+
+def _setup_on_lan(tmp_path, monkeypatch, lan, *args):
+    monkeypatch.chdir(tmp_path)
+    _stub_env_generators(monkeypatch)
+    monkeypatch.setattr(local, "_stdin_is_interactive", lambda: False)
+    monkeypatch.setattr(local, "lan_ipv4", lambda: lan)
+    return CliRunner().invoke(local.setup, list(args))
+
+
+def _declared(tmp_path):
+    for line in (tmp_path / ".env").read_text(encoding="utf-8").splitlines():
+        if line.startswith(local.FRONTEND_HOST_ENV_KEY + "="):
+            return line.split("=", 1)[1]
+    return None
+
+
+def test_setup_declares_the_lan_address_when_none_is_declared(tmp_path, monkeypatch):
+    result = _setup_on_lan(tmp_path, monkeypatch, "192.168.1.42")
+    assert result.exit_code == 0, result.output
+    assert _declared(tmp_path) == "192.168.1.42:5555"
+    assert "http://192.168.1.42:5555" in result.output
+    assert "--lan-host" in result.output
+
+
+def test_setup_fills_in_an_empty_address_left_by_an_older_setup(tmp_path, monkeypatch):
+    (tmp_path / ".env").write_text(f"{local.FRONTEND_HOST_ENV_KEY}=\n")
+    result = _setup_on_lan(tmp_path, monkeypatch, "192.168.1.42")
+    assert result.exit_code == 0, result.output
+    assert _declared(tmp_path) == "192.168.1.42:5555"
+
+
+def test_setup_never_overwrites_a_declared_address(tmp_path, monkeypatch):
+    (tmp_path / ".env").write_text(
+        f"{local.FRONTEND_HOST_ENV_KEY}=arcsecond.local:5555\n"
+    )
+    result = _setup_on_lan(tmp_path, monkeypatch, "192.168.1.42")
+    assert result.exit_code == 0, result.output
+    assert _declared(tmp_path) == "arcsecond.local:5555"
+    assert "192.168.1.42" not in result.output
+
+
+def test_setup_lan_host_wins_over_the_detected_address(tmp_path, monkeypatch):
+    result = _setup_on_lan(
+        tmp_path, monkeypatch, "192.168.1.42", "--lan-host", "arcsecond.local"
+    )
+    assert result.exit_code == 0, result.output
+    assert _declared(tmp_path) == "arcsecond.local:5555"
+
+
+def test_setup_leaves_the_address_empty_without_a_network(tmp_path, monkeypatch):
+    for lan in (None, "127.0.0.1"):
+        result = _setup_on_lan(tmp_path, monkeypatch, lan)
+        assert result.exit_code == 0, result.output
+        assert _declared(tmp_path) == ""
+
+
+def test_an_empty_lan_host_keeps_the_links_on_this_machine_across_setups(
+    tmp_path, monkeypatch
+):
+    first = _setup_on_lan(tmp_path, monkeypatch, "192.168.1.42", "--lan-host", "")
+    assert first.exit_code == 0, first.output
+    assert "this machine only" in first.output
+    second = _setup_on_lan(tmp_path, monkeypatch, "192.168.1.42")
+    assert second.exit_code == 0, second.output
+    assert _declared(tmp_path) == local.THIS_MACHINE_ONLY_HOST
 
 
 def test_setup_remembers_the_folder_for_start_to_find(tmp_path, monkeypatch):

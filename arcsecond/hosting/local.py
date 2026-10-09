@@ -15,7 +15,9 @@ from .utils import (
     _get_encryption_key,
     _get_random_postgres_password,
     _get_random_secret_key,
+    _read_env_value,
     _set_env_value,
+    lan_ipv4,
 )
 
 ENV_FILENAME = ".env"
@@ -113,7 +115,8 @@ REQUIRED_ENV_PROVIDERS = {
     # Empty placeholders: the operator pastes their own GCN credentials here.
     "GCN_CONSUMER_CLIENT_ID": lambda: "",
     "GCN_CONSUMER_CLIENT_SECRET": lambda: "",
-    # Empty placeholder: set by `arcsecond setup --lan-host`, or by hand.
+    # Empty placeholder: filled in by `setup` with this machine's LAN address
+    # (_fill_in_lan_host), or set by `arcsecond setup --lan-host`, or by hand.
     FRONTEND_HOST_ENV_KEY: lambda: "",
 }
 
@@ -500,6 +503,30 @@ def _normalise_lan_host(value):
     return value
 
 
+# What `--lan-host ""` writes. Spelled out rather than left empty, so that the
+# next `setup` does not take an empty value for "never decided" and declare the
+# LAN address over the operator's choice.
+THIS_MACHINE_ONLY_HOST = "localhost:5555"
+
+
+def _fill_in_lan_host(env_path):
+    """Declare this machine's LAN address when no address is declared yet.
+
+    Left empty, every invitation and password-reset link the server emails
+    says localhost, which only works on this machine. A value already there,
+    whoever wrote it, is never touched: `doctor` is what notices when a
+    declared IP no longer matches the machine.
+    """
+    if (_read_env_value(FRONTEND_HOST_ENV_KEY, env_path) or "").strip():
+        return None
+    detected = lan_ipv4()
+    if not detected or detected.startswith("127."):
+        return None
+    host = _normalise_lan_host(detected)
+    _set_env_value(env_path, FRONTEND_HOST_ENV_KEY, host)
+    return host
+
+
 @click.command(short_help="Prepare the installation of Arcsecond.local.")
 @click.option(
     "--with-alerts/--without-alerts",
@@ -515,7 +542,9 @@ def _normalise_lan_host(value):
     metavar="HOST[:PORT]",
     help="The address other computers reach this machine at (e.g. "
     "192.168.1.42 or arcsecond.local). Needed for invitation and "
-    "password-reset links to work from other computers. Port defaults to 5555.",
+    "password-reset links to work from other computers. Port defaults to 5555. "
+    "Without it, setup declares this machine's network address when none is "
+    "declared yet; an empty value keeps the links on this machine.",
 )
 @click.option(
     "--with-sky-map/--without-sky-map",
@@ -549,12 +578,19 @@ def setup(with_alerts, lan_host, with_sky_map):
     for name, answer in to_record:
         _record_optional_service_decision(env_path, name, answer)
     if lan_host is not None:
-        host = _normalise_lan_host(lan_host)
+        host = _normalise_lan_host(lan_host) or THIS_MACHINE_ONLY_HOST
         _set_env_value(env_path, FRONTEND_HOST_ENV_KEY, host)
-        if host:
+        if host != THIS_MACHINE_ONLY_HOST:
             print(f"Other computers will reach this installation at http://{host}")
         else:
             print("This installation is reachable from this machine only.")
+    else:
+        host = _fill_in_lan_host(env_path)
+        if host:
+            print(
+                f"Other computers will reach this installation at http://{host}"
+                " (this machine's network address; change it with --lan-host)"
+            )
     write_docker_compose_file(enabled_services=enabled, directory=directory)
 
     from .stack import remember_install_dir

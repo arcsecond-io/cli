@@ -1,8 +1,22 @@
 import base64
 import os
 import secrets
+import socket
 import subprocess
 from pathlib import Path
+
+
+def lan_ipv4():
+    """This machine's address on the local network, or None.
+
+    No packet is sent: connecting a UDP socket only picks the interface the
+    default route would use, and that is the address to hand around."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("10.255.255.255", 1))
+            return s.getsockname()[0]
+    except OSError:
+        return None
 
 
 def _container_running(name):

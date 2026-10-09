@@ -58,6 +58,7 @@ from .local import (
     REQUIRED_ENV_PROVIDERS,
     template_versions,
 )
+from .utils import lan_ipv4
 
 OK, WARN, FAIL, SKIP = "ok", "warn", "fail", "skip"
 
@@ -236,14 +237,7 @@ class Host:
         return parse_ss(result.stdout)
 
     def lan_ipv4(self) -> Optional[str]:
-        # No packet is sent: connecting a UDP socket only picks the interface
-        # the default route would use, and that is the address to hand around.
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                s.connect(("10.255.255.255", 1))
-                return s.getsockname()[0]
-        except OSError:
-            return None
+        return lan_ipv4()
 
     def http_ok(self, url: str) -> Optional[int]:
         try:
