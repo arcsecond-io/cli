@@ -34,6 +34,7 @@ from .local import (
 MARKER_START = re.compile(r"^\s*# >>> arcsecond:(\S+)\s*$")
 MARKER_END = re.compile(r"^\s*# <<< arcsecond:(\S+)\s*$")
 ENV_REF = re.compile(r"\$\{([A-Z_][A-Z0-9_]*)(?::-[^}]*)?\}")
+ENV_DEFAULT = re.compile(r"^\$\{[A-Z_][A-Z0-9_]*:-([^}]*)\}$")
 
 
 @dataclass
@@ -56,6 +57,12 @@ class Service:
 
 def _strip_comment(line: str) -> str:
     return line.strip().lstrip("#").strip()
+
+
+def _as_shipped(value: str) -> str:
+    """A `${VAR:-default}` value as an installation that leaves VAR unset runs it."""
+    match = ENV_DEFAULT.match(value)
+    return match.group(1) if match else value
 
 
 class _Reader:
@@ -134,7 +141,7 @@ class _Reader:
             "stop_grace_period": "stop_grace_period",
         }
         if key in scalar:
-            setattr(self.current, scalar[key], value)
+            setattr(self.current, scalar[key], _as_shipped(value))
         elif key == "healthcheck":
             self.current.healthcheck = True
         elif key == "ports" and value.startswith("["):
@@ -288,6 +295,28 @@ ENV_KEYS: Dict[str, tuple] = {
     "ARCSECOND_DATA_WORKER_CONCURRENCY": (
         OPERATOR,
         "How many jobs the data worker runs at once. Default 2; each can hold a few hundred MB.",
+    ),
+    "ARCSECOND_API_IMAGE": (
+        OPERATOR,
+        "The image the backend, both workers, beat and the alerts consumer run instead of the published one: "
+        "one built from the backend's sources, e.g. `arcsecond-api:latest`. Empty: the published image. Set "
+        "ARCSECOND_API_PULL_POLICY to `never` with it, then `arcsecond restart`.",
+    ),
+    "ARCSECOND_API_PULL_POLICY": (
+        OPERATOR,
+        "`never` when ARCSECOND_API_IMAGE names an image that exists on this machine only, so `arcsecond update` "
+        "and `arcsecond start --pull` leave it alone rather than fail to download it. Default `missing`.",
+    ),
+    "ARCSECOND_WEB_IMAGE": (
+        OPERATOR,
+        "The image the web interface runs instead of the published one: one built from the webapp's sources, "
+        "e.g. `arcsecond-web:latest`. Empty: the published image. Set ARCSECOND_WEB_PULL_POLICY to `never` "
+        "with it, then `arcsecond restart web`.",
+    ),
+    "ARCSECOND_WEB_PULL_POLICY": (
+        OPERATOR,
+        "`never` when ARCSECOND_WEB_IMAGE names an image that exists on this machine only, as "
+        "ARCSECOND_API_PULL_POLICY does for the backend's. Default `missing`.",
     ),
 }
 

@@ -1,6 +1,6 @@
 # === Arcsecond.local config. ===
 # *** DO NOT change any name or port number. ***
-# Version 7.4
+# Version 7.5
 
 services:
   # Database (PostgresQL)
@@ -29,7 +29,12 @@ services:
 
   # Arcsecond backend (REST APIs). Can be used for API calls and external pipelines, scripts etc.
   backend:
-    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    # ARCSECOND_API_IMAGE swaps the published image for one built from the
+    # backend's sources, here and on every service below that runs it.
+    # ARCSECOND_API_PULL_POLICY=never goes with it: such an image exists on
+    # this machine only, and `arcsecond update` must not try to download it.
+    image: ${ARCSECOND_API_IMAGE:-ghcr.io/arcsecond-io/arcsecond-api:latest}
+    pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-api
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-server.sh
@@ -72,7 +77,8 @@ services:
   # Arcsecond worker, for offloading background work: the Control Room's
   # exposures and procedures, and everything else someone is waiting on.
   worker:
-    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    image: ${ARCSECOND_API_IMAGE:-ghcr.io/arcsecond-io/arcsecond-api:latest}
+    pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-worker
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-worker.sh
@@ -100,7 +106,8 @@ services:
   # storages, database backups, keograms, catalogue refreshes. On its own
   # queue, so a long zip can never hold up a frame the observer is waiting for.
   dataworker:
-    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    image: ${ARCSECOND_API_IMAGE:-ghcr.io/arcsecond-io/arcsecond-api:latest}
+    pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-dataworker
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-worker.sh
@@ -126,7 +133,8 @@ services:
 
   # Arcsecond beat, to launch specific background tasks at specific times.
   beat:
-    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    image: ${ARCSECOND_API_IMAGE:-ghcr.io/arcsecond-io/arcsecond-api:latest}
+    pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-beat
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-beat.sh
@@ -149,7 +157,10 @@ services:
   # organisation-based and therefore always a portal, so the second port that
   # used to be here (5577) served the very same app.
   web:
-    image: ghcr.io/arcsecond-io/arcsecond-web:latest
+    # ARCSECOND_WEB_IMAGE and ARCSECOND_WEB_PULL_POLICY: the same as the
+    # backend's pair above, for an image built from the webapp's sources.
+    image: ${ARCSECOND_WEB_IMAGE:-ghcr.io/arcsecond-io/arcsecond-web:latest}
+    pull_policy: ${ARCSECOND_WEB_PULL_POLICY:-missing}
     container_name: arcsecond-web
     restart: unless-stopped
     depends_on:
@@ -183,7 +194,8 @@ services:
   # GCN_CONSUMER_CLIENT_SECRET in .env; idles harmlessly when they are absent.
   # Single instance only — do not scale it.
   alerts:
-    image: ghcr.io/arcsecond-io/arcsecond-api:latest
+    image: ${ARCSECOND_API_IMAGE:-ghcr.io/arcsecond-io/arcsecond-api:latest}
+    pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-alerts
     restart: unless-stopped
     entrypoint: /home/app/entrypoint-alerts.sh

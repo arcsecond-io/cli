@@ -58,6 +58,30 @@ def test_optional_services_are_recognised_by_their_markers():
     assert "GCN_CONSUMER_CLIENT_ID" in " ".join(s["alerts"].description)
 
 
+def test_every_service_on_the_backend_image_can_be_given_a_local_build():
+    s = _services()
+    api = [name for name, service in s.items() if "arcsecond-api" in service.image]
+    assert api == ["backend", "worker", "dataworker", "beat", "alerts"]
+    for name in api:
+        assert "ARCSECOND_API_IMAGE" in s[name].env_vars, name
+        assert "ARCSECOND_API_PULL_POLICY" in s[name].env_vars, name
+
+
+def test_the_web_interface_can_be_given_a_local_build():
+    web = _services()["web"]
+    assert (
+        web.image == "ghcr.io/arcsecond-io/arcsecond-web:latest"
+    )  # what an unset key runs
+    assert "ARCSECOND_WEB_IMAGE" in web.env_vars
+    assert "ARCSECOND_WEB_PULL_POLICY" in web.env_vars
+
+
+def test_every_key_the_template_reads_is_documented():
+    for service in composedoc.parse_services(local.packaged_compose_text()):
+        for key in service.env_vars:
+            assert key in composedoc.ENV_KEYS, (service.name, key)
+
+
 def test_every_key_setup_writes_is_documented():
     for key in local.REQUIRED_ENV_PROVIDERS:
         assert key in composedoc.ENV_KEYS, key
