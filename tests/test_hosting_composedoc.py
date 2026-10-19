@@ -56,6 +56,7 @@ def test_optional_services_are_recognised_by_their_markers():
     assert s["alerts"].optional == "alerts"
     assert s["web"].optional is None
     assert "GCN_CONSUMER_CLIENT_ID" in " ".join(s["alerts"].description)
+    assert "FINK_ENABLED" in " ".join(s["alerts"].description)
 
 
 def test_every_service_on_the_backend_image_can_be_given_a_local_build():

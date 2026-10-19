@@ -1,6 +1,6 @@
 # === Arcsecond.local config. ===
 # *** DO NOT change any name or port number. ***
-# Version 7.5
+# Version 7.6
 
 services:
   # Database (PostgresQL)
@@ -188,10 +188,13 @@ services:
 
   # >>> arcsecond:alerts
   # Arcsecond transient-alerts consumer (optional).
-  # Long-lived Kafka client for NASA GCN. Outbound TLS only — nothing listens:
-  # auth.gcn.nasa.gov on 443, then kafka, kafka1, kafka2 and
-  # kafka3.gcn.nasa.gov on 9092. Requires GCN_CONSUMER_CLIENT_ID /
-  # GCN_CONSUMER_CLIENT_SECRET in .env; idles harmlessly when they are absent.
+  # Long-lived Kafka clients, outbound only — nothing listens.
+  # NASA GCN, over TLS: auth.gcn.nasa.gov on 443, then kafka, kafka1, kafka2
+  # and kafka3.gcn.nasa.gov on 9092. Requires GCN_CONSUMER_CLIENT_ID /
+  # GCN_CONSUMER_CLIENT_SECRET in .env; idles harmlessly without them.
+  # Fink survey alerts, unencrypted (public data): kafka-ztf.fink-broker.org
+  # and the brokers it hands out, all on 24499. Needs nothing in .env;
+  # FINK_ENABLED=false turns it off.
   # Single instance only — do not scale it.
   alerts:
     image: ${ARCSECOND_API_IMAGE:-ghcr.io/arcsecond-io/arcsecond-api:latest}

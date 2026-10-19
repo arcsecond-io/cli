@@ -605,7 +605,8 @@ def setup(with_alerts, lan_host, with_sky_map):
             "\nTransient alerts next steps: create GCN credentials (see "
             "https://docs.arcsecond.io/guides/operating/transient-alerts), paste them into "
             ".env as GCN_CONSUMER_CLIENT_ID / GCN_CONSUMER_CLIENT_SECRET, then "
-            "run: arcsecond restart alerts"
+            "run: arcsecond restart alerts. Survey alerts from Fink need nothing: "
+            "they start with the service."
         )
 
     click.echo("\nNext:  " + click.style("arcsecond start", bold=True))

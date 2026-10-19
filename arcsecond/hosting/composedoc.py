@@ -229,6 +229,20 @@ ENV_KEYS: Dict[str, tuple] = {
         "NASA GCN client credentials for the optional transient-alerts service. Empty until you paste yours.",
     ),
     "GCN_CONSUMER_CLIENT_SECRET": (OPERATOR, "See GCN_CONSUMER_CLIENT_ID."),
+    "FINK_ENABLED": (
+        BACKEND,
+        "`false` turns off the survey alerts from Fink in the optional transient-alerts service; GCN keeps "
+        "running. Fink needs no credentials, so it is on wherever the service runs.",
+    ),
+    "FINK_KAFKA_GROUP_ID": (
+        BACKEND,
+        "The installation's consumer group at Fink. Empty: `arcsecond-local-` and this machine's fingerprint, "
+        "which no other installation shares. Two installations sharing a group split the alerts between them.",
+    ),
+    "FINK_TOPICS": (
+        BACKEND,
+        "Comma-separated Fink topics, each ending in its survey (`_ztf`). Empty: the topics Arcsecond chose.",
+    ),
     FRONTEND_HOST_ENV_KEY: (
         OPERATOR,
         "The address other computers reach the installation at, port included (e.g. 192.168.1.42:5555). The backend "
