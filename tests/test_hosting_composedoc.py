@@ -1,9 +1,11 @@
 """The services and environment reference, read from the packaged template."""
 
+import re
+
 from click.testing import CliRunner
 
 from arcsecond import cli
-from arcsecond.hosting import composedoc, local
+from arcsecond.hosting import composedoc, lifecycle, local
 
 
 def _services():
@@ -42,6 +44,28 @@ def test_facts_are_read_where_the_template_states_them():
     assert s["db"].ports == [] and s["broker"].ports == []
     assert any("arcsecond_postgres_data" in v for v in s["db"].volumes)
     assert any("/data" in v for v in s["backend"].volumes)
+
+
+def test_every_service_keeps_a_capped_log():
+    """One shared setting, so no service can fill the disk with its log; a
+    service added without it fails here."""
+    text = local.packaged_compose_text()
+    assert (
+        "x-logging: &default-logging\n"
+        "  driver: json-file\n"
+        "  options:\n"
+        '    max-size: "20m"\n'
+        '    max-file: "5"\n'
+    ) in text
+    for service in composedoc.parse_services(text):
+        assert service.logging == "*default-logging", service.name
+
+
+def test_the_logs_help_states_the_cap_the_template_sets():
+    text = local.packaged_compose_text()
+    size = int(re.search(r'max-size: "(\d+)m"', text).group(1))
+    files = int(re.search(r'max-file: "(\d+)"', text).group(1))
+    assert f"last {size * files} MB" in lifecycle.logs.help
 
 
 def test_the_comments_are_kept_as_documentation():

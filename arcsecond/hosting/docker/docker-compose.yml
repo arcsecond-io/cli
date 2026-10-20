@@ -1,6 +1,15 @@
 # === Arcsecond.local config. ===
 # *** DO NOT change any name or port number. ***
-# Version 7.6
+# Version 7.7
+
+# One log setting for every service, so no service can fill the disk with
+# its log: five files of 20 MB each, the oldest dropped first. A full disk
+# stops the database and the broker from saving, and the whole stack with them.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
 
 services:
   # Database (PostgresQL)
@@ -8,6 +17,7 @@ services:
     image: postgres:16
     container_name: arcsecond-db
     restart: unless-stopped
+    logging: *default-logging
     # No host port. The backend reaches the DB over the internal Docker
     # network (hostname `arcsecond-db`), and every CLI command that needs
     # the DB (backups, restore, password rotation) goes through `docker exec`
@@ -24,6 +34,7 @@ services:
     image: redis:7.4
     container_name: arcsecond-broker
     restart: unless-stopped
+    logging: *default-logging
     # No host port either: Redis with no auth must never be reachable from
     # outside the stack, and the backend reaches it over the Docker network.
 
@@ -37,6 +48,7 @@ services:
     pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-api
     restart: unless-stopped
+    logging: *default-logging
     entrypoint: /home/app/entrypoint-server.sh
     # This machine only. Browsers and other computers go through the webapp's
     # port, which serves the very same API under /api/; 8800 is for the
@@ -81,6 +93,7 @@ services:
     pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-worker
     restart: unless-stopped
+    logging: *default-logging
     entrypoint: /home/app/entrypoint-worker.sh
     depends_on:
       backend:
@@ -110,6 +123,7 @@ services:
     pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-dataworker
     restart: unless-stopped
+    logging: *default-logging
     entrypoint: /home/app/entrypoint-worker.sh
     depends_on:
       backend:
@@ -137,6 +151,7 @@ services:
     pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-beat
     restart: unless-stopped
+    logging: *default-logging
     entrypoint: /home/app/entrypoint-beat.sh
     depends_on:
       backend:
@@ -150,6 +165,7 @@ services:
     image: ghcr.io/arcsecond-io/arcsecond-service-platesolver-astrometry:latest
     container_name: arcsecond-platesolver
     restart: unless-stopped
+    logging: *default-logging
     # No host port. Only the backend calls the solver, over the internal Docker
     # network; it has no authentication and nothing outside the stack needs it.
 
@@ -163,6 +179,7 @@ services:
     pull_policy: ${ARCSECOND_WEB_PULL_POLICY:-missing}
     container_name: arcsecond-web
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       backend:
         condition: service_started
@@ -201,6 +218,7 @@ services:
     pull_policy: ${ARCSECOND_API_PULL_POLICY:-missing}
     container_name: arcsecond-alerts
     restart: unless-stopped
+    logging: *default-logging
     entrypoint: /home/app/entrypoint-alerts.sh
     depends_on:
       backend:

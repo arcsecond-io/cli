@@ -51,6 +51,7 @@ class Service:
     volumes: List[str] = field(default_factory=list)
     healthcheck: bool = False
     stop_grace_period: Optional[str] = None
+    logging: Optional[str] = None  # e.g. "*default-logging", the shared anchor
     env_vars: List[str] = field(default_factory=list)
     optional: Optional[str] = None  # the marker name, e.g. "alerts"
 
@@ -139,6 +140,7 @@ class _Reader:
             "restart": "restart",
             "entrypoint": "entrypoint",
             "stop_grace_period": "stop_grace_period",
+            "logging": "logging",
         }
         if key in scalar:
             setattr(self.current, scalar[key], _as_shipped(value))

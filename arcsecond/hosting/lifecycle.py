@@ -272,7 +272,10 @@ def status(directory):
 @basic_options
 def logs(directory, service, follow, tail):
     """Show recent logs. Services are named as in `arcsecond status`:
-    backend, worker, dataworker, beat, web, db, broker, platesolver, alerts."""
+    backend, worker, dataworker, beat, web, db, broker, platesolver, alerts.
+
+    Each service keeps the last 100 MB of its log, so a busy one cannot fill
+    the disk; older lines are dropped."""
     install = stack.resolve_install_dir(directory)
     stack.ensure_docker()
     args = ["logs", "--tail", str(tail)]
