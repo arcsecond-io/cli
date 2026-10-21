@@ -38,9 +38,13 @@ def offer(env_path, key=None, interactive=True) -> None:
         key = key.strip()
         _set_env_value(env_path, ENV_KEY, key)
         if key:
-            click.echo("Tomorrow.io key recorded. The weather forecast starts with the next  arcsecond restart.")
+            click.echo(
+                "Tomorrow.io key recorded. The weather forecast starts with the next  arcsecond restart."
+            )
         else:
-            click.echo("Tomorrow.io key removed: this installation has no weather forecast.")
+            click.echo(
+                "Tomorrow.io key removed: this installation has no weather forecast."
+            )
         return
 
     if has_key(env_path) or not interactive:

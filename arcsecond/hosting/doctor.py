@@ -338,7 +338,9 @@ def check_env_file(install) -> List[Finding]:
 def check_forecast_key(install) -> Finding:
     """Present or not: whether the key works would cost a metered call."""
     if (install.read_env(forecast.ENV_KEY) or "").strip():
-        return Finding("forecast.key", "Weather forecast key", OK, "a Tomorrow.io key is set")
+        return Finding(
+            "forecast.key", "Weather forecast key", OK, "a Tomorrow.io key is set"
+        )
     return Finding(
         "forecast.key",
         "Weather forecast key",

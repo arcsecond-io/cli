@@ -1,4 +1,5 @@
 """The installation's own Tomorrow.io key: asked while empty, never shipped."""
+
 from types import SimpleNamespace
 
 import pytest
@@ -39,7 +40,9 @@ def test_an_empty_key_is_asked_for_and_an_answer_recorded(env, monkeypatch):
     assert _key(env) == "abc123"
 
 
-def test_an_empty_answer_leaves_it_empty_and_the_next_setup_asks_again(env, monkeypatch):
+def test_an_empty_answer_leaves_it_empty_and_the_next_setup_asks_again(
+    env, monkeypatch
+):
     asked = []
     monkeypatch.setattr(forecast.click, "prompt", lambda *a, **k: asked.append(1) or "")
     forecast.offer(env, interactive=True)
@@ -50,7 +53,9 @@ def test_an_empty_answer_leaves_it_empty_and_the_next_setup_asks_again(env, monk
 
 def test_a_recorded_key_is_not_asked_for_again(env, monkeypatch):
     forecast.offer(env, key="abc123")
-    monkeypatch.setattr(forecast.click, "prompt", lambda *a, **k: pytest.fail("asked again"))
+    monkeypatch.setattr(
+        forecast.click, "prompt", lambda *a, **k: pytest.fail("asked again")
+    )
     forecast.offer(env, interactive=True)
 
 

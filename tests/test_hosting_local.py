@@ -620,7 +620,9 @@ def test_setup_writes_an_empty_forecast_key_with_its_explanation(tmp_path, monke
     assert "No Tomorrow.io key yet" in result.output
 
 
-def test_setup_tomorrow_io_key_flag_fills_it_in_and_drops_the_next_step(tmp_path, monkeypatch):
+def test_setup_tomorrow_io_key_flag_fills_it_in_and_drops_the_next_step(
+    tmp_path, monkeypatch
+):
     result = _setup(tmp_path, monkeypatch, "--tomorrow-io-key", "abc123")
     assert result.exit_code == 0, result.output
     env_contents = (tmp_path / ".env").read_text(encoding="utf-8")
@@ -632,8 +634,11 @@ def test_setup_tomorrow_io_key_flag_fills_it_in_and_drops_the_next_step(tmp_path
 def test_an_existing_env_gets_the_forecast_key_line_once(tmp_path, monkeypatch):
     _setup(tmp_path, monkeypatch)
     env_path = tmp_path / ".env"
-    lines = [line for line in env_path.read_text(encoding="utf-8").splitlines()
-             if "TOMORROW_IO_API_KEY" not in line and "Tomorrow.io" not in line]
+    lines = [
+        line
+        for line in env_path.read_text(encoding="utf-8").splitlines()
+        if "TOMORROW_IO_API_KEY" not in line and "Tomorrow.io" not in line
+    ]
     env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     _setup(tmp_path, monkeypatch)
