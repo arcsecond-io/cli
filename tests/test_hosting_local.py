@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from click.testing import CliRunner
 
-from arcsecond.hosting import local
+from arcsecond.hosting import forecast, local
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -17,6 +17,12 @@ def _stub_env_generators(monkeypatch):
     monkeypatch.setattr(local, "prompt_shared_data_path", lambda: "/tmp/shared-data")
     monkeypatch.setattr(local, "_offer_token", lambda: None)
     monkeypatch.setattr(local, "_offer_sky_map", lambda env_path, flag: None)
+    # The flag still applies; the prompt never fires (tests/test_hosting_forecast.py).
+    monkeypatch.setattr(
+        local,
+        "_offer_forecast_key",
+        lambda env_path, key: forecast.offer(env_path, key=key, interactive=False),
+    )
     # The machine running the tests has a LAN address of its own; tests that
     # want one give it.
     monkeypatch.setattr(local, "lan_ipv4", lambda: None)
@@ -600,3 +606,38 @@ def test_setup_hands_over_to_start_and_never_mentions_docker_compose(
     assert "arcsecond start" in result.output
     assert "arcsecond restart alerts" in result.output
     assert "docker compose" not in result.output
+
+
+# --- the installation's own Tomorrow.io key ------------------------------------
+
+
+def test_setup_writes_an_empty_forecast_key_with_its_explanation(tmp_path, monkeypatch):
+    result = _setup(tmp_path, monkeypatch)
+    assert result.exit_code == 0, result.output
+    env_contents = (tmp_path / ".env").read_text(encoding="utf-8")
+    assert "TOMORROW_IO_API_KEY=\n" in env_contents
+    assert "tomorrow.io/weather-api" in env_contents
+    assert "No Tomorrow.io key yet" in result.output
+
+
+def test_setup_tomorrow_io_key_flag_fills_it_in_and_drops_the_next_step(tmp_path, monkeypatch):
+    result = _setup(tmp_path, monkeypatch, "--tomorrow-io-key", "abc123")
+    assert result.exit_code == 0, result.output
+    env_contents = (tmp_path / ".env").read_text(encoding="utf-8")
+    assert "TOMORROW_IO_API_KEY=abc123\n" in env_contents
+    assert env_contents.count("TOMORROW_IO_API_KEY=") == 1
+    assert "No Tomorrow.io key yet" not in result.output
+
+
+def test_an_existing_env_gets_the_forecast_key_line_once(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch)
+    env_path = tmp_path / ".env"
+    lines = [line for line in env_path.read_text(encoding="utf-8").splitlines()
+             if "TOMORROW_IO_API_KEY" not in line and "Tomorrow.io" not in line]
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    _setup(tmp_path, monkeypatch)
+    _setup(tmp_path, monkeypatch)
+    env_contents = env_path.read_text(encoding="utf-8")
+    assert env_contents.count("TOMORROW_IO_API_KEY=") == 1
+    assert env_contents.count(forecast.ENV_COMMENT) == 1

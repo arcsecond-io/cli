@@ -231,6 +231,14 @@ ENV_KEYS: Dict[str, tuple] = {
         "NASA GCN client credentials for the optional transient-alerts service. Empty until you paste yours.",
     ),
     "GCN_CONSUMER_CLIENT_SECRET": (OPERATOR, "See GCN_CONSUMER_CLIENT_ID."),
+    "TOMORROW_IO_API_KEY": (
+        OPERATOR,
+        "Your own Tomorrow.io API key: the weather forecast, and the safety conditions only a forecast can feed "
+        "(cloud cover, humidity) where no station of yours measures them. A free key from "
+        "https://www.tomorrow.io/weather-api/ is enough; the backend asks once an hour per observing site. "
+        "Arcsecond's key is not shipped. Empty: no forecast, and the Safety strip says so. Asked at setup, or "
+        "`arcsecond setup --tomorrow-io-key KEY`.",
+    ),
     "FINK_ENABLED": (
         BACKEND,
         "`false` turns off the survey alerts from Fink in the optional transient-alerts service; GCN keeps "

@@ -50,7 +50,7 @@ from arcsecond.api.config import ArcsecondConfig
 from arcsecond.errors import ArcsecondError
 from arcsecond.options import basic_options
 
-from . import stack
+from . import forecast, stack
 from .lifecycle import dir_option
 from .local import (
     FRONTEND_HOST_ENV_KEY,
@@ -333,6 +333,19 @@ def check_env_file(install) -> List[Finding]:
             )
         )
     return findings
+
+
+def check_forecast_key(install) -> Finding:
+    """Present or not: whether the key works would cost a metered call."""
+    if (install.read_env(forecast.ENV_KEY) or "").strip():
+        return Finding("forecast.key", "Weather forecast key", OK, "a Tomorrow.io key is set")
+    return Finding(
+        "forecast.key",
+        "Weather forecast key",
+        WARN,
+        "no Tomorrow.io key: no weather forecast, and no safety condition fed by it",
+        fix=forecast.LATER,
+    )
 
 
 def check_lan_host(install, host: Host) -> Finding:
@@ -788,6 +801,7 @@ def run_checks(
     findings.append(docker)
     findings.append(check_template(install))
     findings += check_env_file(install)
+    findings.append(check_forecast_key(install))
     findings.append(check_lan_host(install, host))
 
     running = False

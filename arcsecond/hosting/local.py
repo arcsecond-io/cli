@@ -11,6 +11,7 @@ from arcsecond.api.config import ArcsecondConfig
 from arcsecond.errors import ArcsecondError
 from arcsecond.options import basic_options
 
+from . import forecast
 from .utils import (
     _get_encryption_key,
     _get_random_postgres_password,
@@ -115,6 +116,9 @@ REQUIRED_ENV_PROVIDERS = {
     # Empty placeholders: the operator pastes their own GCN credentials here.
     "GCN_CONSUMER_CLIENT_ID": lambda: "",
     "GCN_CONSUMER_CLIENT_SECRET": lambda: "",
+    # Empty placeholder: the operator's own Tomorrow.io key, asked for by
+    # `setup` while it is empty (forecast.offer). Arcsecond's is not shipped.
+    "TOMORROW_IO_API_KEY": lambda: "",
     # Empty placeholder: filled in by `setup` with this machine's LAN address
     # (_fill_in_lan_host), or set by `arcsecond setup --lan-host`, or by hand.
     FRONTEND_HOST_ENV_KEY: lambda: "",
@@ -151,6 +155,7 @@ def write_env_file(directory=None):
         "POSTGRES_DB",
         "GCN_CONSUMER_CLIENT_ID",
         "GCN_CONSUMER_CLIENT_SECRET",
+        "TOMORROW_IO_API_KEY",
         FRONTEND_HOST_ENV_KEY,
     ]
 
@@ -163,6 +168,8 @@ def write_env_file(directory=None):
                 # have hand-added one of the two already.
                 lines.append(GCN_ENV_COMMENT)
                 gcn_comment_pending = False
+            if key == "TOMORROW_IO_API_KEY":
+                lines.append(forecast.ENV_COMMENT)
             if key == FRONTEND_HOST_ENV_KEY:
                 lines.append(FRONTEND_HOST_ENV_COMMENT)
             lines.append(_format_env_line(key, REQUIRED_ENV_PROVIDERS[key]()))
@@ -488,6 +495,10 @@ def _offer_sky_map(env_path, flag):
     skybrightness.offer(env_path, flag=flag, interactive=_stdin_is_interactive())
 
 
+def _offer_forecast_key(env_path, key):
+    forecast.offer(env_path, key=key, interactive=_stdin_is_interactive())
+
+
 def _normalise_lan_host(value):
     """`192.168.1.42` → `192.168.1.42:5555`; a scheme or a path is refused."""
     value = (value or "").strip()
@@ -553,8 +564,16 @@ def _fill_in_lan_host(env_path):
     help="Keep (or not) a copy of the sky-brightness map on this machine, "
     "without prompting. With a copy, no outside lookup is made for it.",
 )
+@click.option(
+    "--tomorrow-io-key",
+    "tomorrow_io_key",
+    default=None,
+    metavar="KEY",
+    help="Your own Tomorrow.io API key, for the weather forecast, without "
+    "prompting (a free key is enough). An empty value removes it.",
+)
 @basic_options
-def setup(with_alerts, lan_host, with_sky_map):
+def setup(with_alerts, lan_host, with_sky_map, tomorrow_io_key):
     """Write (or update) the two files an installation is made of, in the
     current folder: .env, with this installation's secrets, and
     docker-compose.yml — and ask for the access token Arcsecond gave your
@@ -599,6 +618,7 @@ def setup(with_alerts, lan_host, with_sky_map):
     _register_local_api()
     _offer_token()
     _offer_sky_map(env_path, with_sky_map)
+    _offer_forecast_key(env_path, tomorrow_io_key)
 
     if "alerts" in enabled:
         click.echo(
@@ -608,5 +628,9 @@ def setup(with_alerts, lan_host, with_sky_map):
             "run: arcsecond restart alerts. Survey alerts from Fink need nothing: "
             "they start with the service."
         )
+
+    forecast_step = forecast.next_step(env_path)
+    if forecast_step:
+        click.echo("\n" + forecast_step)
 
     click.echo("\nNext:  " + click.style("arcsecond start", bold=True))

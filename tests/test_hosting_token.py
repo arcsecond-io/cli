@@ -233,6 +233,7 @@ def setup_env(tmp_path, monkeypatch):
     monkeypatch.setattr(local, "prompt_shared_data_path", lambda: "/tmp/shared")
     monkeypatch.setattr(local, "_stdin_is_interactive", lambda: True)
     monkeypatch.setattr(local, "_offer_sky_map", lambda env_path, flag: None)
+    monkeypatch.setattr(local, "_offer_forecast_key", lambda env_path, key: None)
     monkeypatch.setattr(stack, "ensure_docker", lambda: "2.29")
     stored = []
     monkeypatch.setattr(token, "store_token", lambda t: stored.append(t))
