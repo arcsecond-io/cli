@@ -363,7 +363,7 @@ def generate_page(manifest: Manifest) -> dict:
         f"- [The same sheet as a one-page PDF]({STATIC_ADDRESS}/{PDF}).",
         # The site's router takes a link ending in .html for one of its own
         # pages and answers 404; a `target` makes it leave the link to the browser.
-        f"- [The same sheet on one printable page]({STATIC_ADDRESS}/{PRINTABLE}){{target=\"_self\"}}, "
+        f'- [The same sheet on one printable page]({STATIC_ADDRESS}/{PRINTABLE}){{target="_self"}}, '
         "to print from your browser.",
         f"- [The request to send to whoever runs your firewall]({STATIC_ADDRESS}/{REQUEST}), as plain text.",
         "",
