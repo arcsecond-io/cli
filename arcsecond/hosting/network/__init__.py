@@ -9,6 +9,7 @@ TOML rather than YAML because Python reads it without a dependency, and this
 tool is installed on observatory machines.
 """
 
+import ipaddress
 import tomllib
 from dataclasses import dataclass, field
 from importlib import resources
@@ -50,6 +51,7 @@ class Destination:
     test: str
     evidence: str
     ports_note: str = ""
+    addresses: Tuple[str, ...] = ()
 
     @property
     def always_on(self) -> bool:
@@ -63,6 +65,14 @@ class Destination:
             return False
         name = name.rstrip(".").lower()
         return any(name == n or name.endswith("." + n) for n in self.names)
+
+    def covers_address(self, address: str, port: int) -> bool:
+        """Whether a connection to ``address`` on ``port`` is this entry: for
+        servers that are handed out by address, with no name to look up."""
+        if port != self.port:
+            return False
+        ip = ipaddress.ip_address(address)
+        return any(ip in ipaddress.ip_network(a) for a in self.addresses)
 
 
 @dataclass(frozen=True)
@@ -92,6 +102,16 @@ class Manifest:
             if origin is not None and d.origin != origin:
                 continue
             if d.covers(name, port):
+                return d
+        return None
+
+    def find_address(
+        self, address: str, port: int, origin: Optional[str] = None
+    ) -> Optional[Destination]:
+        for d in self.destinations:
+            if origin is not None and d.origin != origin:
+                continue
+            if d.covers_address(address, port):
                 return d
         return None
 
@@ -142,6 +162,16 @@ def _destination(entry: dict, index: int) -> Destination:
         raise ManifestError(f"{where}: an outbound entry with no name cannot be tested")
     if names and not 0 < port < 65536:
         raise ManifestError(f"{where}: port {port} is not a port")
+    addresses = tuple(entry.get("addresses", []))
+    if addresses and not names:
+        raise ManifestError(
+            f"{where}: `addresses` are the ones a named server hands out"
+        )
+    for address in addresses:
+        try:
+            ipaddress.ip_network(address)
+        except ValueError:
+            raise ManifestError(f"{where}: {address!r} is not an address") from None
     return Destination(
         id=_require(entry, "id", str, where),
         short=_short(entry, where),
@@ -162,6 +192,7 @@ def _destination(entry: dict, index: int) -> Destination:
         test=_one_of(entry, "test", TESTS, where),
         evidence=_one_of(entry, "evidence", EVIDENCE, where),
         ports_note=str(entry.get("ports_note", "")),
+        addresses=addresses,
     )
 
 

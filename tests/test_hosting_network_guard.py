@@ -67,6 +67,19 @@ def test_a_bare_address_nobody_looked_up_fails():
     assert "no name was looked up" in guard.report(verdict)
 
 
+def test_a_server_handed_out_by_address_passes_when_declared():
+    """Fink's first server names the others by address only: no lookup
+    precedes the connection, so the guard matches the address itself."""
+    verdict = guard.check([_syn("172.21.0.9", "157.136.252.46", 24499)], SUBNET)
+    assert verdict.ok
+    assert verdict.declared[0][0] == "alerts-survey"
+
+
+def test_a_declared_address_on_another_port_fails():
+    verdict = guard.check([_syn("172.21.0.9", "157.136.252.46", 443)], SUBNET)
+    assert not verdict.ok
+
+
 def test_a_declared_browser_destination_is_not_the_stacks_to_use():
     lines = [
         "12:00:00.000000 ?     Out IP 192.168.65.6.41000 > 192.168.65.7.53: 9+ A? server.arcgisonline.com. (40)",

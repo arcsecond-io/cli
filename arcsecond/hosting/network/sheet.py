@@ -304,7 +304,7 @@ def render_firewall_request(manifest: Manifest) -> str:
         return [
             f"  {name:<40} {d.transport} {d.port:<6} {d.short}"
             for d in entries
-            for name in d.names
+            for name in (*d.names, *d.addresses)
         ]
 
     out = [
@@ -312,7 +312,7 @@ def render_firewall_request(manifest: Manifest) -> str:
         "",
         "We run Arcsecond.local, observatory software, on one machine of our network.",
         "It accepts no connection from the Internet and needs no port forwarded.",
-        "It opens outbound connections only, encrypted, to the destinations below.",
+        "It opens outbound connections only, encrypted except Fink's public survey alerts, to the destinations below.",
         "Please allow them from that machine.",
         "",
         "Required:",
@@ -327,7 +327,8 @@ def render_firewall_request(manifest: Manifest) -> str:
         "Only for features we may turn on:",
         *listing(features),
         "",
-        "Note: port 9092 carries NASA's alert feed. It is not web traffic and cannot go through a web proxy.",
+        "Note: port 9092 carries NASA's alert feed, and port 24499 Fink's survey alerts.",
+        "They are not web traffic and cannot go through a web proxy.",
         "",
         "--- as a web proxy allow list (names reached on port 443) ---",
         *sorted(

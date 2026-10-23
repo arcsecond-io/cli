@@ -49,7 +49,7 @@ def test_a_default_installation_needs_one_name_and_only_one(manifest):
     assert [d.names for d in required] == [("licensing.arcsecond.io",)]
 
 
-def test_nothing_leaves_the_stack_unencrypted_except_to_servers_the_observatory_chose(
+def test_nothing_leaves_the_stack_unencrypted_but_public_alerts_and_servers_the_observatory_chose(
     manifest,
 ):
     plain = [
@@ -57,7 +57,7 @@ def test_nothing_leaves_the_stack_unencrypted_except_to_servers_the_observatory_
         for d in manifest.of("stack")
         if d.direction == "outbound" and not d.encrypted
     ]
-    assert plain == ["attached-storage"]
+    assert plain == ["alerts-survey", "attached-storage"]
 
 
 def test_the_listening_ports_are_the_ones_the_compose_file_publishes(manifest):
@@ -86,6 +86,11 @@ def test_the_compose_file_names_the_alert_hosts_the_manifest_declares(manifest):
         r"kafka, kafka1, kafka2 and kafka3\.gcn\.nasa\.gov on 9092", comment
     )
     assert len(manifest.find("kafka.gcn.nasa.gov", 9092).names) == 4
+    assert (
+        "kafka-ztf.fink-broker.org and the brokers it hands out, all on 24499"
+        in comment
+    )
+    assert manifest.find("kafka-ztf.fink-broker.org", 24499).id == "alerts-survey"
 
 
 def network_compose_text():
@@ -113,6 +118,21 @@ def test_a_malformed_entry_is_refused_with_its_name(broken, complaint):
     with pytest.raises(network.ManifestError) as error:
         network.parse(text.replace(broken, replacements[broken], 1))
     assert complaint in str(error.value)
+
+
+def test_an_address_is_matched_on_its_port_and_nothing_near_it(manifest):
+    assert manifest.find_address("157.136.253.223", 24499).id == "alerts-survey"
+    assert manifest.find_address("157.136.253.224", 24499) is None
+    assert manifest.find_address("157.136.253.223", 9092) is None
+
+
+def test_a_name_in_place_of_an_address_is_refused():
+    text = network.packaged_text()
+    line = next(x for x in text.splitlines() if x.startswith("addresses = "))
+    with pytest.raises(network.ManifestError, match="is not an address"):
+        network.parse(
+            text.replace(line, 'addresses = ["kafka-ztf.fink-broker.org"]', 1)
+        )
 
 
 def test_an_id_cannot_be_used_twice():

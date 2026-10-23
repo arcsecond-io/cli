@@ -138,7 +138,7 @@ def check(
                 if (d := manifest.find(name, port, origin="stack"))
             ),
             None,
-        )
+        ) or manifest.find_address(address, port, origin="stack")
         if entry is not None:
             declared[key] = (entry.id, connection)
         else:

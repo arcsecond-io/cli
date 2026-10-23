@@ -91,6 +91,8 @@ def test_the_firewall_request_lists_every_name_with_its_port():
     request = sheet.render_firewall_request(manifest)
     assert re.search(r"licensing\.arcsecond\.io\s+tcp 443", request)
     assert re.search(r"kafka2\.gcn\.nasa\.gov\s+tcp 9092", request)
+    assert re.search(r"kafka-ztf\.fink-broker\.org\s+tcp 24499", request)
+    assert re.search(r"157\.136\.252\.46\s+tcp 24499", request)
     assert "cannot go through a web proxy" in request
     allow_list = (
         request.split(
@@ -102,7 +104,7 @@ def test_the_firewall_request_lists_every_name_with_its_port():
     assert "licensing.arcsecond.io" in allow_list and "ghcr.io" in allow_list
     assert not any(
         "kafka" in name for name in allow_list
-    )  # 9092 is not the proxy's to carry
+    )  # 9092 and 24499 are not the proxy's to carry
     # The browsers' destinations are the workstations' business, not this machine's.
     assert "server.arcgisonline.com" not in request
 

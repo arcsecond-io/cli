@@ -220,7 +220,7 @@ def _proxy_note(proxies: List[str]) -> Finding:
         data={
             "proxies": proxies,
             "note": "The installation uses it only if the same setting is in its .env file. "
-            "The alert feed (port 9092) cannot go through a web proxy.",
+            "The alert feeds (ports 9092 and 24499) cannot go through a web proxy.",
         },
     )
 

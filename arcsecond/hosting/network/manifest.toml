@@ -21,6 +21,8 @@
 #                 command on the host), "docker" (image downloads)
 #   direction     "outbound" or "local-network" (never leaves the site)
 #   names         host names; empty when the administrator chooses the server
+#   addresses     optional: the addresses a named server hands out, with no
+#                 name to look up (single addresses or ranges)
 #   port          destination port
 #   ports_note    optional: what to print instead, when the port is the observatory's choice
 #   transport     "tcp" or "udp"
@@ -371,6 +373,28 @@ without_it = "No alerts from the network."
 proxy = "no"
 test = "handshake"
 evidence = "captured"
+
+[[destination]]
+id = "alerts-survey"
+short = "Survey alerts (Fink)"
+from = "stack"
+direction = "outbound"
+names = ["kafka-ztf.fink-broker.org"]
+addresses = ["157.136.249.242", "157.136.252.46", "157.136.252.125", "157.136.252.183", "157.136.253.223"]
+port = 24499
+ports_note = "24499, not encrypted"
+transport = "tcp"
+encrypted = false
+need = "optional"
+enabled_by = "the transient-alerts service; no credentials needed, and FINK_ENABLED=false in the configuration file turns it off"
+purpose = "Fink alert broker: new detections of the Zwicky Transient Facility survey, over a connection kept open. The first server hands out the others by address only, all on the same port: the addresses listed here, as read on 2026-10-23. Not encrypted: the alerts are public data."
+feature = "Receiving transient alerts."
+frequency = "Continuous while the service runs."
+data_sent = ["a consumer group name derived from the machine", "acknowledgements of what was received"]
+without_it = "No survey alerts. Alerts from NASA's network still work."
+proxy = "no"
+test = "connect"
+evidence = "code"
 
 [[destination]]
 id = "weather-forecast"
