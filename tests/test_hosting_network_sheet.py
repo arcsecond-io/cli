@@ -123,3 +123,8 @@ def test_docs_network_writes_then_checks(tmp_path):
     (static / "firewall-request.txt").write_text("edited by hand")
     stale = CliRunner().invoke(docgen.docs, [*args, "--check"])
     assert stale.exit_code == 1 and "firewall-request.txt" in stale.output
+
+
+def test_the_printable_page_is_linked_past_the_documentation_router():
+    page = sheet.generate_page(_manifest())[sheet.PAGE]
+    assert '(/network/network-sheet.html){target="_self"}' in page
