@@ -14,6 +14,7 @@ from arcsecond.hosting import (
     backups,
     db,
     doctor_cmd,
+    license_group,
     logs,
     restart,
     setup,
@@ -78,6 +79,9 @@ main.add_command(update)
 main.add_command(doctor_cmd)
 # Its name until 4.4, kept so that scripts and habits go on working.
 main.add_command(doctor_cmd, name="check")
+
+# Is the installation licensed, as the backend itself sees it, and if not why.
+main.add_command(license_group)
 
 # The access token Arcsecond gave the observatory, once per machine.
 main.add_command(token_group)
