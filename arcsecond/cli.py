@@ -12,6 +12,7 @@ from arcsecond.cloud import (
 from arcsecond.docgen import docs
 from arcsecond.hosting import (
     backups,
+    disks_group,
     db,
     doctor_cmd,
     license_group,
@@ -88,6 +89,9 @@ main.add_command(token_group)
 
 # Browse and restore Arcsecond.local DB backups.
 main.add_command(backups)
+
+# The disks of this machine to attach as Local Disk storages.
+main.add_command(disks_group)
 
 # Manage the Arcsecond.local database (e.g. `arcsecond db set-password`).
 main.add_command(db)

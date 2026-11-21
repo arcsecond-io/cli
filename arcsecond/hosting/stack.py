@@ -188,6 +188,10 @@ def compose_command(install: InstallDir, *args: str) -> list:
     files = ["-f", str(install.compose_path)]
     if install.override_path.is_file():
         files += ["-f", str(install.override_path)]
+    # The disks `arcsecond disks` made available (see hosting/disks.py).
+    disks_path = install.path / "docker-compose.disks.yml"
+    if disks_path.is_file():
+        files += ["-f", str(disks_path)]
     return [
         "docker",
         "compose",

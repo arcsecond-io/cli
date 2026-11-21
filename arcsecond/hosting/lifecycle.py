@@ -15,6 +15,7 @@ from arcsecond.errors import ArcsecondError
 from arcsecond.options import basic_options
 
 from . import stack
+from .disks import offer_disks
 from .local import (
     LOCAL_API_NAME,
     _record_optional_service_decision,
@@ -321,6 +322,8 @@ def update(directory):
     for name, answer in to_record:
         _record_optional_service_decision(install.env_path, name, answer)
     write_docker_compose_file(enabled_services=enabled, directory=install.path)
+    # Asked once: a disk of this machine to attach as Local Disk storages.
+    offer_disks(install)
     # Installations set up before 4.0 never recorded where they are; from now
     # on the other commands find this one from any folder.
     stack.remember_install_dir(install.path)

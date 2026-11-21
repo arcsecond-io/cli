@@ -620,6 +620,11 @@ def setup(with_alerts, lan_host, with_sky_map, tomorrow_io_key):
     _offer_sky_map(env_path, with_sky_map)
     _offer_forecast_key(env_path, tomorrow_io_key)
 
+    from .disks import offer_disks
+    from .stack import InstallDir
+
+    offer_disks(InstallDir(Path(directory)))
+
     if "alerts" in enabled:
         click.echo(
             "\nTransient alerts next steps: create GCN credentials (see "
