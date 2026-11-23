@@ -49,7 +49,9 @@ def disks_compose_path(install) -> Path:
 def disk_name(path: str, taken=()) -> str:
     """A name for /disks/<name>: the folder's own, lowercased, made safe, and
     made unique among the names already taken."""
-    base = _NAME_RE.sub("-", Path(path.rstrip("/\\")).name.lower()).strip("-.") or "disk"
+    base = (
+        _NAME_RE.sub("-", Path(path.rstrip("/\\")).name.lower()).strip("-.") or "disk"
+    )
     name, index = base, 2
     while name in taken:
         name, index = f"{base}-{index}", index + 1
@@ -115,9 +117,13 @@ def add_disk(install, path: str, name: str = None) -> str:
     if name:
         name = _NAME_RE.sub("-", name.lower()).strip("-.")
         if not name:
-            raise ArcsecondError("A disk name holds letters, digits, dots, dashes or underscores.")
+            raise ArcsecondError(
+                "A disk name holds letters, digits, dots, dashes or underscores."
+            )
         if name in disks:
-            raise ArcsecondError(f"A disk is already mounted as {name}. `arcsecond disks list` shows them.")
+            raise ArcsecondError(
+                f"A disk is already mounted as {name}. `arcsecond disks list` shows them."
+            )
     else:
         name = disk_name(source, taken=disks.keys())
     disks[name] = source
@@ -129,7 +135,9 @@ def _record_declined(install) -> None:
     from .local import _parse_env_keys
 
     env_path = install.env_path
-    lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
+    lines = (
+        env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
+    )
     if LOCAL_DISKS_ENV_KEY in _parse_env_keys(lines):
         return
     if lines and lines[-1].strip():
@@ -144,18 +152,28 @@ def _record_declined(install) -> None:
 def offer_disks(install) -> bool:
     """The question `setup` and `update` ask once: is there a disk of this
     machine to attach? True when the disks changed."""
-    if read_disks(install) or install.read_env(LOCAL_DISKS_ENV_KEY) or not sys.stdin.isatty():
+    if (
+        read_disks(install)
+        or install.read_env(LOCAL_DISKS_ENV_KEY)
+        or not sys.stdin.isatty()
+    ):
         return False
     click.echo(
-        "\nArcsecond.local can index data already on a disk of this machine (a \"Local Disk\" storage,"
+        '\nArcsecond.local can index data already on a disk of this machine (a "Local Disk" storage,'
         "\nattached in the web interface), without copying it."
     )
-    if not click.confirm("Is there a disk or folder of this machine to make available?", default=False):
+    if not click.confirm(
+        "Is there a disk or folder of this machine to make available?", default=False
+    ):
         _record_declined(install)
         return False
     changed = False
     while True:
-        path = click.prompt("Path of the disk or folder (empty when done)", default="", show_default=False).strip()
+        path = click.prompt(
+            "Path of the disk or folder (empty when done)",
+            default="",
+            show_default=False,
+        ).strip()
         if not path:
             return changed
         try:
@@ -164,7 +182,11 @@ def offer_disks(install) -> bool:
             click.echo(click.style(str(e), fg="red"))
             continue
         changed = True
-        click.echo(click.style(f"  {path} will be available as {DISKS_TARGET}/{name}.", fg="green"))
+        click.echo(
+            click.style(
+                f"  {path} will be available as {DISKS_TARGET}/{name}.", fg="green"
+            )
+        )
 
 
 # --- Commands ---------------------------------------------------------------
@@ -172,13 +194,17 @@ def offer_disks(install) -> bool:
 
 def _apply(install, restart: bool) -> None:
     if not restart:
-        click.echo("Run `arcsecond restart backend worker dataworker` to make the change effective.")
+        click.echo(
+            "Run `arcsecond restart backend worker dataworker` to make the change effective."
+        )
         return
     from .lifecycle import _streamed
 
     stack.ensure_docker()
     click.echo("Recreating the services that read storages ...")
-    _streamed(install, "docker compose up", "up", "-d", "--force-recreate", *DISK_SERVICES)
+    _streamed(
+        install, "docker compose up", "up", "-d", "--force-recreate", *DISK_SERVICES
+    )
     click.echo(click.style("Done.", fg="green"))
 
 
@@ -195,7 +221,9 @@ _no_restart_option = click.option(
 )
 
 
-@click.group(name="disks", short_help="Disks of this machine to attach as Local Disk storages.")
+@click.group(
+    name="disks", short_help="Disks of this machine to attach as Local Disk storages."
+)
 def disks_group():
     """The disks (or folders) of this machine Arcsecond.local can attach as
     Local Disk storages. Once added here, attach a folder of one in the web
@@ -212,12 +240,20 @@ def disks_list(directory):
         click.echo("No disk yet. Add one with:  arcsecond disks add PATH")
         return
     for name, source in sorted(disks.items()):
-        click.echo(f"  {click.style(name, bold=True)}  {source}  (seen as {DISKS_TARGET}/{name})")
+        click.echo(
+            f"  {click.style(name, bold=True)}  {source}  (seen as {DISKS_TARGET}/{name})"
+        )
 
 
-@disks_group.command(name="add", help="Make a disk or folder of this machine available.")
+@disks_group.command(
+    name="add", help="Make a disk or folder of this machine available."
+)
 @click.argument("path")
-@click.option("--name", default=None, help="The name it is listed under. Default: the folder's name.")
+@click.option(
+    "--name",
+    default=None,
+    help="The name it is listed under. Default: the folder's name.",
+)
 @_dir_option
 @_no_restart_option
 @basic_options
@@ -230,7 +266,9 @@ def disks_add(path, name, directory, no_restart):
         return
     click.echo(f"{path} is available as {click.style(name, bold=True)}.")
     _apply(install, restart=not no_restart)
-    click.echo("Attach a folder of it in the web interface: Attached Storages, New Storage, Local Disk.")
+    click.echo(
+        "Attach a folder of it in the web interface: Attached Storages, New Storage, Local Disk."
+    )
 
 
 @disks_group.command(name="remove", help="Stop making a disk available.")
@@ -242,7 +280,9 @@ def disks_remove(name, directory, no_restart):
     install = stack.resolve_install_dir(directory)
     disks = read_disks(install)
     if name not in disks:
-        raise ArcsecondError(f"No disk named {name}. `arcsecond disks list` shows them.")
+        raise ArcsecondError(
+            f"No disk named {name}. `arcsecond disks list` shows them."
+        )
     del disks[name]
     write_disks(install, disks)
     click.echo(

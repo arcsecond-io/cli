@@ -29,7 +29,9 @@ def _run(*args, **kwargs):
     return CliRunner().invoke(disks.disks_group, list(args), **kwargs)
 
 
-def test_add_mounts_the_disk_on_every_storage_service_and_restarts_them(install, tmp_path):
+def test_add_mounts_the_disk_on_every_storage_service_and_restarts_them(
+    install, tmp_path
+):
     astro = tmp_path / "Astro Data"
     astro.mkdir()
     result = _run("add", str(astro))
@@ -49,7 +51,10 @@ def test_names_are_unique_and_paths_round_trip(install, tmp_path):
     assert disks.add_disk(install["install"], str(first)) == "data"
     assert disks.add_disk(install["install"], str(second)) == "data-1"
     assert disks.add_disk(install["install"], str(first)) == "data"  # already there
-    assert disks.read_disks(install["install"]) == {"data": first.as_posix(), "data-1": second.as_posix()}
+    assert disks.read_disks(install["install"]) == {
+        "data": first.as_posix(),
+        "data-1": second.as_posix(),
+    }
     # `$` doubles for compose, and comes back single.
     assert "data$$1" in (tmp_path / disks.DISKS_COMPOSE_FILENAME).read_text()
 
@@ -57,9 +62,13 @@ def test_names_are_unique_and_paths_round_trip(install, tmp_path):
 def test_compose_is_given_the_disks_file(install, tmp_path):
     folder = tmp_path / "disk"
     folder.mkdir()
-    assert disks.DISKS_COMPOSE_FILENAME not in " ".join(stack.compose_command(install["install"], "ps"))
+    assert disks.DISKS_COMPOSE_FILENAME not in " ".join(
+        stack.compose_command(install["install"], "ps")
+    )
     disks.add_disk(install["install"], str(folder))
-    assert str(tmp_path / disks.DISKS_COMPOSE_FILENAME) in stack.compose_command(install["install"], "ps")
+    assert str(tmp_path / disks.DISKS_COMPOSE_FILENAME) in stack.compose_command(
+        install["install"], "ps"
+    )
 
 
 def test_a_missing_folder_is_refused(install, tmp_path):
@@ -88,7 +97,9 @@ def test_the_question_is_asked_once(install, tmp_path, monkeypatch):
     monkeypatch.setattr(disks.click, "confirm", lambda *a, **k: False)
     assert disks.offer_disks(install["install"]) is False
     assert "ARCSECOND_LOCAL_DISKS=no" in (tmp_path / ".env").read_text()
-    monkeypatch.setattr(disks.click, "confirm", lambda *a, **k: pytest.fail("asked twice"))
+    monkeypatch.setattr(
+        disks.click, "confirm", lambda *a, **k: pytest.fail("asked twice")
+    )
     assert disks.offer_disks(install["install"]) is False
 
 
@@ -102,7 +113,9 @@ def test_the_question_adds_the_disks_typed(install, tmp_path, monkeypatch):
     assert disks.offer_disks(install["install"]) is True
     assert disks.read_disks(install["install"]) == {"disk": folder.as_posix()}
     # Disks there: not asked again.
-    monkeypatch.setattr(disks.click, "confirm", lambda *a, **k: pytest.fail("asked twice"))
+    monkeypatch.setattr(
+        disks.click, "confirm", lambda *a, **k: pytest.fail("asked twice")
+    )
     assert disks.offer_disks(install["install"]) is False
 
 

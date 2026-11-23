@@ -12,8 +12,8 @@ from arcsecond.cloud import (
 from arcsecond.docgen import docs
 from arcsecond.hosting import (
     backups,
-    disks_group,
     db,
+    disks_group,
     doctor_cmd,
     license_group,
     logs,
