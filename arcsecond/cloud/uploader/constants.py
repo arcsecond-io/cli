@@ -2,7 +2,7 @@ from copy import deepcopy
 from enum import Enum
 
 # As used in QLFits: https://github.com/onekiloparsec/QLFits
-OORT_FITS_EXTENSIONS = [
+FITS_EXTENSIONS = [
     ".fits",
     ".fit",
     ".fts",
@@ -19,7 +19,7 @@ OORT_FITS_EXTENSIONS = [
     ".pi",
 ]
 
-DATA_EXTENSIONS = OORT_FITS_EXTENSIONS + [
+DATA_EXTENSIONS = FITS_EXTENSIONS + [
     ".xisf",
 ]
 
@@ -43,7 +43,7 @@ def get_all_xisf_extensions():
 
 
 def get_all_fits_extensions():
-    return _extend_list(deepcopy(OORT_FITS_EXTENSIONS))
+    return _extend_list(deepcopy(FITS_EXTENSIONS))
 
 
 class Status(Enum):
